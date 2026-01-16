@@ -1,0 +1,370 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AdminLayout from '@/components/layout/AdminLayout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AgentType } from '@/types';
+import { cn } from '@/lib/utils';
+import { 
+  ArrowLeft, 
+  ArrowRight, 
+  Check, 
+  GraduationCap, 
+  BookOpen, 
+  Layers, 
+  User,
+  Upload,
+  FileText,
+  Globe,
+  Sparkles,
+} from 'lucide-react';
+
+const agentTypes: { value: AgentType; label: string; description: string; icon: React.ElementType }[] = [
+  { value: 'class', label: 'Class', description: 'Grade or classroom level agent', icon: GraduationCap },
+  { value: 'subject', label: 'Subject', description: 'Subject-specific teaching agent', icon: BookOpen },
+  { value: 'course', label: 'Course', description: 'Individual course agent', icon: Layers },
+  { value: 'teacher', label: 'Teacher', description: 'Personal teaching style agent', icon: User },
+];
+
+const steps = [
+  { id: 1, title: 'Type', description: 'Select agent type' },
+  { id: 2, title: 'Details', description: 'Basic information' },
+  { id: 3, title: 'Knowledge', description: 'Upload materials' },
+  { id: 4, title: 'Settings', description: 'Configure options' },
+  { id: 5, title: 'Review', description: 'Create agent' },
+];
+
+export default function CreateAgentPage() {
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState({
+    type: '' as AgentType | '',
+    name: '',
+    description: '',
+    educationLevel: '',
+    learningObjectives: '',
+    teachingTone: '',
+    documents: [] as File[],
+    enableGlobalPrompts: true,
+    enableGlobalRags: true,
+  });
+
+  const canProceed = () => {
+    switch (currentStep) {
+      case 1: return formData.type !== '';
+      case 2: return formData.name.trim() !== '' && formData.description.trim() !== '';
+      case 3: return true; // Documents are optional
+      case 4: return true;
+      case 5: return true;
+      default: return false;
+    }
+  };
+
+  const handleNext = () => {
+    if (currentStep < 5) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      // Create agent
+      console.log('Creating agent:', formData);
+      navigate('/admin/agents');
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  return (
+    <AdminLayout>
+      <div className="p-8 max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/admin/agents')}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Create AI Agent</h1>
+            <p className="text-muted-foreground mt-1">Set up a new AI teaching agent</p>
+          </div>
+        </div>
+
+        {/* Progress Steps */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            {steps.map((step, index) => (
+              <div key={step.id} className="flex items-center">
+                <div className="flex flex-col items-center">
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all",
+                    currentStep > step.id 
+                      ? "bg-success text-success-foreground"
+                      : currentStep === step.id
+                        ? "bg-primary text-primary-foreground shadow-glow"
+                        : "bg-muted text-muted-foreground"
+                  )}>
+                    {currentStep > step.id ? <Check className="w-5 h-5" /> : step.id}
+                  </div>
+                  <span className={cn(
+                    "text-xs mt-2 font-medium",
+                    currentStep >= step.id ? "text-foreground" : "text-muted-foreground"
+                  )}>
+                    {step.title}
+                  </span>
+                </div>
+                {index < steps.length - 1 && (
+                  <div className={cn(
+                    "w-full h-0.5 mx-4",
+                    currentStep > step.id ? "bg-success" : "bg-muted"
+                  )} style={{ width: '60px' }} />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Step Content */}
+        <Card variant="elevated" className="mb-6">
+          <CardHeader>
+            <CardTitle>{steps[currentStep - 1].title}</CardTitle>
+            <CardDescription>{steps[currentStep - 1].description}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Step 1: Agent Type */}
+            {currentStep === 1 && (
+              <div className="grid grid-cols-2 gap-4">
+                {agentTypes.map((type) => (
+                  <button
+                    key={type.value}
+                    onClick={() => setFormData({ ...formData, type: type.value })}
+                    className={cn(
+                      "p-6 rounded-xl border-2 text-left transition-all duration-200",
+                      formData.type === type.value
+                        ? "border-primary bg-primary/5 shadow-glow"
+                        : "border-border hover:border-primary/50 hover:bg-muted/50"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-12 h-12 rounded-lg flex items-center justify-center mb-4",
+                      formData.type === type.value ? "bg-primary text-primary-foreground" : "bg-muted"
+                    )}>
+                      <type.icon className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-semibold text-foreground mb-1">{type.label}</h3>
+                    <p className="text-sm text-muted-foreground">{type.description}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Step 2: Details */}
+            {currentStep === 2 && (
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Agent Name</Label>
+                  <Input
+                    id="name"
+                    placeholder="e.g., Advanced Mathematics"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Describe what this agent teaches..."
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={4}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="educationLevel">Education Level</Label>
+                    <Input
+                      id="educationLevel"
+                      placeholder="e.g., High School"
+                      value={formData.educationLevel}
+                      onChange={(e) => setFormData({ ...formData, educationLevel: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="teachingTone">Teaching Tone (Optional)</Label>
+                    <Input
+                      id="teachingTone"
+                      placeholder="e.g., Friendly, Professional"
+                      value={formData.teachingTone}
+                      onChange={(e) => setFormData({ ...formData, teachingTone: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="objectives">Learning Objectives</Label>
+                  <Textarea
+                    id="objectives"
+                    placeholder="List the key learning objectives..."
+                    value={formData.learningObjectives}
+                    onChange={(e) => setFormData({ ...formData, learningObjectives: e.target.value })}
+                    rows={3}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Knowledge Sources */}
+            {currentStep === 3 && (
+              <div className="space-y-6">
+                <div className="border-2 border-dashed border-border rounded-xl p-12 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                  <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-semibold text-foreground mb-2">Upload Documents</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Drag and drop PDF, DOC, PPT, or TXT files
+                  </p>
+                  <Button variant="outline">Browse Files</Button>
+                </div>
+                
+                {formData.documents.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Uploaded Files</Label>
+                    <div className="space-y-2">
+                      {formData.documents.map((file, index) => (
+                        <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-muted">
+                          <FileText className="w-5 h-5 text-muted-foreground" />
+                          <span className="text-sm font-medium">{file.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-sm text-muted-foreground">
+                    <Sparkles className="w-4 h-4 inline mr-2 text-primary" />
+                    Documents will be automatically chunked and embedded for semantic search.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Settings */}
+            {currentStep === 4 && (
+              <div className="space-y-6">
+                <div className="flex items-start gap-4 p-4 rounded-lg border border-border">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Globe className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-foreground">Global Prompts</h3>
+                      <Button
+                        variant={formData.enableGlobalPrompts ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setFormData({ ...formData, enableGlobalPrompts: !formData.enableGlobalPrompts })}
+                      >
+                        {formData.enableGlobalPrompts ? 'Enabled' : 'Disabled'}
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Apply universal teaching rules to this agent
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 rounded-lg border border-border">
+                  <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-5 h-5 text-accent" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-foreground">Global RAGs</h3>
+                      <Button
+                        variant={formData.enableGlobalRags ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setFormData({ ...formData, enableGlobalRags: !formData.enableGlobalRags })}
+                      >
+                        {formData.enableGlobalRags ? 'Enabled' : 'Disabled'}
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Include shared knowledge base in agent responses
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 5: Review */}
+            {currentStep === 5 && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-muted-foreground">Agent Type</Label>
+                    <p className="font-medium text-foreground capitalize">{formData.type}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Agent Name</Label>
+                    <p className="font-medium text-foreground">{formData.name}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-muted-foreground">Description</Label>
+                    <p className="font-medium text-foreground">{formData.description}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Education Level</Label>
+                    <p className="font-medium text-foreground">{formData.educationLevel || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Teaching Tone</Label>
+                    <p className="font-medium text-foreground">{formData.teachingTone || 'Default'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Global Prompts</Label>
+                    <p className="font-medium text-foreground">{formData.enableGlobalPrompts ? 'Enabled' : 'Disabled'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Global RAGs</Label>
+                    <p className="font-medium text-foreground">{formData.enableGlobalRags ? 'Enabled' : 'Disabled'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Navigation */}
+        <div className="flex items-center justify-between">
+          <Button
+            variant="outline"
+            onClick={handleBack}
+            disabled={currentStep === 1}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+          <Button
+            variant="gradient"
+            onClick={handleNext}
+            disabled={!canProceed()}
+          >
+            {currentStep === 5 ? (
+              <>
+                Create Agent
+                <Check className="w-4 h-4 ml-2" />
+              </>
+            ) : (
+              <>
+                Next
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    </AdminLayout>
+  );
+}
