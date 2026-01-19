@@ -92,7 +92,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter basename="/Teacher_AI_Agent">
           <AppRoutes />
         </BrowserRouter>
       </TooltipProvider>

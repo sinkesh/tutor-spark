@@ -184,7 +184,8 @@ export default function FeedbackPage() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="queue" className="flex-1 flex gap-4 mt-0 overflow-hidden">
+          <TabsContent value="queue" className="flex-1 mt-0 overflow-hidden">
+            <div className="flex gap-4 ">
             {/* Left: Queue List */}
             <div className="w-1/2 flex flex-col bg-card rounded-xl border overflow-hidden">
               <div className="p-4 border-b space-y-3">
@@ -234,6 +235,7 @@ export default function FeedbackPage() {
                   </div>
                 </div>
               )}
+            </div>
             </div>
           </TabsContent>
 
