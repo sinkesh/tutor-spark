@@ -53,3 +53,42 @@ export const listStudent = async (): Promise<{
   const response = await api.get(API_URL.LIST_STUDENT);
   return response.data;
 };
+
+export const getStudentDetails = async (
+  id: string
+): Promise<{
+  subject_agent: any[];
+  name: string;
+  email: string;
+  class_name: string;
+}> => {
+  const response = await api.get(`${API_URL.STUDENT}/${id}`);
+  return response.data;
+};
+
+export const editStudentDetails = async (
+  id: string,
+  studentData: {
+    name: string;
+    email: string;
+    class_name: string;
+    subject_agent: Array<{ name: string }>;
+  }
+): Promise<{
+  id: string;
+  name: string;
+  email: string;
+  class_name: string;
+  subject_agent: Array<{ name: string }>;
+}> => {
+  const response = await apiDataJson.put(
+    `${API_URL.STUDENT}/${id}`,
+    studentData
+  );
+  return response.data;
+};
+
+export const deleteStudentDetails = async (id: string) => {
+  const response = await apiDataJson.delete(`${API_URL.STUDENT}/${id}`);
+  return response.data;
+};

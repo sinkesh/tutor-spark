@@ -51,7 +51,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { agentOfClass, createStudent, listStudent } from "@/config/services";
+import {
+  agentOfClass,
+  createStudent,
+  listStudent,
+  getStudentDetails,
+  editStudentDetails,
+  deleteStudentDetails,
+} from "@/config/services";
 
 interface SubjectAgent {
   subject: string;
@@ -59,10 +66,13 @@ interface SubjectAgent {
 }
 
 interface NewStudent {
+  id: string;
   name: string;
   email: string;
   class_name: string;
-  subject_agent: any;
+  subject_agent: {
+    name: string;
+  }[];
 }
 
 interface Student {
@@ -151,7 +161,9 @@ export default function StudentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newStudent, setNewStudent] = useState<NewStudent>({
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [currentStudentId, setCurrentStudentId] = useState<string | null>(null);
+  const [newStudent, setNewStudent] = useState<any>({
     name: "",
     email: "",
     class_name: "",
@@ -237,9 +249,9 @@ export default function StudentsPage() {
         ? [...prev.subject_agent]
         : [];
 
-      // Check if subject is already selected
+      // Check if subject is already selected - handle both formats (with/without id)
       const subjectIndex = currentSubjects.findIndex(
-        (s) => s.name === subject.subject
+        (s) => s.name === subject.subject || s.subject === subject.subject
       );
 
       if (subjectIndex >= 0) {
@@ -248,10 +260,14 @@ export default function StudentsPage() {
         updatedSubjects.splice(subjectIndex, 1);
         return { ...prev, subject_agent: updatedSubjects };
       } else {
-        // Add if not selected
+        // Add if not selected - use the format that matches the current mode
+        const newSubject = isEditMode
+          ? { subject: subject.subject, id: subject.id }
+          : { name: subject.subject };
+
         return {
           ...prev,
-          subject_agent: [...currentSubjects, { name: subject.subject }],
+          subject_agent: [...currentSubjects, newSubject],
         };
       }
     });
@@ -259,27 +275,39 @@ export default function StudentsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm(newStudent)) {
-      return;
-    }
+    if (!validateForm(newStudent)) return;
 
     try {
       setIsSubmitting(true);
-      await createStudent(newStudent);
-      toast.success("Student created successfully");
-      setIsAddDialogOpen(false);
-      // Reset form
-      setNewStudent({
-        name: "",
-        email: "",
-        class_name: "",
-        subject_agent: [],
-      });
-      setIsSubject([]);
-    } catch (error) {
-      console.error("Error creating student:", error);
-      toast.error("Failed to create student");
+
+      if (isEditMode && currentStudentId) {
+        // Update existing student
+        const res = await createStudent({
+          ...newStudent,
+          student_id: currentStudentId,
+        });
+        if (res) {
+          toast.success("Student updated successfully");
+          setIsAddDialogOpen(false);
+          resetForm();
+          fetchStudentsList();
+        }
+      } else {
+        // Create new student
+        const res = await createStudent(newStudent);
+        if (res) {
+          toast.success("Student created successfully");
+          setIsAddDialogOpen(false);
+          resetForm();
+          fetchStudentsList();
+        }
+      }
+    } catch (err) {
+      console.error(
+        `Error ${isEditMode ? "updating" : "creating"} student:`,
+        err
+      );
+      toast.error(`Failed to ${isEditMode ? "update" : "create"} student`);
     } finally {
       setIsSubmitting(false);
     }
@@ -294,14 +322,126 @@ export default function StudentsPage() {
         setTotalStudents(res.total || 0);
         toast.success(`Fetched ${res.students.length} students`);
       }
-    } catch (err) {
-      console.error("Error fetching students:", err);
-      toast.error("Failed to fetch student list");
-      setStudents([]);
-      setTotalStudents(0);
+    } catch (error) {
+      console.error("Error fetching students:", error);
+      toast.error("Failed to fetch students");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleEditStudent = async (studentId: string) => {
+    try {
+      setIsLoading(true);
+      const res = await getStudentDetails(studentId);
+      if (res) {
+        setCurrentStudentId(studentId);
+        setIsEditMode(true);
+
+        // Format subject_agent to match the expected format in the form
+        const formattedSubjects =
+          res.subject_agent?.map((subject) => ({
+            subject: subject.name,
+            id: subject.name.toLowerCase().replace(/\s+/g, "-"),
+          })) || [];
+
+        setNewStudent({
+          name: res.name || "",
+          email: res.email || "",
+          class_name: res.class_name || "",
+          subject_agent: formattedSubjects,
+        });
+
+        // Fetch subjects for the class if class exists
+        if (res.class_name) {
+          const subjects = await agentOfClass({ class_name: res.class_name });
+          setIsSubject(subjects.agents || []);
+        }
+
+        // Open the dialog after state is updated
+        setIsAddDialogOpen(true);
+      }
+    } catch (err) {
+      console.error("Error fetching student details:", err);
+      toast.error("Failed to load student details");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm(newStudent)) return;
+
+    try {
+      setIsSubmitting(true);
+
+      if (isEditMode && currentStudentId) {
+        // Format data for API
+        const studentData = {
+          name: newStudent.name,
+          email: newStudent.email,
+          class_name: newStudent.class_name,
+          subject_agent: newStudent.subject_agent.map((subject: any) => ({
+            name: subject.name || subject.subject,
+          })),
+        };
+
+        // Update existing student
+        const res = await editStudentDetails(currentStudentId, studentData);
+        if (res) {
+          toast.success("Student updated successfully");
+          setIsAddDialogOpen(false);
+          resetForm();
+          fetchStudentsList(); // Refresh the list
+        }
+      } else {
+        // Create new student
+        const res = await createStudent(newStudent);
+        if (res) {
+          toast.success("Student created successfully");
+          setIsAddDialogOpen(false);
+          resetForm();
+          fetchStudentsList();
+        }
+      }
+    } catch (err) {
+      console.error(
+        `Error ${isEditMode ? "updating" : "creating"} student:`,
+        err
+      );
+      toast.error(`Failed to ${isEditMode ? "update" : "create"} student`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteStudent = async (studentId: string) => {
+    try {
+      setIsLoading(true);
+      const res = await deleteStudentDetails(studentId);
+      if (res) {
+        toast.success("Student deleted successfully");
+        fetchStudentsList();
+      }
+    } catch (err) {
+      console.error("Error deleting student:", err);
+      toast.error("Failed to delete student");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setNewStudent({
+      name: "",
+      email: "",
+      class_name: "",
+      subject_agent: [],
+    });
+    setCurrentStudentId(null);
+    setIsEditMode(false);
+    setErrors({});
   };
 
   const filteredStudents = students.filter((student) => {
@@ -356,19 +496,37 @@ export default function StudentsPage() {
               <Upload className="w-4 h-4 mr-2" />
               Bulk Import
             </Button>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Student
-                </Button>
-              </DialogTrigger>
+            <Button
+              onClick={() => {
+                resetForm();
+                setIsEditMode(false);
+                setIsAddDialogOpen(true);
+              }}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Student
+            </Button>
+            <Dialog
+              open={isAddDialogOpen}
+              onOpenChange={(open) => {
+                if (!open) {
+                  resetForm();
+                }
+                setIsAddDialogOpen(open);
+              }}
+            >
               <DialogContent className="sm:max-w-[525px]">
-                <form onSubmit={handleSubmit}>
+                <form
+                  onSubmit={isEditMode ? handleUpdateStudent : handleSubmit}
+                >
                   <DialogHeader>
-                    <DialogTitle>Add New Student</DialogTitle>
+                    <DialogTitle>
+                      {isEditMode ? "Edit Student" : "Add New Student"}
+                    </DialogTitle>
                     <DialogDescription>
-                      Fill in the details to add a new student to the system.
+                      {isEditMode
+                        ? "Update the student details below."
+                        : "Fill in the details to add a new student to the system."}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 pb-4">
@@ -456,7 +614,9 @@ export default function StudentsPage() {
                             const isSelected =
                               Array.isArray(newStudent.subject_agent) &&
                               newStudent.subject_agent.some(
-                                (s) => s.name === subject.subject
+                                (s) =>
+                                  s.name === subject.subject ||
+                                  s.subject === subject.subject
                               );
 
                             return (
@@ -508,8 +668,10 @@ export default function StudentsPage() {
                       {isSubmitting ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Adding...
+                          {isEditMode ? "Updating..." : "Adding..."}
                         </>
+                      ) : isEditMode ? (
+                        "Update Student"
                       ) : (
                         "Add Student"
                       )}
@@ -686,11 +848,20 @@ export default function StudentsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleEditStudent(student.student_id)
+                            }
+                          >
                             <Edit2 className="w-4 h-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() =>
+                              handleDeleteStudent(student.student_id)
+                            }
+                          >
                             <Trash2 className="w-4 h-4 mr-2" />
                             Remove
                           </DropdownMenuItem>

@@ -9,4 +9,5 @@ export const API_URL = {
   AGENT_QUERY: "/student/agent-query",
   CREATE_STUDENT: "/student/create-student",
   LIST_STUDENT: "/student/student-list",
+  STUDENT: "/student"
 };
