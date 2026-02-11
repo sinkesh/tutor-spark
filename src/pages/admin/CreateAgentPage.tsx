@@ -1,75 +1,176 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import AdminLayout from '@/components/layout/AdminLayout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AgentType } from '@/types';
-import { cn } from '@/lib/utils';
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  Check, 
-  GraduationCap, 
-  BookOpen, 
-  Layers, 
+import { useState, useCallback, useRef } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import AdminLayout from "@/components/layout/AdminLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { AgentType } from "@/types";
+import { createAgents } from "@/config/services";
+import { cn } from "@/lib/utils";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  GraduationCap,
+  BookOpen,
+  Layers,
   User,
   Upload,
   FileText,
   Globe,
   Sparkles,
-} from 'lucide-react';
+} from "lucide-react";
 
-const agentTypes: { value: AgentType; label: string; description: string; icon: React.ElementType }[] = [
-  { value: 'class', label: 'Class', description: 'Grade or classroom level agent', icon: GraduationCap },
-  { value: 'subject', label: 'Subject', description: 'Subject-specific teaching agent', icon: BookOpen },
-  { value: 'course', label: 'Course', description: 'Individual course agent', icon: Layers },
-  { value: 'teacher', label: 'Teacher', description: 'Personal teaching style agent', icon: User },
+const agentTypes: {
+  value: AgentType;
+  label: string;
+  description: string;
+  icon: React.ElementType;
+}[] = [
+  {
+    value: "class",
+    label: "Class",
+    description: "Grade or classroom level agent",
+    icon: GraduationCap,
+  },
+  {
+    value: "subject",
+    label: "Subject",
+    description: "Subject-specific teaching agent",
+    icon: BookOpen,
+  },
+  {
+    value: "course",
+    label: "Course",
+    description: "Individual course agent",
+    icon: Layers,
+  },
+  {
+    value: "teacher",
+    label: "Teacher",
+    description: "Personal teaching style agent",
+    icon: User,
+  },
 ];
 
 const steps = [
-  { id: 1, title: 'Type', description: 'Select agent type' },
-  { id: 2, title: 'Details', description: 'Basic information' },
-  { id: 3, title: 'Knowledge', description: 'Upload materials' },
-  { id: 4, title: 'Settings', description: 'Configure options' },
-  { id: 5, title: 'Review', description: 'Create agent' },
+  { id: 1, title: "Type", description: "Select agent type" },
+  { id: 2, title: "Details", description: "Basic information" },
+  { id: 3, title: "Knowledge", description: "Upload materials" },
+  { id: 4, title: "Settings", description: "Configure options" },
+  { id: 5, title: "Review", description: "Create agent" },
 ];
 
 export default function CreateAgentPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
-    type: '' as AgentType | '',
-    name: '',
-    description: '',
-    educationLevel: '',
-    learningObjectives: '',
-    teachingTone: '',
+    type: "" as AgentType | "",
+    name: "",
+    description: "",
+    class: "",
+    subject: "",
+    educationLevel: "",
+    learningObjectives: "",
+    teachingTone: "",
     documents: [] as File[],
     enableGlobalPrompts: true,
     enableGlobalRags: true,
   });
 
+  const handleFiles = useCallback((files: File[]) => {
+    setFormData((prev) => ({
+      ...prev,
+      documents: [...prev.documents, ...files],
+    }));
+  }, []);
+
+  const removeFile = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      documents: prev.documents.filter((_, i) => i !== index),
+    }));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
   const canProceed = () => {
     switch (currentStep) {
-      case 1: return formData.type !== '';
-      case 2: return formData.name.trim() !== '' && formData.description.trim() !== '';
-      case 3: return true; // Documents are optional
-      case 4: return true;
-      case 5: return true;
-      default: return false;
+      case 1:
+        return formData.type !== "";
+      case 2:
+        return (
+          formData.name.trim() !== "" && formData.description.trim() !== ""
+        );
+      case 3:
+        return true; // Documents are optional
+      case 4:
+        return true;
+      case 5:
+        return true;
+      default:
+        return false;
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < 5) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      // Create agent
-      console.log('Creating agent:', formData);
-      navigate('/admin/agents');
+      setCurrentStep((s) => s + 1);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      const payload = new FormData();
+
+      payload.append("class_", formData.class);
+      payload.append("subject", formData.subject);
+      payload.append("agent_type", formData.educationLevel);
+      payload.append("agent_name", formData.name);
+      payload.append("description", formData.description);
+      payload.append("teaching_tone", formData.teachingTone || "");
+
+      formData.documents.forEach((file) => {
+        payload.append("files", file);
+      });
+
+      await createAgents(payload);
+
+      toast({
+        title: "Success",
+        description: "Agent created successfully!",
+      });
+
+      navigate("/admin/agents");
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Error",
+        description: "Failed to create agent",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -84,43 +185,67 @@ export default function CreateAgentPage() {
       <div className="p-8 max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/admin/agents')}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/admin/agents")}
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Create AI Agent</h1>
-            <p className="text-muted-foreground mt-1">Set up a new AI teaching agent</p>
+            <h1 className="text-3xl font-bold text-foreground">
+              Create AI Agent
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Set up a new AI teaching agent
+            </p>
           </div>
         </div>
 
         {/* Progress Steps */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-8 w-full">
+          <div className="w-full flex items-center justify-between">
             {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div className="flex flex-col items-center">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all",
-                    currentStep > step.id 
-                      ? "bg-success text-success-foreground"
-                      : currentStep === step.id
+              <div
+                key={step.id}
+                className="w-full last:w-fit last:ml-6 flex items-center"
+              >
+                <div className="w-full flex flex-col items-center">
+                  <div
+                    className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all",
+                      currentStep > step.id
+                        ? "bg-success text-success-foreground"
+                        : currentStep === step.id
                         ? "bg-primary text-primary-foreground shadow-glow"
                         : "bg-muted text-muted-foreground"
-                  )}>
-                    {currentStep > step.id ? <Check className="w-5 h-5" /> : step.id}
+                    )}
+                  >
+                    {currentStep > step.id ? (
+                      <Check className="w-5 h-5" />
+                    ) : (
+                      step.id
+                    )}
                   </div>
-                  <span className={cn(
-                    "text-xs mt-2 font-medium",
-                    currentStep >= step.id ? "text-foreground" : "text-muted-foreground"
-                  )}>
+                  <span
+                    className={cn(
+                      "text-xs mt-2 font-medium",
+                      currentStep >= step.id
+                        ? "text-foreground"
+                        : "text-muted-foreground"
+                    )}
+                  >
                     {step.title}
                   </span>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className={cn(
-                    "w-full h-0.5 mx-4",
-                    currentStep > step.id ? "bg-success" : "bg-muted"
-                  )} style={{ width: '60px' }} />
+                  <div
+                    className={cn(
+                      "w-full h-0.5 mb-6 max-w-32",
+                      currentStep > step.id ? "bg-success" : "bg-muted"
+                    )}
+                    // style={{ width: "60px" }}
+                  />
                 )}
               </div>
             ))}
@@ -131,7 +256,9 @@ export default function CreateAgentPage() {
         <Card variant="elevated" className="mb-6">
           <CardHeader>
             <CardTitle>{steps[currentStep - 1].title}</CardTitle>
-            <CardDescription>{steps[currentStep - 1].description}</CardDescription>
+            <CardDescription>
+              {steps[currentStep - 1].description}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {/* Step 1: Agent Type */}
@@ -140,7 +267,9 @@ export default function CreateAgentPage() {
                 {agentTypes.map((type) => (
                   <button
                     key={type.value}
-                    onClick={() => setFormData({ ...formData, type: type.value })}
+                    onClick={() =>
+                      setFormData({ ...formData, type: type.value })
+                    }
                     className={cn(
                       "p-6 rounded-xl border-2 text-left transition-all duration-200",
                       formData.type === type.value
@@ -148,14 +277,22 @@ export default function CreateAgentPage() {
                         : "border-border hover:border-primary/50 hover:bg-muted/50"
                     )}
                   >
-                    <div className={cn(
-                      "w-12 h-12 rounded-lg flex items-center justify-center mb-4",
-                      formData.type === type.value ? "bg-primary text-primary-foreground" : "bg-muted"
-                    )}>
+                    <div
+                      className={cn(
+                        "w-12 h-12 rounded-lg flex items-center justify-center mb-4",
+                        formData.type === type.value
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                      )}
+                    >
                       <type.icon className="w-6 h-6" />
                     </div>
-                    <h3 className="font-semibold text-foreground mb-1">{type.label}</h3>
-                    <p className="text-sm text-muted-foreground">{type.description}</p>
+                    <h3 className="font-semibold text-foreground mb-1">
+                      {type.label}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {type.description}
+                    </p>
                   </button>
                 ))}
               </div>
@@ -170,7 +307,31 @@ export default function CreateAgentPage() {
                     id="name"
                     placeholder="e.g., Advanced Mathematics"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="class">Class</Label>
+                  <Input
+                    id="class"
+                    placeholder="10th"
+                    value={formData.class}
+                    onChange={(e) =>
+                      setFormData({ ...formData, class: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subject">Subject</Label>
+                  <Input
+                    id="subject"
+                    placeholder="e.g., Mathematics"
+                    value={formData.subject}
+                    onChange={(e) =>
+                      setFormData({ ...formData, subject: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -179,63 +340,171 @@ export default function CreateAgentPage() {
                     id="description"
                     placeholder="Describe what this agent teaches..."
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
                     rows={4}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="educationLevel">Education Level</Label>
+                    <Label htmlFor="educationLevel">Agent Type</Label>
                     <Input
                       id="educationLevel"
                       placeholder="e.g., High School"
                       value={formData.educationLevel}
-                      onChange={(e) => setFormData({ ...formData, educationLevel: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          educationLevel: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="teachingTone">Teaching Tone (Optional)</Label>
+                    <Label htmlFor="teachingTone">
+                      Teaching Tone (Optional)
+                    </Label>
                     <Input
                       id="teachingTone"
                       placeholder="e.g., Friendly, Professional"
                       value={formData.teachingTone}
-                      onChange={(e) => setFormData({ ...formData, teachingTone: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          teachingTone: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="objectives">Learning Objectives</Label>
                   <Textarea
                     id="objectives"
                     placeholder="List the key learning objectives..."
                     value={formData.learningObjectives}
-                    onChange={(e) => setFormData({ ...formData, learningObjectives: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        learningObjectives: e.target.value,
+                      })
+                    }
                     rows={3}
                   />
-                </div>
+                </div> */}
               </div>
             )}
 
             {/* Step 3: Knowledge Sources */}
             {currentStep === 3 && (
               <div className="space-y-6">
-                <div className="border-2 border-dashed border-border rounded-xl p-12 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                <div
+                  className="border-2 border-dashed border-border rounded-xl p-12 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.currentTarget.classList.add("border-primary/50");
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.currentTarget.classList.remove("border-primary/50");
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.currentTarget.classList.remove("border-primary/50");
+                    const files = Array.from(e.dataTransfer.files).filter(
+                      (file) =>
+                        file.type === "application/pdf" ||
+                        file.type === "application/msword" ||
+                        file.type ===
+                          "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+                        file.type === "text/plain"
+                    );
+                    if (files.length > 0) {
+                      handleFiles(files);
+                    } else {
+                      toast({
+                        title: "Invalid file type",
+                        description:
+                          "Please upload PDF, DOC, DOCX, or TXT files only.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.txt"
+                    multiple
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        handleFiles(Array.from(e.target.files));
+                      }
+                    }}
+                  />
                   <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-semibold text-foreground mb-2">Upload Documents</h3>
+                  <h3 className="font-semibold text-foreground mb-2">
+                    Upload Documents
+                  </h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Drag and drop PDF, DOC, PPT, or TXT files
+                    Drag and drop PDF, DOC, DOCX, or TXT files or click to
+                    browse
                   </p>
-                  <Button variant="outline">Browse Files</Button>
+                  <Button variant="outline" type="button">
+                    Browse Files
+                  </Button>
                 </div>
-                
+
                 {formData.documents.length > 0 && (
                   <div className="space-y-2">
                     <Label>Uploaded Files</Label>
                     <div className="space-y-2">
                       {formData.documents.map((file, index) => (
-                        <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-muted">
-                          <FileText className="w-5 h-5 text-muted-foreground" />
-                          <span className="text-sm font-medium">{file.name}</span>
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                            <div className="text-left">
+                              <p className="text-sm font-medium text-ellipsis overflow-hidden max-w-xs">
+                                {file.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatFileSize(file.size)}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFile(index);
+                            }}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <line x1="18" y1="6" x2="6" y2="18"></line>
+                              <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -245,7 +514,8 @@ export default function CreateAgentPage() {
                 <div className="p-4 rounded-lg bg-muted/50 border border-border">
                   <p className="text-sm text-muted-foreground">
                     <Sparkles className="w-4 h-4 inline mr-2 text-primary" />
-                    Documents will be automatically chunked and embedded for semantic search.
+                    Documents will be automatically chunked and embedded for
+                    semantic search.
                   </p>
                 </div>
               </div>
@@ -260,13 +530,22 @@ export default function CreateAgentPage() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-foreground">Global Prompts</h3>
+                      <h3 className="font-semibold text-foreground">
+                        Global Prompts
+                      </h3>
                       <Button
-                        variant={formData.enableGlobalPrompts ? 'default' : 'outline'}
+                        variant={
+                          formData.enableGlobalPrompts ? "default" : "outline"
+                        }
                         size="sm"
-                        onClick={() => setFormData({ ...formData, enableGlobalPrompts: !formData.enableGlobalPrompts })}
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            enableGlobalPrompts: !formData.enableGlobalPrompts,
+                          })
+                        }
                       >
-                        {formData.enableGlobalPrompts ? 'Enabled' : 'Disabled'}
+                        {formData.enableGlobalPrompts ? "Enabled" : "Disabled"}
                       </Button>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -281,13 +560,22 @@ export default function CreateAgentPage() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-foreground">Global RAGs</h3>
+                      <h3 className="font-semibold text-foreground">
+                        Global RAGs
+                      </h3>
                       <Button
-                        variant={formData.enableGlobalRags ? 'default' : 'outline'}
+                        variant={
+                          formData.enableGlobalRags ? "default" : "outline"
+                        }
                         size="sm"
-                        onClick={() => setFormData({ ...formData, enableGlobalRags: !formData.enableGlobalRags })}
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            enableGlobalRags: !formData.enableGlobalRags,
+                          })
+                        }
                       >
-                        {formData.enableGlobalRags ? 'Enabled' : 'Disabled'}
+                        {formData.enableGlobalRags ? "Enabled" : "Disabled"}
                       </Button>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -304,31 +592,51 @@ export default function CreateAgentPage() {
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <Label className="text-muted-foreground">Agent Type</Label>
-                    <p className="font-medium text-foreground capitalize">{formData.type}</p>
+                    <p className="font-medium text-foreground capitalize">
+                      {formData.type}
+                    </p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Agent Name</Label>
-                    <p className="font-medium text-foreground">{formData.name}</p>
+                    <p className="font-medium text-foreground">
+                      {formData.name}
+                    </p>
                   </div>
                   <div className="col-span-2">
                     <Label className="text-muted-foreground">Description</Label>
-                    <p className="font-medium text-foreground">{formData.description}</p>
+                    <p className="font-medium text-foreground">
+                      {formData.description}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Education Level</Label>
-                    <p className="font-medium text-foreground">{formData.educationLevel || 'Not specified'}</p>
+                    <Label className="text-muted-foreground">
+                      Education Level
+                    </Label>
+                    <p className="font-medium text-foreground">
+                      {formData.educationLevel || "Not specified"}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Teaching Tone</Label>
-                    <p className="font-medium text-foreground">{formData.teachingTone || 'Default'}</p>
+                    <Label className="text-muted-foreground">
+                      Teaching Tone
+                    </Label>
+                    <p className="font-medium text-foreground">
+                      {formData.teachingTone || "Default"}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Global Prompts</Label>
-                    <p className="font-medium text-foreground">{formData.enableGlobalPrompts ? 'Enabled' : 'Disabled'}</p>
+                    <Label className="text-muted-foreground">
+                      Global Prompts
+                    </Label>
+                    <p className="font-medium text-foreground">
+                      {formData.enableGlobalPrompts ? "Enabled" : "Disabled"}
+                    </p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Global RAGs</Label>
-                    <p className="font-medium text-foreground">{formData.enableGlobalRags ? 'Enabled' : 'Disabled'}</p>
+                    <p className="font-medium text-foreground">
+                      {formData.enableGlobalRags ? "Enabled" : "Disabled"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -349,13 +657,34 @@ export default function CreateAgentPage() {
           <Button
             variant="gradient"
             onClick={handleNext}
-            disabled={!canProceed()}
+            disabled={!canProceed() || isLoading}
           >
-            {currentStep === 5 ? (
-              <>
-                Create Agent
-                <Check className="w-4 h-4 ml-2" />
-              </>
+            {isLoading ? (
+              <div className="flex items-center">
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                {currentStep === 5 ? "Creating..." : "Loading..."}
+              </div>
+            ) : currentStep === 5 ? (
+              "Create Agent"
             ) : (
               <>
                 Next

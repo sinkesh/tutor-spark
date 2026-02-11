@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'student';
+export type UserRole = "admin" | "student";
 
 export interface User {
   id: string;
@@ -8,29 +8,42 @@ export interface User {
   avatar?: string;
 }
 
-export type AgentType = 'class' | 'subject' | 'course' | 'teacher';
-export type AgentStatus = 'active' | 'draft' | 'disabled';
+export type AgentType = "class" | "subject" | "course" | "teacher";
+export type AgentStatus = "active" | "draft" | "disabled";
 
 export interface AIAgent {
   id: string;
-  name: string;
-  description: string;
-  type: AgentType;
+  agent_type: string;
+  agent_name: string;
   status: AgentStatus;
+  description: string;
   educationLevel: string;
   learningObjectives: string[];
-  teachingTone?: string;
   assignedStudents: number;
   accuracyScore: number;
   totalConversations: number;
-  createdAt: Date;
-  updatedAt: Date;
 }
+
+// export interface AIAgent {
+//   id: string;
+//   name: string;
+//   description: string;
+//   type: AgentType;
+//   status: AgentStatus;
+//   educationLevel: string;
+//   learningObjectives: string[];
+//   teachingTone?: string;
+//   assignedStudents: number;
+//   accuracyScore: number;
+//   totalConversations: number;
+//   createdAt: Date;
+//   updatedAt: Date;
+// }
 
 export interface Message {
   id: string;
   content: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   timestamp: Date;
   confidence?: number;
   sources?: string[];
@@ -55,7 +68,25 @@ export interface KPIData {
 export interface FolderItem {
   id: string;
   name: string;
-  type: 'class' | 'subject' | 'course' | 'agent';
+  type: "class" | "subject" | "course" | "agent";
   children?: FolderItem[];
   agentId?: string;
+}
+
+export interface StudentQuery {
+  student_id: string;
+  subject: string;
+  class_name: string;
+  query: string;
+}
+
+export interface CreateStudent {
+  name: string;
+  email: string;
+  class_name: string;
+  subject_agent: [
+    {
+      name: string;
+    }
+  ];
 }

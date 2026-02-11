@@ -26,28 +26,38 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode; allowedRole: 'admin' | 'student' }) {
+function ProtectedRoute({
+  children,
+  allowedRole,
+}: {
+  children: React.ReactNode;
+  allowedRole: "admin" | "student";
+}) {
   const { user, isAuthenticated } = useAuth();
-  
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  
+
   if (user?.role !== allowedRole) {
-    return <Navigate to={user?.role === 'admin' ? '/admin' : '/student'} replace />;
+    return (
+      <Navigate to={user?.role === "admin" ? "/admin" : "/student"} replace />
+    );
   }
-  
+
   return <>{children}</>;
 }
 
 function AuthRedirect() {
   const { user, isAuthenticated } = useAuth();
-  
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  
-  return <Navigate to={user?.role === 'admin' ? '/admin' : '/student'} replace />;
+
+  return (
+    <Navigate to={user?.role === "admin" ? "/admin" : "/student"} replace />
+  );
 }
 
 function AppRoutes() {
@@ -56,30 +66,138 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Public routes */}
-      <Route path="/login" element={isAuthenticated ? <AuthRedirect /> : <LoginPage />} />
-      
+      <Route
+        path="/login"
+        element={isAuthenticated ? <AuthRedirect /> : <LoginPage />}
+      />
+
       {/* Root redirect */}
       <Route path="/" element={<AuthRedirect />} />
-      
+
       {/* Admin routes */}
-      <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminDashboard /></ProtectedRoute>} />
-      <Route path="/admin/agents" element={<ProtectedRoute allowedRole="admin"><AgentsListPage /></ProtectedRoute>} />
-      <Route path="/admin/agents/create" element={<ProtectedRoute allowedRole="admin"><CreateAgentPage /></ProtectedRoute>} />
-      <Route path="/admin/agents/:agentId" element={<ProtectedRoute allowedRole="admin"><AgentDetailPage /></ProtectedRoute>} />
-      <Route path="/admin/global-knowledge" element={<ProtectedRoute allowedRole="admin"><GlobalKnowledgePage /></ProtectedRoute>} />
-      <Route path="/admin/feedback" element={<ProtectedRoute allowedRole="admin"><FeedbackPage /></ProtectedRoute>} />
-      <Route path="/admin/analytics" element={<ProtectedRoute allowedRole="admin"><AnalyticsPage /></ProtectedRoute>} />
-      <Route path="/admin/sandbox" element={<ProtectedRoute allowedRole="admin"><SandboxPage /></ProtectedRoute>} />
-      <Route path="/admin/students" element={<ProtectedRoute allowedRole="admin"><StudentsPage /></ProtectedRoute>} />
-      <Route path="/admin/settings" element={<ProtectedRoute allowedRole="admin"><SettingsPage /></ProtectedRoute>} />
-      
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/agents"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AgentsListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/agents/create"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <CreateAgentPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/agents/:agentId"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AgentDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/global-knowledge"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <GlobalKnowledgePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/feedback"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <FeedbackPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/analytics"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AnalyticsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/sandbox"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <SandboxPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/students"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <StudentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/settings"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Student routes */}
-      <Route path="/student" element={<ProtectedRoute allowedRole="student"><StudentDashboard /></ProtectedRoute>} />
-      <Route path="/student/explore" element={<ProtectedRoute allowedRole="student"><ExplorePage /></ProtectedRoute>} />
-      <Route path="/student/chat/:agentId" element={<ProtectedRoute allowedRole="student"><ChatPage /></ProtectedRoute>} />
-      <Route path="/student/history" element={<ProtectedRoute allowedRole="student"><HistoryPage /></ProtectedRoute>} />
-      <Route path="/student/profile" element={<ProtectedRoute allowedRole="student"><ProfilePage /></ProtectedRoute>} />
-      
+      <Route
+        path="/student"
+        element={
+          <ProtectedRoute allowedRole="student">
+            <StudentDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/explore"
+        element={
+          <ProtectedRoute allowedRole="student">
+            <ExplorePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/chat/:subjectName"
+        element={
+          <ProtectedRoute allowedRole="student">
+            <ChatPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/history"
+        element={
+          <ProtectedRoute allowedRole="student">
+            <HistoryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/profile"
+        element={
+          <ProtectedRoute allowedRole="student">
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>

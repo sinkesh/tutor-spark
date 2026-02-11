@@ -1,12 +1,24 @@
-import AdminLayout from '@/components/layout/AdminLayout';
-import KPICard from '@/components/dashboard/KPICard';
-import AgentCard from '@/components/agents/AgentCard';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { AIAgent, KPIData } from '@/types';
-import { Bot, Users, MessageCircle, Target, Plus, ArrowRight, Clock } from 'lucide-react';
-import { Link } from 'react-router-dom';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import AdminLayout from "@/components/layout/AdminLayout";
+import KPICard from "@/components/dashboard/KPICard";
+import AgentCard from "@/components/agents/AgentCard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AIAgent, KPIData } from "@/types";
+import {
+  Bot,
+  Users,
+  MessageCircle,
+  Target,
+  Plus,
+  ArrowRight,
+  Clock,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { getAgents } from "@/config/services";
+import { toast } from "sonner";
 
 // Mock data
 const kpiData: KPIData = {
@@ -16,59 +28,44 @@ const kpiData: KPIData = {
   avgAccuracyScore: 94.2,
 };
 
-const topAgents: AIAgent[] = [
-  {
-    id: '1',
-    name: 'Advanced Mathematics',
-    description: 'Covers calculus, algebra, and statistics for high school students',
-    type: 'subject',
-    status: 'active',
-    educationLevel: 'High School',
-    learningObjectives: ['Calculus', 'Algebra'],
-    assignedStudents: 342,
-    accuracyScore: 97,
-    totalConversations: 8420,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '2',
-    name: 'English Literature',
-    description: 'Comprehensive literature analysis and writing skills',
-    type: 'course',
-    status: 'active',
-    educationLevel: 'High School',
-    learningObjectives: ['Analysis', 'Writing'],
-    assignedStudents: 289,
-    accuracyScore: 95,
-    totalConversations: 6230,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '3',
-    name: 'Physics 101',
-    description: 'Introduction to physics concepts and problem-solving',
-    type: 'class',
-    status: 'active',
-    educationLevel: 'College',
-    learningObjectives: ['Mechanics', 'Thermodynamics'],
-    assignedStudents: 198,
-    accuracyScore: 93,
-    totalConversations: 4120,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-
 const recentActivity = [
-  { action: 'Agent updated', target: 'Advanced Mathematics', time: '5 mins ago' },
-  { action: 'New student joined', target: 'Physics 101', time: '12 mins ago' },
-  { action: 'Feedback reviewed', target: 'English Literature', time: '1 hour ago' },
-  { action: 'Agent created', target: 'Chemistry Basics', time: '3 hours ago' },
+  {
+    action: "Agent updated",
+    target: "Advanced Mathematics",
+    time: "5 mins ago",
+  },
+  { action: "New student joined", target: "Physics 101", time: "12 mins ago" },
+  {
+    action: "Feedback reviewed",
+    target: "English Literature",
+    time: "1 hour ago",
+  },
+  { action: "Agent created", target: "Chemistry Basics", time: "3 hours ago" },
 ];
 
 export default function AdminDashboard() {
+  const [agentsData, setAgentsData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const getAllAgents = async () => {
+    try {
+      setIsLoading(true);
+      const response = await getAgents();
+
+      const agents = response?.agents ?? [];
+      setAgentsData(agents.slice(0, 3));
+    } catch (err) {
+      console.error("Error fetching agents:", err);
+      toast.error("Failed to fetch agents");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getAllAgents();
+  }, []);
+
   return (
     <AdminLayout>
       <div className="p-8">
@@ -76,7 +73,9 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Overview of your AI teaching platform</p>
+            <p className="text-muted-foreground mt-1">
+              Overview of your AI teaching platform
+            </p>
           </div>
           <Link to="/admin/agents/create">
             <Button variant="gradient" size="lg">
@@ -136,7 +135,7 @@ export default function AdminDashboard() {
                 </Link>
               </CardHeader>
               <CardContent className="space-y-4">
-                {topAgents.map((agent) => (
+                {agentsData.map((agent) => (
                   <AgentCard key={agent.id} agent={agent} />
                 ))}
               </CardContent>
@@ -152,15 +151,25 @@ export default function AdminDashboard() {
               <CardContent>
                 <div className="space-y-4">
                   {recentActivity.map((activity, index) => (
-                    <div key={index} className="flex items-start gap-3 animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
+                    <div
+                      key={index}
+                      className="flex items-start gap-3 animate-fade-in"
+                      style={{ animationDelay: `${index * 100}ms` }}
+                    >
                       <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
                         <Clock className="w-4 h-4 text-muted-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground">{activity.action}</p>
-                        <p className="text-sm text-muted-foreground truncate">{activity.target}</p>
+                        <p className="text-sm font-medium text-foreground">
+                          {activity.action}
+                        </p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {activity.target}
+                        </p>
                       </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">{activity.time}</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {activity.time}
+                      </span>
                     </div>
                   ))}
                 </div>

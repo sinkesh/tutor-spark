@@ -1,96 +1,94 @@
-import { useState, useRef, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import StudentLayout from '@/components/layout/StudentLayout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-import { 
-  ArrowLeft, 
-  Send, 
-  Bot, 
-  User, 
-  ThumbsUp, 
-  ThumbsDown, 
+import { useState, useRef, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
+import StudentLayout from "@/components/layout/StudentLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import {
+  ArrowLeft,
+  Send,
+  Bot,
+  User,
+  ThumbsUp,
+  ThumbsDown,
   Sparkles,
   Loader2,
-} from 'lucide-react';
+} from "lucide-react";
+import { studentQueryChat } from "@/config/services";
+import { toast } from "sonner";
+import MarkdownMessage from "@/components/MarkdownMessage";
 
 interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: Date;
 }
 
-const mockAgent = {
-  id: '1',
-  name: 'Calculus Helper',
-  description: 'Your AI tutor for mastering calculus concepts',
-  type: 'subject',
-};
-
-const initialMessages: ChatMessage[] = [
-  {
-    id: '1',
-    role: 'assistant',
-    content: "Hello! I'm your Calculus Helper. I'm here to help you understand derivatives, integrals, limits, and more. What would you like to learn about today?",
-    timestamp: new Date(),
-  },
-];
-
 export default function ChatPage() {
-  const { agentId } = useParams();
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
-  const [inputValue, setInputValue] = useState('');
+  const { subjectName } = useParams<{ subjectName: string }>();
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const subject = subjectName
+    ? decodeURIComponent(subjectName)
+        .toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+    : "";
 
+  /* -------------------- Scroll Handling -------------------- */
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
 
+  /* -------------------- Send Message -------------------- */
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
 
     const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'user',
+      id: crypto.randomUUID(),
+      role: "user",
       content: inputValue.trim(),
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInputValue('');
+    setInputValue("");
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponses = [
-        "Great question! Let me explain this concept step by step. The derivative of a function represents the rate of change at any given point. Think of it as the slope of the tangent line to the curve at that specific point.",
-        "That's an excellent observation! In calculus, we use the limit definition to understand derivatives. The formal definition is: f'(x) = lim(h→0) [f(x+h) - f(x)] / h",
-        "I see what you're asking about. Integration is essentially the reverse of differentiation. When we integrate a function, we're finding the area under the curve between two points.",
-        "Let me help you with that problem! First, identify what type of function you're working with, then apply the appropriate differentiation or integration rules.",
-      ];
+    try {
+      const payload = {
+        student_id: "stu_1002",
+        subject,
+        class_name: "10th",
+        query: userMessage.content,
+      };
+
+      const res = await studentQueryChat(payload);
 
       const aiMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: aiResponses[Math.floor(Math.random() * aiResponses.length)],
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: res?.response || "Sorry, I couldn’t understand that.",
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, aiMessage]);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to get response from AI");
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  /* -------------------- Enter Key -------------------- */
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
@@ -99,71 +97,72 @@ export default function ChatPage() {
   return (
     <StudentLayout>
       <div className="flex flex-col h-screen">
-        {/* Header */}
-        <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+        {/* ---------------- Header ---------------- */}
+        <div className="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-10">
           <div className="flex items-center gap-4 p-4">
             <Link to="/student">
               <Button variant="ghost" size="icon-sm">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
+
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl gradient-accent flex items-center justify-center">
-                <Bot className="w-5 h-5 text-accent-foreground" />
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Bot className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h1 className="font-semibold text-foreground">{mockAgent.name}</h1>
-                <p className="text-xs text-muted-foreground">{mockAgent.description}</p>
+                <h1 className="font-semibold capitalize">{subject} Agent</h1>
+                <p className="text-xs text-muted-foreground">
+                  Your AI tutor for mastering {subject} concepts
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Messages */}
+        {/* ---------------- Messages ---------------- */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {messages.map((message) => (
             <div
               key={message.id}
               className={cn(
-                "flex gap-3 animate-slide-up",
-                message.role === 'user' && "flex-row-reverse"
+                "flex gap-3",
+                message.role === "user" && "flex-row-reverse"
               )}
             >
-              <div className={cn(
-                "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
-                message.role === 'user' 
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-accent/10 text-accent"
-              )}>
-                {message.role === 'user' ? (
+              <div
+                className={cn(
+                  "w-8 h-8 rounded-lg flex items-center justify-center",
+                  message.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-accent/10 text-accent"
+                )}
+              >
+                {message.role === "user" ? (
                   <User className="w-4 h-4" />
                 ) : (
                   <Bot className="w-4 h-4" />
                 )}
               </div>
-              <div className={cn(
-                "max-w-[70%] space-y-2",
-                message.role === 'user' && "flex flex-col items-end"
-              )}>
-                <div className={cn(
-                  "p-4 rounded-2xl",
-                  message.role === 'user' 
-                    ? "chat-bubble-user"
-                    : "chat-bubble-ai"
-                )}>
-                  <p className={cn(
-                    "text-sm leading-relaxed",
-                    message.role === 'user' ? "text-primary-foreground" : "text-foreground"
-                  )}>
-                    {message.content}
-                  </p>
+
+              <div className="max-w-[70%] space-y-1">
+                <div
+                  className={cn(
+                    "p-4 rounded-2xl text-sm",
+                    message.role === "user"
+                      ? "chat-bubble-user text-primary-foreground"
+                      : "chat-bubble-ai"
+                  )}
+                >
+                  <MarkdownMessage content={message.content} />
                 </div>
-                {message.role === 'assistant' && (
-                  <div className="flex items-center gap-2 ml-2">
-                    <Button variant="ghost" size="icon-sm" className="h-7 w-7">
+
+                {message.role === "assistant" && (
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon-sm">
                       <ThumbsUp className="w-3.5 h-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon-sm" className="h-7 w-7">
+                    <Button variant="ghost" size="icon-sm">
                       <ThumbsDown className="w-3.5 h-3.5" />
                     </Button>
                   </div>
@@ -172,16 +171,17 @@ export default function ChatPage() {
             </div>
           ))}
 
+          {/* ---------------- Loading Bubble ---------------- */}
           {isLoading && (
-            <div className="flex gap-3 animate-fade-in">
+            <div className="flex gap-3">
               <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
                 <Bot className="w-4 h-4 text-accent" />
               </div>
-              <div className="p-4 rounded-2xl chat-bubble-ai">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Thinking...</span>
-                </div>
+              <div className="p-4 rounded-2xl chat-bubble-ai flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm text-muted-foreground">
+                  Thinking...
+                </span>
               </div>
             </div>
           )}
@@ -189,33 +189,31 @@ export default function ChatPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
-        <div className="border-t border-border bg-card/50 backdrop-blur-sm p-4">
+        {/* ---------------- Input ---------------- */}
+        <div className="border-t border-border bg-card/50 backdrop-blur p-4">
           <div className="max-w-4xl mx-auto">
-            <div className="flex gap-3 items-end">
-              <div className="flex-1 relative">
-                <Input
-                  placeholder="Ask me anything about calculus..."
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  className="pr-12 py-6 text-base"
-                  disabled={isLoading}
-                />
-                <Button
-                  variant="gradient"
-                  size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2"
-                  onClick={handleSend}
-                  disabled={!inputValue.trim() || isLoading}
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
+            <div className="flex gap-3">
+              <Input
+                placeholder={`Ask anything about ${subject}...`}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyPress}
+                disabled={isLoading}
+              />
+
+              <Button
+                variant="gradient"
+                size="icon"
+                onClick={handleSend}
+                disabled={!inputValue.trim() || isLoading}
+              >
+                <Send className="w-4 h-4" />
+              </Button>
             </div>
+
             <p className="text-xs text-muted-foreground text-center mt-3">
-              <Sparkles className="w-3 h-3 inline mr-1" />
-              AI responses are generated and may not always be accurate. Verify important information.
+              <Sparkles className="inline w-3 h-3 mr-1" />
+              AI responses may not always be accurate.
             </p>
           </div>
         </div>
