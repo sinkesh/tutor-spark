@@ -13,6 +13,7 @@ export type AgentStatus = "active" | "draft" | "disabled";
 
 export interface AIAgent {
   id: string;
+  subject_agent_id: string;
   agent_type: string;
   agent_name: string;
   status: AgentStatus;
@@ -22,6 +23,13 @@ export interface AIAgent {
   assignedStudents: number;
   accuracyScore: number;
   totalConversations: number;
+  class_name?: string;
+  subject?: string;
+  file_names?: string[];
+  agent_metadata?: {
+    agent_name?: string;
+    teaching_tone?: string;
+  };
 }
 
 // export interface AIAgent {

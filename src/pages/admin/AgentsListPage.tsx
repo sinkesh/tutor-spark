@@ -28,7 +28,7 @@ import {
   Info,
   X,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { getAgents, getAiAgentsDetails, deleteAiAgentsDetails } from "@/config/services";
 import { toast } from "sonner";
@@ -61,6 +61,7 @@ export default function AgentsListPage() {
   const [agentDetails, setAgentDetails] = useState<any>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const navigate = useNavigate();
 
   // const filteredAgents = agentsData.filter((agent) => {
   //   const matchesSearch =
@@ -117,6 +118,19 @@ export default function AgentsListPage() {
     }
   };
 
+  const handleEditAgent = (agent: AIAgent) => {
+    navigate(`/admin/agents/create`, { 
+      state: { 
+        isEditMode: true,
+        agentData: {
+          ...agent,
+          type: agent.agent_type as AgentType,
+          name: agent.agent_name,
+        }
+      } 
+    });
+  };
+
   const handleDeleteAgent = async (id: string) => {
     if (!id) return;
     
@@ -125,7 +139,6 @@ export default function AgentsListPage() {
       await deleteAiAgentsDetails(id);
       toast.success("Agent deleted successfully");
       setIsDetailsOpen(false);
-      // Refresh the agents list
       await getAllAgents();
     } catch (err) {
       console.error("Error deleting agent:", err);
@@ -248,7 +261,8 @@ export default function AgentsListPage() {
                 key={agent.id}
                 agent={agent}
                 onView={() => handleViewDetails(agent)}
-                onDelete={() => handleDeleteAgent(agent.subject_agent_id)}
+                onDelete={handleDeleteAgent}
+                onEdit={handleEditAgent}
               />
             ))}
           </div>

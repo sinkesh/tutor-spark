@@ -1,6 +1,7 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { getAiAgentsDetails, updateAiAgentsDetails } from "@/config/services";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import {
 import { AgentType } from "@/types";
 import { createAgents } from "@/config/services";
 import { cn } from "@/lib/utils";
+
 import {
   ArrowLeft,
   ArrowRight,
@@ -72,12 +74,14 @@ const steps = [
 
 export default function CreateAgentPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     type: "" as AgentType | "",
     name: "",
     description: "",
@@ -86,10 +90,62 @@ export default function CreateAgentPage() {
     educationLevel: "",
     learningObjectives: "",
     teachingTone: "",
-    documents: [] as File[],
+    documents: [],
     enableGlobalPrompts: true,
     enableGlobalRags: true,
   });
+
+  const fetchDetails = async (id: string) => {
+    try {
+      setIsLoading(true);
+      const details = await getAiAgentsDetails(id) as any;
+      console.log('Agent details:', details);
+      
+      const fileObjects = [];
+      
+      if (details.file_names && Array.isArray(details.file_names)) {
+        details.file_names.forEach((fileName: string) => {
+          const file = new File([], fileName, { type: 'application/octet-stream' });
+          fileObjects.push(file);
+        });
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        type: details.agent_metadata?.agent_type || "",
+        class: details.class || "",
+        id: details.subject_agent_id || "",
+        name: details.agent_metadata?.agent_name || "",
+        description: details.agent_metadata?.description || "",
+        subject: details.subject || "",
+        educationLevel: details.agent_metadata?.agent_type || "",
+        teachingTone: details.agent_metadata?.teaching_tone || "",
+        enableGlobalPrompts: details.enable_global_prompts ?? true,
+        enableGlobalRags: details.enable_global_rags ?? true,
+        documents: [...fileObjects],
+      }));
+      
+    } catch (err) {
+      console.error("Error fetching agent details:", err);
+      toast({
+        title: "Error",
+        description: "Failed to load agent details. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (location.state?.isEditMode && location.state?.agentData) {
+      const { agentData } = location.state;
+      setIsEditMode(true);
+      setCurrentStep(2);
+      
+      fetchDetails(agentData?.subject_agent_id);
+    }
+  }, [location.state]);
 
   const handleFiles = useCallback((files: File[]) => {
     setFormData((prev) => ({
@@ -122,7 +178,7 @@ export default function CreateAgentPage() {
           formData.name.trim() !== "" && formData.description.trim() !== ""
         );
       case 3:
-        return true; // Documents are optional
+        return true;
       case 4:
         return true;
       case 5:
@@ -137,36 +193,54 @@ export default function CreateAgentPage() {
       setCurrentStep((s) => s + 1);
       return;
     }
-
+    setIsLoading(true);
+    
     try {
-      setIsLoading(true);
-
       const payload = new FormData();
-
       payload.append("class_", formData.class);
       payload.append("subject", formData.subject);
       payload.append("agent_type", formData.educationLevel);
       payload.append("agent_name", formData.name);
       payload.append("description", formData.description);
+      payload.append("education_level", formData.educationLevel);
       payload.append("teaching_tone", formData.teachingTone || "");
-
+      
+      // const learningObjectives = formData.learningObjectives.split('\n').filter(Boolean);
+      // payload.append("learning_objectives", JSON.stringify(learningObjectives));
+      
+      // const metadata = {
+      //   teaching_tone: formData.teachingTone,
+      // };
+      // payload.append("agent_metadata", JSON.stringify(metadata));
+      
       formData.documents.forEach((file) => {
         payload.append("files", file);
       });
 
-      await createAgents(payload);
-
-      toast({
-        title: "Success",
-        description: "Agent created successfully!",
-      });
-
+      if (isEditMode && formData.id) {
+        const updateData = Object.fromEntries(payload.entries());
+        await updateAiAgentsDetails(formData.id, updateData);
+        toast({
+          title: "Success",
+          description: "Agent updated successfully",
+          variant: "default",
+        });
+      } else {
+        await createAgents(payload);
+        toast({
+          title: "Success",
+          description: "Agent created successfully",
+          variant: "default",
+        });
+      }
+      
+      // Navigate back to agents list
       navigate("/admin/agents");
-    } catch (err) {
-      console.error(err);
+    } catch (error: any) {
+      console.error("Error saving agent:", error);
       toast({
         title: "Error",
-        description: "Failed to create agent",
+        description: error.response?.data?.message || "Failed to save agent. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -465,22 +539,33 @@ export default function CreateAgentPage() {
                   <div className="space-y-2">
                     <Label>Uploaded Files</Label>
                     <div className="space-y-2">
-                      {formData.documents.map((file, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                            <div className="text-left">
-                              <p className="text-sm font-medium text-ellipsis overflow-hidden max-w-xs">
-                                {file.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {formatFileSize(file.size)}
-                              </p>
+                      {formData.documents && formData.documents.map((file, index) => { 
+                        // Check if it's an existing file (has no size) or a newly uploaded file
+                        const isExistingFile = file.size === 0;
+                        
+                        return (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                              <div className="text-left">
+                                <p className="text-sm font-medium text-ellipsis overflow-hidden max-w-xs">
+                                  {file.name}
+                                  {isExistingFile && (
+                                    <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                      Existing
+                                    </span>
+                                  )}
+                                </p>
+                                {!isExistingFile && file.size > 0 && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {formatFileSize(file.size)}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                          </div>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -506,7 +591,8 @@ export default function CreateAgentPage() {
                             </svg>
                           </Button>
                         </div>
-                      ))}
+                      )})
+                      }
                     </div>
                   </div>
                 )}

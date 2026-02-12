@@ -109,3 +109,8 @@ export const deleteAiAgentsDetails = async (agent_id: string) => {
   const response = await api.delete(`${API_URL.VECTORS}/${agent_id}`);
   return response.data;
 };
+
+export const updateAiAgentsDetails = async (agent_id: string, data: any) => {
+  const response = await api.put(`${API_URL.VECTORS}/${agent_id}`, data);
+  return response.data;
+};

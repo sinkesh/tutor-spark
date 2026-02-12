@@ -24,7 +24,7 @@ interface AgentCardProps {
   agent: AIAgent;
   onView?: (agent: AIAgent) => void;
   onEdit?: (agent: AIAgent) => void;
-  onDelete?: (agent: AIAgent) => void;
+  onDelete?: (id: string) => Promise<void>;
 }
 
 // const typeColors: Record<string, string> = {
@@ -114,15 +114,19 @@ export default function AgentCard({
                 <Eye className="w-4 h-4 mr-2" />
                 View Details
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onEdit?.(agent)} className="cursor-pointer">
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Agent
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onDelete?.(agent)}
-                className="cursor-pointer"
+              <DropdownMenuItem 
+                onClick={() => onEdit?.(agent)}
+                disabled={onEdit === undefined}
               >
-                <Trash2 className="w-4 h-4 mr-2" />
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => onDelete?.(agent.subject_agent_id)}
+                className="text-destructive"
+                disabled={onDelete === undefined}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
