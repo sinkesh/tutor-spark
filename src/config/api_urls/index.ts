@@ -11,4 +11,5 @@ export const API_URL = {
   LIST_STUDENT: "/student/student-list",
   STUDENT: "/student",
   VECTORS: "/vectors",
+  STUDENT_FEEDBACK: "/student/feedback",
 };

@@ -114,3 +114,7 @@ export const updateAiAgentsDetails = async (agent_id: string, data: any) => {
   const response = await api.put(`${API_URL.VECTORS}/${agent_id}`, data);
   return response.data;
 };
+
+export const studentFeedback = (data: any) => {
+  return apiDataJson.post(API_URL.STUDENT_FEEDBACK, data);
+};

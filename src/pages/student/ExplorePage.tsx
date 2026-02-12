@@ -185,7 +185,7 @@ export default function ExplorePage() {
     try {
       setIsLoading(true);
 
-      const res = await agentOfClass({ class_name: "10th" });
+      const res = await agentOfClass({ class_name: "8" });
 
       setIsSubject(res.agents);
       toast.success("Data get successfully");

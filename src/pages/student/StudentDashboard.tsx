@@ -73,7 +73,7 @@ export default function StudentDashboard() {
     try {
       setIsLoading(true);
 
-      const res = await agentOfClass({ class_name: "10th" });
+      const res = await agentOfClass({ class_name: "8" });
 
       setIsSubject(res.agents.slice(0, 3));
       toast.success("Data get successfully");

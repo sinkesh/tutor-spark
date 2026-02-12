@@ -14,7 +14,7 @@ import {
   Sparkles,
   Loader2,
 } from "lucide-react";
-import { studentQueryChat } from "@/config/services";
+import { studentQueryChat, studentFeedback } from "@/config/services";
 import { toast } from "sonner";
 import MarkdownMessage from "@/components/MarkdownMessage";
 
@@ -23,6 +23,8 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  feedback?: 'like' | 'dislike' | null;
+  conversation_id?: string;
 }
 
 export default function ChatPage() {
@@ -33,6 +35,32 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  /* -------------------- Handle Feedback -------------------- */
+  const handleFeedback = async (feedbackType: 'like' | 'dislike', conversationId?: string) => {
+    if (!conversationId) {
+      console.error('No conversation ID available for feedback');
+      return;
+    }
+
+    try {
+      await studentFeedback({
+        conversation_id: conversationId,
+        feedback: feedbackType
+      });
+
+      // setMessages(prev => prev.map(msg => 
+      //   msg.id === messageId 
+      //     ? { ...msg, feedback: feedbackType }
+      //     : msg
+      // ));
+      
+      toast.success(`Feedback submitted as ${feedbackType}`);
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      toast.error('Failed to submit feedback');
+    }
+  };
 
   const subject = subjectName
     ? decodeURIComponent(subjectName)
@@ -62,9 +90,9 @@ export default function ChatPage() {
 
     try {
       const payload = {
-        student_id: "stu_1002",
+        student_id: "std_16JPC",
         subject,
-        class_name: "10th",
+        class_name: "8",
         query: userMessage.content,
       };
 
@@ -73,8 +101,10 @@ export default function ChatPage() {
       const aiMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: res?.response || "Sorry, I couldn’t understand that.",
+        content: res?.response || "Sorry, I couldn't understand that.",
         timestamp: new Date(),
+        conversation_id: res?.conversation_id,
+        feedback: null
       };
 
       setMessages((prev) => [...prev, aiMessage]);
@@ -158,12 +188,22 @@ export default function ChatPage() {
                 </div>
 
                 {message.role === "assistant" && (
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon-sm">
-                      <ThumbsUp className="w-3.5 h-3.5" />
+                  <div className="flex gap-1 mt-1">
+                    <Button 
+                      variant={message.feedback === 'like' ? 'default' : 'ghost'}
+                      size="icon-sm"
+                      onClick={() => handleFeedback('like', message.conversation_id)}
+                      className={message.feedback === 'like' ? 'bg-green-100 hover:bg-green-100' : ''}
+                    >
+                      <ThumbsUp className={`w-3.5 h-3.5 ${message.feedback === 'like' ? 'text-green-600' : ''}`} />
                     </Button>
-                    <Button variant="ghost" size="icon-sm">
-                      <ThumbsDown className="w-3.5 h-3.5" />
+                    <Button 
+                      variant={message.feedback === 'dislike' ? 'default' : 'ghost'}
+                      size="icon-sm"
+                      onClick={() => handleFeedback('dislike', message.conversation_id)}
+                      className={message.feedback === 'dislike' ? 'bg-red-100 hover:bg-red-100' : ''}
+                    >
+                      <ThumbsDown className={`w-3.5 h-3.5 ${message.feedback === 'dislike' ? 'text-red-600' : ''}`} />
                     </Button>
                   </div>
                 )}
