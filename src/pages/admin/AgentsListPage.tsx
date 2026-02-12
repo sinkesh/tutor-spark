@@ -6,107 +6,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { AIAgent, AgentType, AgentStatus } from "@/types";
-import { Plus, Search, Filter, Grid, List, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Filter,
+  Grid,
+  List,
+  Loader2,
+  User,
+  BookOpen,
+  GraduationCap,
+  Book,
+  Info,
+  X,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { getAgents } from "@/config/services";
+import { getAgents, getAiAgentsDetails, deleteAiAgentsDetails } from "@/config/services";
 import { toast } from "sonner";
 import AgentCardSkeleton from "@/components/loader/AgentCardSkeleton";
-
-// Mock data
-// const mockData: AIAgent[] = [
-//   {
-//     id: "1",
-//     agent_name: "Advanced Mathematics",
-//     description:
-//       "Covers calculus, algebra, and statistics for high school students. Includes step-by-step problem solving.",
-//     agent_type: "subject",
-//     status: "active",
-//     educationLevel: "High School",
-//     learningObjectives: ["Calculus", "Algebra", "Statistics"],
-//     assignedStudents: 342,
-//     accuracyScore: 97,
-//     totalConversations: 8420,
-//     createdAt: new Date(),
-//     updatedAt: new Date(),
-//   },
-//   {
-//     id: "2",
-//     agent_name: "English Literature",
-//     description:
-//       "Comprehensive literature analysis and writing skills development for students.",
-//     agent_type: "course",
-//     status: "active",
-//     educationLevel: "High School",
-//     learningObjectives: ["Analysis", "Writing"],
-//     assignedStudents: 289,
-//     accuracyScore: 95,
-//     totalConversations: 6230,
-//     createdAt: new Date(),
-//     updatedAt: new Date(),
-//   },
-//   {
-//     id: "3",
-//     agent_name: "Physics 101",
-//     description:
-//       "Introduction to physics concepts and problem-solving techniques.",
-//     agent_type: "class",
-//     status: "active",
-//     educationLevel: "College",
-//     learningObjectives: ["Mechanics", "Thermodynamics"],
-//     assignedStudents: 198,
-//     accuracyScore: 93,
-//     totalConversations: 4120,
-//     createdAt: new Date(),
-//     updatedAt: new Date(),
-//   },
-//   {
-//     id: "4",
-//     agent_name: "Dr. Smith - Chemistry",
-//     description:
-//       "Personal AI teaching assistant modeled after Dr. Smith's teaching style.",
-//     agent_type: "teacher",
-//     status: "draft",
-//     educationLevel: "College",
-//     learningObjectives: ["Organic Chemistry"],
-//     assignedStudents: 0,
-//     accuracyScore: 0,
-//     totalConversations: 0,
-//     createdAt: new Date(),
-//     updatedAt: new Date(),
-//   },
-//   {
-//     id: "5",
-//     agent_name: "World History",
-//     description:
-//       "Comprehensive world history from ancient civilizations to modern era.",
-//     agent_type: "subject",
-//     status: "active",
-//     educationLevel: "High School",
-//     learningObjectives: ["Ancient History", "Modern History"],
-//     assignedStudents: 421,
-//     accuracyScore: 91,
-//     totalConversations: 5630,
-//     createdAt: new Date(),
-//     updatedAt: new Date(),
-//   },
-//   {
-//     id: "6",
-//     agent_name: "Biology Basics",
-//     description:
-//       "Foundational biology concepts including cell biology and genetics.",
-//     agent_type: "course",
-//     status: "disabled",
-//     educationLevel: "Middle School",
-//     learningObjectives: ["Cell Biology", "Genetics"],
-//     assignedStudents: 0,
-//     accuracyScore: 88,
-//     totalConversations: 2340,
-//     createdAt: new Date(),
-//     updatedAt: new Date(),
-//   },
-// ];
 
 const typeFilters: { value: AgentType | "all"; label: string }[] = [
   { value: "all", label: "All Types" },
@@ -130,6 +56,11 @@ export default function AgentsListPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [agentsData, setAgentsData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<any>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [agentDetails, setAgentDetails] = useState<any>(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // const filteredAgents = agentsData.filter((agent) => {
   //   const matchesSearch =
@@ -167,6 +98,40 @@ export default function AgentsListPage() {
       toast.error("Failed to fetch agents");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleViewDetails = async (agent: any) => {
+    setSelectedAgent(agent);
+    setIsDetailsOpen(true);
+
+    try {
+      setIsLoadingDetails(true);
+      const details = await getAiAgentsDetails(agent?.subject_agent_id);
+      setAgentDetails(details);
+    } catch (err) {
+      console.error("Error fetching agent details:", err);
+      toast.error("Failed to load agent details");
+    } finally {
+      setIsLoadingDetails(false);
+    }
+  };
+
+  const handleDeleteAgent = async (id: string) => {
+    if (!id) return;
+    
+    try {
+      setIsDeleting(true);
+      await deleteAiAgentsDetails(id);
+      toast.success("Agent deleted successfully");
+      setIsDetailsOpen(false);
+      // Refresh the agents list
+      await getAllAgents();
+    } catch (err) {
+      console.error("Error deleting agent:", err);
+      toast.error("Failed to delete agent");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -279,7 +244,12 @@ export default function AgentsListPage() {
             )}
           >
             {filteredAgents.map((agent) => (
-              <AgentCard key={agent.id} agent={agent} />
+              <AgentCard
+                key={agent.id}
+                agent={agent}
+                onView={() => handleViewDetails(agent)}
+                onDelete={() => handleDeleteAgent(agent.subject_agent_id)}
+              />
             ))}
           </div>
         )}
@@ -294,6 +264,164 @@ export default function AgentsListPage() {
           </Card>
         )}
       </div>
+
+      {/* Agent Details Dialog */}
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          {isLoadingDetails ? (
+            <div className="flex justify-center items-center h-40">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : (
+            <>
+              <DialogHeader>
+                <div className="flex justify-between items-center">
+                  <DialogTitle className="text-2xl">
+                    {selectedAgent?.agent_name || "Agent Details"}
+                  </DialogTitle>
+                  {/* <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsDetailsOpen(false)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button> */}
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Badge variant="outline" className="capitalize">
+                    {selectedAgent?.agent_type}
+                  </Badge>
+                  <Badge
+                    variant={
+                      selectedAgent?.status === "active"
+                        ? "default"
+                        : "secondary"
+                    }
+                  >
+                    {selectedAgent?.status}
+                  </Badge>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-6 py-4">
+                <div>
+                  <h3 className="font-medium mb-2 flex items-center gap-2">
+                    <Info className="h-4 w-4" />
+                    Description
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedAgent?.description || "No description available"}
+                  </p>
+                </div>
+
+                {agentDetails && (
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-medium mb-2 flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Teacher Information
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Name</p>
+                          <p>
+                            {agentDetails.agent_metadata?.agent_name || "N/A"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Subject</p>
+                          <p>{agentDetails.subject || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Class</p>
+                          <p>{agentDetails.class || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Teaching Tone</p>
+                          <p>
+                            {agentDetails.agent_metadata.teaching_tone || "N/A"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Documents</p>
+
+                          <p className="flex flex-wrap gap-2">
+                            {agentDetails?.file_names?.length > 0
+                              ? agentDetails.file_names.map(
+                                  (file: string, index: number) => (
+                                    <span
+                                      key={index}
+                                      className="border border-gray-300 px-2 py-1 rounded-full px-2 text-xs font-normal"
+                                    >
+                                      {file}
+                                    </span>
+                                  )
+                                )
+                              : "N/A"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Education Level</p>
+                    <p>{selectedAgent?.educationLevel || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Assigned Students</p>
+                    <p>{selectedAgent?.assignedStudents || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Accuracy Score</p>
+                    <p>
+                      {selectedAgent?.accuracyScore
+                        ? `${selectedAgent.accuracyScore}%`
+                        : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Total Conversations</p>
+                    <p>{selectedAgent?.totalConversations || 0}</p>
+                  </div>
+                </div>
+
+                {selectedAgent?.learningObjectives?.length > 0 && (
+                  <div>
+                    <h3 className="font-medium mb-2 flex items-center gap-2">
+                      <GraduationCap className="h-4 w-4" />
+                      Learning Objectives
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedAgent.learningObjectives.map(
+                        (obj: string, index: number) => (
+                          <Badge key={index} variant="secondary">
+                            {obj}
+                          </Badge>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-between pt-2">
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsDetailsOpen(false)}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }

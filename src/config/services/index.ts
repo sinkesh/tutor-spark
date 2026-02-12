@@ -92,3 +92,20 @@ export const deleteStudentDetails = async (id: string) => {
   const response = await apiDataJson.delete(`${API_URL.STUDENT}/${id}`);
   return response.data;
 };
+
+export const getAiAgentsDetails = async (
+  agent_id: string
+): Promise<{
+  subject_agent: any[];
+  name: string;
+  email: string;
+  class_name: string;
+}> => {
+  const response = await api.get(`${API_URL.VECTORS}/${agent_id}`);
+  return response.data;
+};
+
+export const deleteAiAgentsDetails = async (agent_id: string) => {
+  const response = await api.delete(`${API_URL.VECTORS}/${agent_id}`);
+  return response.data;
+};

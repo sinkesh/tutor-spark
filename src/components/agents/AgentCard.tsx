@@ -110,17 +110,17 @@ export default function AgentCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onView?.(agent)}>
+              <DropdownMenuItem onClick={() => onView?.(agent)} className="cursor-pointer">
                 <Eye className="w-4 h-4 mr-2" />
                 View Details
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onEdit?.(agent)}>
+              <DropdownMenuItem onClick={() => onEdit?.(agent)} className="cursor-pointer">
                 <Edit className="w-4 h-4 mr-2" />
                 Edit Agent
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => onDelete?.(agent)}
-                className="text-destructive focus:text-destructive"
+                className="cursor-pointer"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete
