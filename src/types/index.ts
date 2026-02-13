@@ -5,7 +5,10 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
+  class: string;
   avatar?: string;
+  permissions?: string[];
+  is_active?: boolean;
 }
 
 export type AgentType = "class" | "subject" | "course" | "teacher";

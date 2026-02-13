@@ -1,53 +1,61 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { User, UserRole } from "@/types";
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (userData: User) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Demo users for testing
-const demoUsers: Record<string, User> = {
-  "admin@aiteachers.com": {
-    id: "1",
-    email: "admin@aiteachers.com",
-    name: "Sarah Admin",
-    role: "admin",
-  },
-  "student@aiteachers.com": {
-    id: "2",
-    email: "student@aiteachers.com",
-    name: "Alex Student",
-    role: "student",
-  },
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const login = async (email: string, password: string) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 800));
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        const userData = localStorage.getItem('user');
+        const token = localStorage.getItem('access_token');
+        
+        if (userData && token) {
+          setUser(JSON.parse(userData));
+        }
+      } catch (error) {
+        console.error('Failed to initialize auth:', error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    const foundUser = demoUsers[email.toLowerCase()];
-    if (foundUser && password.length >= 6) {
-      setUser(foundUser);
-    } else {
-      throw new Error("Invalid credentials");
+    initializeAuth();
+  }, []);
+
+  const login = async (userData: User) => {
+    try {
+      setUser(userData);
+    } catch (error) {
+      console.error('Login error:', error);
+      throw new Error('Failed to login. Please try again.');
     }
   };
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, login, logout, isAuthenticated: !!user }}
+      value={{ user, login, logout, isAuthenticated: !!user, isLoading }}
     >
       {children}
     </AuthContext.Provider>

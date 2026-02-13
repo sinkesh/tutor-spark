@@ -268,10 +268,10 @@ export default function CreateAgentPage() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-foreground">
-              Create AI Agent
+              {isEditMode ? "Edit" : "Create"} AI Agent
             </h1>
             <p className="text-muted-foreground mt-1">
-              Set up a new AI teaching agent
+              {isEditMode ? "Edit" : "Set up a new"} AI teaching agent
             </p>
           </div>
         </div>

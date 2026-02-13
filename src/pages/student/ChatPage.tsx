@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import StudentLayout from "@/components/layout/StudentLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,22 +45,66 @@ export default function ChatPage() {
     }
 
     try {
+      // Optimistically update the UI
+      setMessages(prev => prev.map(msg => 
+        msg.conversation_id === conversationId 
+          ? { ...msg, feedback: feedbackType }
+          : msg
+      ));
+
+      // Send the feedback to the server
       await studentFeedback({
         conversation_id: conversationId,
         feedback: feedbackType
       });
-
-      // setMessages(prev => prev.map(msg => 
-      //   msg.id === messageId 
-      //     ? { ...msg, feedback: feedbackType }
-      //     : msg
-      // ));
       
-      toast.success(`Feedback submitted as ${feedbackType}`);
+      toast.success(`Feedback submitted`);
     } catch (error) {
       console.error('Error submitting feedback:', error);
+      // Revert the UI on error
+      setMessages(prev => prev.map(msg => 
+        msg.conversation_id === conversationId 
+          ? { ...msg, feedback: undefined }
+          : msg
+      ));
       toast.error('Failed to submit feedback');
     }
+  };
+
+  // Helper function to render feedback buttons
+  const renderFeedbackButtons = (message: ChatMessage) => {
+    if (message.role !== 'assistant') return null;
+    
+    return (
+      <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleFeedback('like', message.conversation_id);
+          }}
+          className={cn(
+            "p-1.5 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors",
+            message.feedback === 'like' && 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+          )}
+          aria-label="Like response"
+        >
+          <ThumbsUp className="w-4 h-4" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleFeedback('dislike', message.conversation_id);
+          }}
+          className={cn(
+            "p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors",
+            message.feedback === 'dislike' && 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+          )}
+          aria-label="Dislike response"
+        >
+          <ThumbsDown className="w-4 h-4" />
+        </button>
+      </div>
+    );
   };
 
   const subject = subjectName
@@ -73,9 +118,15 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
+  const { user } = useAuth();
+  
   /* -------------------- Send Message -------------------- */
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
+    if (!user?.id) {
+      console.error("User not authenticated");
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -90,9 +141,9 @@ export default function ChatPage() {
 
     try {
       const payload = {
-        student_id: "std_16JPC",
+        student_id: user.id,
         subject,
-        class_name: "8",
+        class_name: user.class,
         query: userMessage.content,
       };
 
@@ -188,23 +239,35 @@ export default function ChatPage() {
                 </div>
 
                 {message.role === "assistant" && (
-                  <div className="flex gap-1 mt-1">
-                    <Button 
-                      variant={message.feedback === 'like' ? 'default' : 'ghost'}
-                      size="icon-sm"
-                      onClick={() => handleFeedback('like', message.conversation_id)}
-                      className={message.feedback === 'like' ? 'bg-green-100 hover:bg-green-100' : ''}
+                  <div className="flex gap-1 mt-1 group/feedback">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFeedback('like', message.conversation_id);
+                      }}
+                      className={cn(
+                        "p-1.5 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors",
+                        message.feedback === 'like' && 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
+                        "opacity-70 hover:opacity-100 focus:opacity-100 focus:outline-none"
+                      )}
+                      aria-label="Like response"
                     >
-                      <ThumbsUp className={`w-3.5 h-3.5 ${message.feedback === 'like' ? 'text-green-600' : ''}`} />
-                    </Button>
-                    <Button 
-                      variant={message.feedback === 'dislike' ? 'default' : 'ghost'}
-                      size="icon-sm"
-                      onClick={() => handleFeedback('dislike', message.conversation_id)}
-                      className={message.feedback === 'dislike' ? 'bg-red-100 hover:bg-red-100' : ''}
+                      <ThumbsUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFeedback('dislike', message.conversation_id);
+                      }}
+                      className={cn(
+                        "p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors",
+                        message.feedback === 'dislike' && 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',
+                        "opacity-70 hover:opacity-100 focus:opacity-100 focus:outline-none"
+                      )}
+                      aria-label="Dislike response"
                     >
-                      <ThumbsDown className={`w-3.5 h-3.5 ${message.feedback === 'dislike' ? 'text-red-600' : ''}`} />
-                    </Button>
+                      <ThumbsDown className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 )}
               </div>

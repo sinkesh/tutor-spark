@@ -7,9 +7,11 @@ export const API_URL = {
   ALL_COLLECTIONS: "/vectors/all_collections",
   AGENT_OF_CLASS: "/vectors/agent_of_class",
   AGENT_QUERY: "/student/agent-query",
-  CREATE_STUDENT: "/student/create-student",
+  CREATE_STUDENT: "/auth/create-student-with-auth",
   LIST_STUDENT: "/student/student-list",
   STUDENT: "/student",
   VECTORS: "/vectors",
   STUDENT_FEEDBACK: "/student/feedback",
+  LOGIN: "/auth/login",
+  CHANGE_PASSWORD: "/auth/admin/admin-reset-student-password",
 };

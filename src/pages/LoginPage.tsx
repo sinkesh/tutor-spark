@@ -11,14 +11,19 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Sparkles, AlertCircle } from "lucide-react";
+import { GraduationCap, Sparkles, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { login as apiLogin } from "@/config/services";
+import { useToast } from "@/components/ui/use-toast";
+import { User } from "@/types";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const { login: authLogin } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,10 +32,46 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
-      // Navigation will be handled by the auth context
-    } catch (err) {
-      setError("Invalid email or password");
+      const response = await apiLogin({ email, password });
+      const { access_token, refresh_token, user: userData } = response.data;
+      
+      const user: User = {
+        id: userData.user_id,
+        email: userData.email,
+        name: userData.name,
+        role: userData.role,
+        class: userData.class || '',
+        is_active: userData.is_active,
+        permissions: userData.permissions || []
+      };
+
+      localStorage.setItem('access_token', access_token);
+      localStorage.setItem('refresh_token', refresh_token);
+      localStorage.setItem('user', JSON.stringify(user));
+      await authLogin(user);
+
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else if (user.role === 'student') {
+        navigate('/student');
+      } else {
+        navigate('/');
+      }
+
+      toast({
+        title: "Login successful",
+        description: `Welcome back, ${user.name}!`,
+      });
+
+    } catch (err: any) {
+      console.error('Login error:', err);
+      const errorMessage = err.response?.data?.message || 'Invalid email or password';
+      setError(errorMessage);
+      toast({
+        title: "Login failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -121,14 +162,19 @@ export default function LoginPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
+                  <div className="relative">
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
+                  <div onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer">
+                    {showPassword ? <Eye className="w-6 h-6 text-primary" /> : <EyeOff className="w-6 h-6 text-primary" />}
+                  </div>
+                  </div>
                 </div>
 
                 <Button

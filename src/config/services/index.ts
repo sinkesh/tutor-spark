@@ -4,6 +4,32 @@ import { API_URL } from "../api_urls";
 import { BASE_URL, VERSION } from "../api_urls";
 import { CreateStudent, StudentQuery } from "@/types";
 
+// Create a function to get the auth token
+const getAuthToken = () => {
+  return localStorage.getItem('access_token');
+};
+
+// Request interceptor to add auth token
+const addAuthToken = (config: any) => {
+  const token = getAuthToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+};
+
+// Response interceptor to handle 401 errors
+const handleUnauthorized = (error: any) => {
+  if (error.response?.status === 401) {
+    // Clear auth data and redirect to login
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  }
+  return Promise.reject(error);
+};
+
 const api = axios.create({
   baseURL: BASE_URL + VERSION,
   headers: {
@@ -20,6 +46,15 @@ const apiDataJson = axios.create({
     "User-Agent": "MyCustomAgent/1.0",
     "ngrok-skip-browser-warning": true,
   },
+});
+
+// Add interceptors to both instances
+[api, apiDataJson].forEach(instance => {
+  instance.interceptors.request.use(addAuthToken);
+  instance.interceptors.response.use(
+    response => response,
+    handleUnauthorized
+  );
 });
 
 export const createAgents = (data: any) => {
@@ -57,9 +92,11 @@ export const listStudent = async (): Promise<{
 export const getStudentDetails = async (
   id: string
 ): Promise<{
+  student_id: string;
   subject_agent: any[];
   name: string;
   email: string;
+  password: string;
   class_name: string;
 }> => {
   const response = await api.get(`${API_URL.STUDENT}/${id}`);
@@ -117,4 +154,12 @@ export const updateAiAgentsDetails = async (agent_id: string, data: any) => {
 
 export const studentFeedback = (data: any) => {
   return apiDataJson.post(API_URL.STUDENT_FEEDBACK, data);
+};
+
+export const login = (data: any) => {
+  return apiDataJson.post(API_URL.LOGIN, data);
+};
+
+export const changePassword = (data: any, id: string) => {
+  return apiDataJson.post(API_URL.CHANGE_PASSWORD + '/' + id, data);
 };
