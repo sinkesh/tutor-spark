@@ -6,7 +6,7 @@ import { CreateStudent, StudentQuery } from "@/types";
 
 // Create a function to get the auth token
 const getAuthToken = () => {
-  return localStorage.getItem('access_token');
+  return localStorage.getItem("access_token");
 };
 
 // Request interceptor to add auth token
@@ -22,10 +22,10 @@ const addAuthToken = (config: any) => {
 const handleUnauthorized = (error: any) => {
   if (error.response?.status === 401) {
     // Clear auth data and redirect to login
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
-    window.location.href = '/login';
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
+    window.location.href = "/login";
   }
   return Promise.reject(error);
 };
@@ -49,10 +49,10 @@ const apiDataJson = axios.create({
 });
 
 // Add interceptors to both instances
-[api, apiDataJson].forEach(instance => {
+[api, apiDataJson].forEach((instance) => {
   instance.interceptors.request.use(addAuthToken);
   instance.interceptors.response.use(
-    response => response,
+    (response) => response,
     handleUnauthorized
   );
 });
@@ -161,5 +161,17 @@ export const login = (data: any) => {
 };
 
 export const changePassword = (data: any, id: string) => {
-  return apiDataJson.post(API_URL.CHANGE_PASSWORD + '/' + id, data);
+  return apiDataJson.post(API_URL.CHANGE_PASSWORD + "/" + id, data);
+};
+
+export const getChatHistory = async (id: string): Promise<any> => {
+  const response = await apiDataJson.get(`${API_URL.STUDENT_HISTORY}/${id}`);
+  return response.data;
+};
+
+export const getStudentAgent = async (id: string): Promise<any> => {
+  const response = await apiDataJson.get(
+    `${API_URL.STUDENT_AGENT}/${id}/subjects`
+  );
+  return response.data;
 };

@@ -12,7 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { agentOfClass } from "@/config/services";
+import { agentOfClass, getStudentAgent } from "@/config/services";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import SubjectSkeletonItem from "@/components/loader/SubjectSkeletonItem";
@@ -73,9 +73,10 @@ export default function StudentDashboard() {
     try {
       setIsLoading(true);
 
-      const res = await agentOfClass({ class_name: "8" });
-
-      setIsSubject(res.agents.slice(0, 3));
+      // const res = await agentOfClass({ class_name: "8" });
+      const res = await getStudentAgent(user?.id);
+      console.log("res====", res);
+      setIsSubject(res.subjects.slice(0, 3));
       toast.success("Data get successfully");
     } catch (err) {
       console.log(err);
@@ -151,7 +152,7 @@ export default function StudentDashboard() {
                 ) : (
                   isSubject?.map((cls) => (
                     <Link
-                      key={cls.id}
+                      key={cls?.subject_agent_id}
                       to={`/student/explore?class=${cls.id}`}
                       className="flex items-center gap-4 p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-all group"
                     >
@@ -160,10 +161,10 @@ export default function StudentDashboard() {
                       </div>
                       <div className="flex-1">
                         <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors capitalize">
-                          {cls.agent_name}
+                          {cls.name}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          {cls.subject}
+                          {cls?.description}
                         </p>
                       </div>
                       {/* <Badge variant="secondary">{cls.agentCount} agents</Badge>
@@ -186,10 +187,30 @@ export default function StudentDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {recentAgents.map((agent) => (
+                {isSubject?.slice(0, 3).map((cls) => (
                   <Link
-                    key={agent.id}
-                    to={`/student/chat/${agent.id}`}
+                    key={cls}
+                    to={`/student/explore?class=${cls.id}`}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors group"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                      <Bot className="w-5 h-5 text-accent" />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                        {cls.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        2 hours ago
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+                {/* {recentAgents.map((cls) => (
+                  <Link
+                    key={cls.id}
+                    to={`/student/explore?class=${cls.id}`}
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors group"
                   >
                     <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
@@ -197,14 +218,14 @@ export default function StudentDashboard() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                        {agent.name}
+                        {cls.name}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {agent.lastUsed}
+                        {cls.lastUsed}
                       </p>
                     </div>
                   </Link>
-                ))}
+                ))} */}
               </CardContent>
             </Card>
 

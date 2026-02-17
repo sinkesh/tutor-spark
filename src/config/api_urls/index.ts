@@ -1,5 +1,5 @@
 export const BASE_URL =
-  "https://00fa-2401-4900-1c64-7d7e-e4ed-221c-af65-8ad3.ngrok-free.app";
+  "https://d75d-2401-4900-1c63-4d6d-74d0-93ef-5db5-c616.ngrok-free.app";
 export const VERSION = "/api/v1";
 
 export const API_URL = {
@@ -14,4 +14,6 @@ export const API_URL = {
   STUDENT_FEEDBACK: "/student/feedback",
   LOGIN: "/auth/login",
   CHANGE_PASSWORD: "/auth/admin/admin-reset-student-password",
+  STUDENT_HISTORY: "/student/std_VIWG3/history/English",
+  STUDENT_AGENT: "/vectors/student",
 };

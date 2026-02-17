@@ -19,12 +19,40 @@ import { studentQueryChat, studentFeedback } from "@/config/services";
 import { toast } from "sonner";
 import MarkdownMessage from "@/components/MarkdownMessage";
 
+interface NotesData {
+  topic?: string;
+  notes: string;
+}
+
+interface StudyPlanData {
+  study_plan: string;
+  subject?: string;
+  topic?: string;
+}
+
+interface QuizQuestion {
+  question_number: number;
+  total_questions: number;
+  question: string;
+  options: string[];
+}
+
+interface QuizData {
+  message?: string;
+  feedback?: string;
+  question?: QuizQuestion;
+  final_score?: string;
+}
+
 interface ChatMessage {
   id: string;
   role: "user" | "assistant";
-  content: string;
+  content?: string;
+  notes?: NotesData;
+  studyPlan?: StudyPlanData;
+  quiz?: QuizData;
   timestamp: Date;
-  feedback?: 'like' | 'dislike' | null;
+  feedback?: "like" | "dislike" | null;
   conversation_id?: string;
 }
 
@@ -38,53 +66,58 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   /* -------------------- Handle Feedback -------------------- */
-  const handleFeedback = async (feedbackType: 'like' | 'dislike', conversationId?: string) => {
+  const handleFeedback = async (
+    feedbackType: "like" | "dislike",
+    conversationId?: string
+  ) => {
     if (!conversationId) {
-      console.error('No conversation ID available for feedback');
+      console.error("No conversation ID available for feedback");
       return;
     }
 
     try {
-      // Optimistically update the UI
-      setMessages(prev => prev.map(msg => 
-        msg.conversation_id === conversationId 
-          ? { ...msg, feedback: feedbackType }
-          : msg
-      ));
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.conversation_id === conversationId
+            ? { ...msg, feedback: feedbackType }
+            : msg
+        )
+      );
 
-      // Send the feedback to the server
       await studentFeedback({
         conversation_id: conversationId,
-        feedback: feedbackType
+        feedback: feedbackType,
       });
-      
+
       toast.success(`Feedback submitted`);
     } catch (error) {
-      console.error('Error submitting feedback:', error);
-      // Revert the UI on error
-      setMessages(prev => prev.map(msg => 
-        msg.conversation_id === conversationId 
-          ? { ...msg, feedback: undefined }
-          : msg
-      ));
-      toast.error('Failed to submit feedback');
+      console.error("Error submitting feedback:", error);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.conversation_id === conversationId
+            ? { ...msg, feedback: undefined }
+            : msg
+        )
+      );
+      toast.error("Failed to submit feedback");
     }
   };
 
   // Helper function to render feedback buttons
   const renderFeedbackButtons = (message: ChatMessage) => {
-    if (message.role !== 'assistant') return null;
-    
+    if (message.role !== "assistant") return null;
+
     return (
       <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={(e) => {
             e.stopPropagation();
-            handleFeedback('like', message.conversation_id);
+            handleFeedback("like", message.conversation_id);
           }}
           className={cn(
             "p-1.5 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors",
-            message.feedback === 'like' && 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+            message.feedback === "like" &&
+              "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400"
           )}
           aria-label="Like response"
         >
@@ -93,11 +126,12 @@ export default function ChatPage() {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            handleFeedback('dislike', message.conversation_id);
+            handleFeedback("dislike", message.conversation_id);
           }}
           className={cn(
             "p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors",
-            message.feedback === 'dislike' && 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+            message.feedback === "dislike" &&
+              "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400"
           )}
           aria-label="Dislike response"
         >
@@ -119,14 +153,11 @@ export default function ChatPage() {
   }, [messages, isLoading]);
 
   const { user } = useAuth();
-  
+
   /* -------------------- Send Message -------------------- */
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
-    if (!user?.id) {
-      console.error("User not authenticated");
-      return;
-    }
+    if (!user?.id) return;
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -152,11 +183,55 @@ export default function ChatPage() {
       const aiMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: res?.response || "Sorry, I couldn't understand that.",
         timestamp: new Date(),
         conversation_id: res?.conversation_id,
-        feedback: null
+        feedback: null,
       };
+
+      const response = res?.response;
+
+      if (response && typeof response === "object" && response.notes) {
+        aiMessage.notes = {
+          topic: response.topic,
+          notes: response.notes,
+        };
+      }
+
+      if (response && typeof response === "object" && response.study_plan) {
+        aiMessage.studyPlan = {
+          study_plan: response.study_plan,
+          subject: response.subject,
+          topic: response.topic,
+        };
+      }
+
+      if (response && typeof response === "object") {
+        if (
+          response.message &&
+          typeof response.message === "string" &&
+          response.message.includes("Quiz Complete")
+        ) {
+          const scoreMatch = response.message.match(/Final Score:\s*(.*)/);
+
+          aiMessage.quiz = {
+            feedback: response.message.includes("✅")
+              ? "✅ Question 5: Correct"
+              : `"❌ Question 5:" ${response.message}`,
+            final_score: scoreMatch ? scoreMatch[1] : undefined,
+          };
+        } else if (
+          response.question ||
+          response.feedback ||
+          response.final_score ||
+          response.message
+        ) {
+          aiMessage.quiz = response;
+        }
+      } else if (typeof response === "string") {
+        aiMessage.content = response;
+      } else {
+        aiMessage.content = "Something went wrong. Please try again.";
+      }
 
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
@@ -235,41 +310,211 @@ export default function ChatPage() {
                       : "chat-bubble-ai"
                   )}
                 >
-                  <MarkdownMessage content={message.content} />
-                </div>
+                  <div className="rounded-2xl text-sm">
+                    {/* ---------- TEXT ---------- */}
+                    {message.content && (
+                      <MarkdownMessage content={message.content} />
+                    )}
 
-                {message.role === "assistant" && (
-                  <div className="flex gap-1 mt-1 group/feedback">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleFeedback('like', message.conversation_id);
-                      }}
-                      className={cn(
-                        "p-1.5 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors",
-                        message.feedback === 'like' && 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
-                        "opacity-70 hover:opacity-100 focus:opacity-100 focus:outline-none"
-                      )}
-                      aria-label="Like response"
-                    >
-                      <ThumbsUp className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleFeedback('dislike', message.conversation_id);
-                      }}
-                      className={cn(
-                        "p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors",
-                        message.feedback === 'dislike' && 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',
-                        "opacity-70 hover:opacity-100 focus:opacity-100 focus:outline-none"
-                      )}
-                      aria-label="Dislike response"
-                    >
-                      <ThumbsDown className="w-3.5 h-3.5" />
-                    </button>
+                    {/* ---------- QUIZ ---------- */}
+                    {message.quiz && (
+                      <div className="space-y-3 mt-2">
+                        {message.quiz.feedback && (
+                          <div
+                            className={cn(
+                              "p-2 rounded-lg text-sm font-medium",
+                              message.quiz.feedback.startsWith("✅")
+                                ? "bg-green-50 text-green-700 dark:bg-green-900/20"
+                                : "bg-red-50 text-red-700 dark:bg-red-900/20"
+                            )}
+                          >
+                            {message.quiz.question?.question_number
+                              ? `Question ${
+                                  message.quiz.question.question_number - 1
+                                }: `
+                              : ""}
+                            {message.quiz.feedback}
+                          </div>
+                        )}
+
+                        {/* Quiz message (start / complete) */}
+                        {message.quiz.message && (
+                          <p className="font-semibold text-primary">
+                            {message.quiz.message}
+                          </p>
+                        )}
+
+                        {message.quiz.question && (
+                          <div className="p-3 rounded-xl border bg-background">
+                            <p className="text-xs text-muted-foreground mb-1">
+                              Question {message.quiz.question.question_number}{" "}
+                              of {message.quiz.question.total_questions}
+                            </p>
+
+                            <p className="font-semibold mb-3">
+                              {message.quiz.question.question}
+                            </p>
+
+                            <div className="space-y-2">
+                              {message.quiz.question.options.map(
+                                (option, idx) => {
+                                  const label = String.fromCharCode(97 + idx); // a, b, c, d
+
+                                  return (
+                                    <button
+                                      key={idx}
+                                      className="w-full text-left p-2 rounded-lg border hover:bg-muted transition flex gap-2"
+                                      onClick={() => {
+                                        setInputValue(option);
+                                        handleSend();
+                                      }}
+                                    >
+                                      <span className="font-semibold">
+                                        {label}.
+                                      </span>
+                                      <span>{option}</span>
+                                    </button>
+                                  );
+                                }
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {message.quiz.final_score && (
+                          <div className="p-4 rounded-xl border bg-primary/5 text-center">
+                            <p className="text-lg font-bold">
+                              🎉 Quiz Completed!
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Your Score
+                            </p>
+                            Last Question:
+                            <p className="text-2xl font-extrabold text-primary mt-2">
+                              {message.quiz.final_score}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ---------- STUDY PLAN ---------- */}
+                    {message.studyPlan && (
+                      <div className="mt-3 space-y-3">
+                        <div className="p-4 rounded-xl border bg-gradient-to-br from-primary/5 to-accent/5">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <Sparkles className="w-4 h-4 text-primary" />
+                            </div>
+
+                            <div>
+                              <h3 className="font-semibold text-lg leading-tight">
+                                Study Plan
+                                {message.studyPlan.topic && (
+                                  <span className="text-primary">
+                                    {" "}
+                                    – {message.studyPlan.topic}
+                                  </span>
+                                )}
+                              </h3>
+                              <p className="text-xs text-muted-foreground">
+                                Structured learning guide
+                              </p>
+                            </div>
+                          </div>
+
+                          {message.studyPlan.subject && (
+                            <span className="inline-block mb-3 px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary">
+                              {message.studyPlan.subject}
+                            </span>
+                          )}
+
+                          {/* Content */}
+                          <div className="prose prose-sm dark:prose-invert max-w-none">
+                            <MarkdownMessage
+                              content={message.studyPlan.study_plan}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
+
+                  {/* ---------- NOTES ---------- */}
+                  {message.notes && (
+                    <div className="mt-3">
+                      <div className="p-4 rounded-xl border bg-gradient-to-br from-yellow-50/60 to-orange-50/40 dark:from-yellow-900/20 dark:to-orange-900/10">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-8 h-8 rounded-lg bg-yellow-400/20 flex items-center justify-center">
+                            📝
+                          </div>
+
+                          <div>
+                            <h3 className="font-semibold text-lg leading-tight">
+                              Notes
+                              {message.notes.topic && (
+                                <span className="text-primary">
+                                  {" "}
+                                  – {message.notes.topic}
+                                </span>
+                              )}
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                              Quick revision points
+                            </p>
+                          </div>
+                        </div>
+
+                        <div
+                          className={cn(
+                            "prose prose-sm max-w-none",
+                            "prose-ul:list-disc prose-ul:pl-5",
+                            "prose-li:my-1.5",
+                            "prose-strong:text-primary prose-strong:font-semibold",
+                            "dark:prose-invert"
+                          )}
+                        >
+                          <MarkdownMessage content={message.notes.notes} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {message.role === "assistant" && (
+                    <div className="flex gap-1 mt-1 group/feedback pt-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFeedback("like", message.conversation_id);
+                        }}
+                        className={cn(
+                          "p-1.5 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors",
+                          message.feedback === "like" &&
+                            "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400",
+                          "opacity-70 hover:opacity-100 focus:opacity-100 focus:outline-none"
+                        )}
+                        aria-label="Like response"
+                      >
+                        <ThumbsUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFeedback("dislike", message.conversation_id);
+                        }}
+                        className={cn(
+                          "p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors",
+                          message.feedback === "dislike" &&
+                            "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400",
+                          "opacity-70 hover:opacity-100 focus:opacity-100 focus:outline-none"
+                        )}
+                        aria-label="Dislike response"
+                      >
+                        <ThumbsDown className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}

@@ -61,7 +61,9 @@ import {
   editStudentDetails,
   deleteStudentDetails,
   changePassword,
+  getStudentAgent,
 } from "@/config/services";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SubjectAgent {
   subject: string;
@@ -184,13 +186,16 @@ export default function StudentsPage() {
   const [standardTimeout, setStandardTimeout] = useState<NodeJS.Timeout | null>(
     null
   );
-  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false);
+  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] =
+    useState(false);
   const [passwordData, setPasswordData] = useState({
-    current_password: '',
-    new_password: ''
+    current_password: "",
+    new_password: "",
   });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchStudentsList();
@@ -198,21 +203,21 @@ export default function StudentsPage() {
 
   const handleChangePassword = (studentId: string) => {
     setCurrentStudentId(studentId);
-    setPasswordData({ current_password: '', new_password: '' });
+    setPasswordData({ current_password: "", new_password: "" });
     setIsChangePasswordDialogOpen(true);
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentStudentId) return;
-    
+
     try {
       setIsChangingPassword(true);
       await changePassword(passwordData, currentStudentId);
-      
+
       toast.success("Password changed successfully");
       setIsChangePasswordDialogOpen(false);
-      setPasswordData({ current_password: '', new_password: '' });
+      setPasswordData({ current_password: "", new_password: "" });
     } catch (error) {
       console.error("Error changing password:", error);
       toast.error(error.message);
@@ -277,6 +282,7 @@ export default function StudentsPage() {
     try {
       setIsLoading(true);
       const res = await agentOfClass({ class_name: className });
+      // const res = await getStudentAgent(user?.id);
       setIsSubject(res.agents.slice(0, 3));
     } catch (err) {
       console.error(err);
@@ -382,10 +388,10 @@ export default function StudentsPage() {
 
         // Safely format subject_agent, handling null/undefined cases
         let formattedSubjects: Array<{ subject: string; id: string }> = [];
-        
+
         if (res.subject_agent && Array.isArray(res.subject_agent)) {
           formattedSubjects = res.subject_agent
-            .filter(subject => subject && subject.name) // Filter out any null/undefined entries
+            .filter((subject) => subject && subject.name) // Filter out any null/undefined entries
             .map((subject) => ({
               subject: subject.name,
               id: subject.name.toLowerCase().replace(/\s+/g, "-"),
@@ -654,10 +660,19 @@ export default function StudentsPage() {
                           disabled={isEditMode}
                         />
                         {errors.password && (
-                          <p className="text-sm text-red-500">{errors.password}</p>
+                          <p className="text-sm text-red-500">
+                            {errors.password}
+                          </p>
                         )}
-                        <div onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer">
-                          {showPassword ? <Eye className="w-6 h-6 text-primary" /> : <EyeOff className="w-6 h-6 text-primary" />}
+                        <div
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
+                        >
+                          {showPassword ? (
+                            <Eye className="w-6 h-6 text-primary" />
+                          ) : (
+                            <EyeOff className="w-6 h-6 text-primary" />
+                          )}
                         </div>
                       </div>
                     </div>
@@ -889,15 +904,17 @@ export default function StudentsPage() {
                     <TableCell>
                       <div className="flex flex-wrap gap-1 max-w-[200px]">
                         {student.subject_agent?.length ? (
-                          student.subject_agent.map((subject: any, idx: number) => (
-                            <Badge
-                              key={`${student.student_id}-subj-${idx}`}
-                              variant="secondary"
-                              className="text-xs"
-                            >
-                              {subject.subject}
-                            </Badge>
-                          ))
+                          student.subject_agent.map(
+                            (subject: any, idx: number) => (
+                              <Badge
+                                key={`${student.student_id}-subj-${idx}`}
+                                variant="secondary"
+                                className="text-xs"
+                              >
+                                {subject.subject}
+                              </Badge>
+                            )
+                          )
                         ) : (
                           <span className="text-xs text-muted-foreground">
                             No subjects
@@ -969,7 +986,10 @@ export default function StudentsPage() {
         </Card>
       </div>
 
-      <Dialog open={isChangePasswordDialogOpen} onOpenChange={setIsChangePasswordDialogOpen}>
+      <Dialog
+        open={isChangePasswordDialogOpen}
+        onOpenChange={setIsChangePasswordDialogOpen}
+      >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Change Password</DialogTitle>
@@ -994,8 +1014,8 @@ export default function StudentsPage() {
                     }
                     required
                   />
-                  <div 
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)} 
+                  <div
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
                   >
                     {showCurrentPassword ? (
@@ -1022,8 +1042,8 @@ export default function StudentsPage() {
                     required
                     minLength={8}
                   />
-                  <div 
-                    onClick={() => setShowNewPassword(!showNewPassword)} 
+                  <div
+                    onClick={() => setShowNewPassword(!showNewPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
                   >
                     {showNewPassword ? (
