@@ -1,53 +1,53 @@
 import StudentLayout from "@/components/layout/StudentLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Bot,
-  MessageCircle,
+  // MessageCircle,
   Clock,
   ArrowRight,
   BookOpen,
   Sparkles,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { agentOfClass, getStudentAgent } from "@/config/services";
+import { getStudentAgent } from "@/config/services";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import SubjectSkeletonItem from "@/components/loader/SubjectSkeletonItem";
 
-const assignedClasses = [
-  {
-    id: "1",
-    name: "Advanced Mathematics",
-    subject: "Mathematics",
-    agentCount: 3,
-  },
-  { id: "2", name: "English Literature", subject: "English", agentCount: 2 },
-  { id: "3", name: "Physics 101", subject: "Science", agentCount: 4 },
-];
+// const assignedClasses = [
+//   {
+//     id: "1",
+//     name: "Advanced Mathematics",
+//     subject: "Mathematics",
+//     agentCount: 3,
+//   },
+//   { id: "2", name: "English Literature", subject: "English", agentCount: 2 },
+//   { id: "3", name: "Physics 101", subject: "Science", agentCount: 4 },
+// ];
 
-const recentAgents = [
-  {
-    id: "1",
-    name: "Calculus Helper",
-    lastUsed: "2 hours ago",
-    type: "subject",
-  },
-  {
-    id: "2",
-    name: "Essay Writing Guide",
-    lastUsed: "Yesterday",
-    type: "course",
-  },
-  {
-    id: "3",
-    name: "Physics Problem Solver",
-    lastUsed: "3 days ago",
-    type: "class",
-  },
-];
+// const recentAgents = [
+//   {
+//     id: "1",
+//     name: "Calculus Helper",
+//     lastUsed: "2 hours ago",
+//     type: "subject",
+//   },
+//   {
+//     id: "2",
+//     name: "Essay Writing Guide",
+//     lastUsed: "Yesterday",
+//     type: "course",
+//   },
+//   {
+//     id: "3",
+//     name: "Physics Problem Solver",
+//     lastUsed: "3 days ago",
+//     type: "class",
+//   },
+// ];
 
 const suggestedAgents = [
   {
@@ -73,9 +73,7 @@ export default function StudentDashboard() {
     try {
       setIsLoading(true);
 
-      // const res = await agentOfClass({ class_name: "8" });
       const res = await getStudentAgent(user?.id);
-      console.log("res====", res);
       setIsSubject(res.subjects.slice(0, 3));
       toast.success("Data get successfully");
     } catch (err) {
@@ -135,12 +133,14 @@ export default function StudentDashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Your Classes</CardTitle>
-                <Link to="/student/explore">
-                  <Button variant="ghost" size="sm">
-                    View all
-                    <ArrowRight className="w-4 h-4 ml-1" />
-                  </Button>
-                </Link>
+                {isSubject?.length > 0 && (
+                  <Link to="/student/explore">
+                    <Button variant="ghost" size="sm">
+                      View all
+                      <ArrowRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </Link>
+                )}
               </CardHeader>
               <CardContent className="space-y-4">
                 {isLoading ? (
@@ -153,7 +153,8 @@ export default function StudentDashboard() {
                   isSubject?.map((cls) => (
                     <Link
                       key={cls?.subject_agent_id}
-                      to={`/student/explore?class=${cls.id}`}
+                      to={`/student/chat/${cls.name}`}
+                      // to={`/student/explore?class=${cls.id}`}
                       className="flex items-center gap-4 p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-all group"
                     >
                       <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -178,7 +179,6 @@ export default function StudentDashboard() {
 
           {/* Recent & Suggested */}
           <div className="space-y-6">
-            {/* Recently Used */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

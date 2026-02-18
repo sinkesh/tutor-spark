@@ -1,5 +1,5 @@
 export const BASE_URL =
-  "https://d75d-2401-4900-1c63-4d6d-74d0-93ef-5db5-c616.ngrok-free.app";
+  "https://8648-2401-4900-1c62-2cbd-2d6b-f2ab-521d-9d1a.ngrok-free.app";
 export const VERSION = "/api/v1";
 
 export const API_URL = {

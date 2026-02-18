@@ -282,8 +282,7 @@ export default function StudentsPage() {
     try {
       setIsLoading(true);
       const res = await agentOfClass({ class_name: className });
-      // const res = await getStudentAgent(user?.id);
-      setIsSubject(res.agents.slice(0, 3));
+      setIsSubject(res.agents);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch subjects");

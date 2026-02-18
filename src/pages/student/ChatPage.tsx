@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,7 +16,11 @@ import {
   Sparkles,
   Loader2,
 } from "lucide-react";
-import { studentQueryChat, studentFeedback } from "@/config/services";
+import {
+  studentQueryChat,
+  studentFeedback,
+  getStudentChatHis,
+} from "@/config/services";
 import { toast } from "sonner";
 import MarkdownMessage from "@/components/MarkdownMessage";
 
@@ -64,6 +69,120 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const { user } = useAuth();
+
+  const extractStudyPlanTopic = (text: string): string | undefined => {
+    const clean = text.replace(/[*_#]/g, "");
+
+    const match =
+      clean.match(/Main Topic:\s*(.*)/i) || clean.match(/Plan for\s*(.*)/i);
+
+    return match ? match[1].trim() : undefined;
+  };
+
+  const extractNotesTopic = (text: string): string | undefined => {
+    const match =
+      text.match(/Notes\s*[:–-]\s*(.*)/i) ||
+      text.match(/Topic\s*[:–-]\s*(.*)/i);
+
+    return match ? match[1].trim() : undefined;
+  };
+
+  const normalizeHistoryToMessages = (history: any[]): ChatMessage[] => {
+    const msgs: ChatMessage[] = [];
+
+    history.forEach((item) => {
+      // USER MESSAGE
+      msgs.push({
+        id: crypto.randomUUID(),
+        role: "user",
+        content: item.query,
+        timestamp: new Date(),
+      });
+
+      // ASSISTANT MESSAGE
+      const assistantMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        timestamp: new Date(),
+        feedback: null,
+        conversation_id: item.conversation_id,
+      };
+
+      const response = item.response;
+      const queryLower = item.query.toLowerCase();
+
+      if (typeof response === "string") {
+        const lower = response.toLowerCase();
+
+        /* ---------- QUIZ ANSWER FEEDBACK ---------- */
+        if (
+          response.includes("Your answer:") &&
+          (response.includes("✅") || response.includes("❌"))
+        ) {
+          assistantMsg.quiz = {
+            feedback: response,
+          };
+        } else if (lower.includes("started quiz")) {
+          /* ---------- QUIZ START ---------- */
+          assistantMsg.quiz = {
+            message: response,
+          };
+        } else if (
+          queryLower.includes("notes") ||
+          queryLower.includes("make notes") ||
+          queryLower.includes("create notes") ||
+          queryLower.includes("prepare notes")
+        ) {
+          assistantMsg.notes = {
+            topic: extractNotesTopic(response),
+            notes: response,
+          };
+        } else if (
+          lower.includes("main topic:") ||
+          lower.includes("plan for") ||
+          lower.includes("study plan")
+        ) {
+          assistantMsg.studyPlan = {
+            study_plan: response,
+            subject: subjectName
+              ? decodeURIComponent(subjectName)
+                  .toLowerCase()
+                  .replace(/\b\w/g, (c) => c.toUpperCase())
+              : undefined,
+            topic: extractStudyPlanTopic(response),
+          };
+        } else {
+          /* ---------- NORMAL TEXT ---------- */
+          assistantMsg.content = response;
+        }
+      }
+
+      msgs.push(assistantMsg);
+    });
+
+    return msgs;
+  };
+
+  useEffect(() => {
+    fetchChatHis();
+  }, []);
+
+  const fetchChatHis = async () => {
+    try {
+      const res = await getStudentChatHis(user.id, subjectName);
+
+      if (!Array.isArray(res)) return;
+
+      const formattedMessages = normalizeHistoryToMessages([...res].reverse());
+
+      setMessages(formattedMessages);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load chat history");
+    }
+  };
 
   /* -------------------- Handle Feedback -------------------- */
   const handleFeedback = async (
@@ -152,22 +271,23 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  const { user } = useAuth();
-
   /* -------------------- Send Message -------------------- */
-  const handleSend = async () => {
-    if (!inputValue.trim() || isLoading) return;
+  const handleSend = async (overrideValue?: string) => {
+    // Use the overrideValue (the A,B,C,D label) if provided, otherwise use inputValue
+    const valueToSend = overrideValue || inputValue;
+
+    if (!valueToSend.trim() || isLoading) return;
     if (!user?.id) return;
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: inputValue.trim(),
+      content: valueToSend.trim(), // This will now be "A", "B", etc.
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInputValue("");
+    setInputValue(""); // Clear input
     setIsLoading(true);
 
     try {
@@ -175,7 +295,7 @@ export default function ChatPage() {
         student_id: user.id,
         subject,
         class_name: user.class,
-        query: userMessage.content,
+        query: userMessage.content, // Sends "A", "B", "C", or "D"
       };
 
       const res = await studentQueryChat(payload);
@@ -358,16 +478,26 @@ export default function ChatPage() {
                             <div className="space-y-2">
                               {message.quiz.question.options.map(
                                 (option, idx) => {
-                                  const label = String.fromCharCode(97 + idx); // a, b, c, d
+                                  const label = String.fromCharCode(65 + idx);
 
                                   return (
                                     <button
                                       key={idx}
                                       className="w-full text-left p-2 rounded-lg border hover:bg-muted transition flex gap-2"
                                       onClick={() => {
-                                        setInputValue(option);
-                                        handleSend();
+                                        // Change from setInputValue(option) to setInputValue(label)
+                                        setInputValue(label);
+
+                                        // We use a small trick here: since setInputValue is async,
+                                        // we should pass the label directly to handleSend if possible,
+                                        // or trigger the effect.
+                                        // Best approach: modify handleSend to accept an optional override string.
+                                        handleSend(label);
                                       }}
+                                      // onClick={() => {
+                                      //   setInputValue(option);
+                                      //   handleSend();
+                                      // }}
                                     >
                                       <span className="font-semibold">
                                         {label}.
@@ -389,7 +519,6 @@ export default function ChatPage() {
                             <p className="text-sm text-muted-foreground mt-1">
                               Your Score
                             </p>
-                            Last Question:
                             <p className="text-2xl font-extrabold text-primary mt-2">
                               {message.quiz.final_score}
                             </p>
@@ -552,7 +681,7 @@ export default function ChatPage() {
               <Button
                 variant="gradient"
                 size="icon"
-                onClick={handleSend}
+                onClick={() => handleSend()}
                 disabled={!inputValue.trim() || isLoading}
               >
                 <Send className="w-4 h-4" />

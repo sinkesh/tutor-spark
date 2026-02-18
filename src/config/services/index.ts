@@ -175,3 +175,13 @@ export const getStudentAgent = async (id: string): Promise<any> => {
   );
   return response.data;
 };
+
+export const getStudentChatHis = async (
+  id: string,
+  subject: string
+): Promise<any> => {
+  const response = await apiDataJson.get(
+    `${API_URL.STUDENT}/${id}/history/${subject}`
+  );
+  return response.data;
+};
