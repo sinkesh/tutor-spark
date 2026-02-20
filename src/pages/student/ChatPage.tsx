@@ -15,6 +15,8 @@ import {
   ThumbsDown,
   Sparkles,
   Loader2,
+  Check,
+  Copy,
 } from "lucide-react";
 import {
   studentQueryChat,
@@ -67,10 +69,23 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { user } = useAuth();
+
+  const handleCopy = async (text: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(messageId);
+      toast.success("Copied to clipboard");
+
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      toast.error("Failed to copy text");
+    }
+  };
 
   const extractStudyPlanTopic = (text: string): string | undefined => {
     const clean = text.replace(/[*_#]/g, "");
@@ -187,7 +202,7 @@ export default function ChatPage() {
   /* -------------------- Handle Feedback -------------------- */
   const handleFeedback = async (
     feedbackType: "like" | "dislike",
-    conversationId?: string
+    conversationId?: string,
   ) => {
     if (!conversationId) {
       console.error("No conversation ID available for feedback");
@@ -199,8 +214,8 @@ export default function ChatPage() {
         prev.map((msg) =>
           msg.conversation_id === conversationId
             ? { ...msg, feedback: feedbackType }
-            : msg
-        )
+            : msg,
+        ),
       );
 
       await studentFeedback({
@@ -215,8 +230,8 @@ export default function ChatPage() {
         prev.map((msg) =>
           msg.conversation_id === conversationId
             ? { ...msg, feedback: undefined }
-            : msg
-        )
+            : msg,
+        ),
       );
       toast.error("Failed to submit feedback");
     }
@@ -236,7 +251,7 @@ export default function ChatPage() {
           className={cn(
             "p-1.5 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors",
             message.feedback === "like" &&
-              "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400"
+              "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400",
           )}
           aria-label="Like response"
         >
@@ -250,7 +265,7 @@ export default function ChatPage() {
           className={cn(
             "p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors",
             message.feedback === "dislike" &&
-              "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400"
+              "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400",
           )}
           aria-label="Dislike response"
         >
@@ -403,7 +418,7 @@ export default function ChatPage() {
               key={message.id}
               className={cn(
                 "flex gap-3",
-                message.role === "user" && "flex-row-reverse"
+                message.role === "user" && "flex-row-reverse",
               )}
             >
               <div
@@ -411,7 +426,7 @@ export default function ChatPage() {
                   "w-8 h-8 rounded-lg flex items-center justify-center",
                   message.role === "user"
                     ? "bg-primary text-primary-foreground"
-                    : "bg-accent/10 text-accent"
+                    : "bg-accent/10 text-accent",
                 )}
               >
                 {message.role === "user" ? (
@@ -427,7 +442,7 @@ export default function ChatPage() {
                     "p-4 rounded-2xl text-sm",
                     message.role === "user"
                       ? "chat-bubble-user text-primary-foreground"
-                      : "chat-bubble-ai"
+                      : "chat-bubble-ai",
                   )}
                 >
                   <div className="rounded-2xl text-sm">
@@ -445,7 +460,7 @@ export default function ChatPage() {
                               "p-2 rounded-lg text-sm font-medium",
                               message.quiz.feedback.startsWith("✅")
                                 ? "bg-green-50 text-green-700 dark:bg-green-900/20"
-                                : "bg-red-50 text-red-700 dark:bg-red-900/20"
+                                : "bg-red-50 text-red-700 dark:bg-red-900/20",
                             )}
                           >
                             {message.quiz.question?.question_number
@@ -505,7 +520,7 @@ export default function ChatPage() {
                                       <span>{option}</span>
                                     </button>
                                   );
-                                }
+                                },
                               )}
                             </div>
                           </div>
@@ -600,7 +615,7 @@ export default function ChatPage() {
                             "prose-ul:list-disc prose-ul:pl-5",
                             "prose-li:my-1.5",
                             "prose-strong:text-primary prose-strong:font-semibold",
-                            "dark:prose-invert"
+                            "dark:prose-invert",
                           )}
                         >
                           <MarkdownMessage content={message.notes.notes} />
@@ -614,13 +629,36 @@ export default function ChatPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          const textToCopy =
+                            message.content ||
+                            message.notes?.notes ||
+                            message.studyPlan?.study_plan ||
+                            "";
+                          handleCopy(textToCopy, message.id);
+                        }}
+                        className={cn(
+                          "p-1.5 rounded-full transition-colors opacity-70 hover:opacity-100 hover:bg-muted",
+                          copiedId === message.id && "text-green-600",
+                        )}
+                        title="Copy to clipboard"
+                      >
+                        {copiedId === message.id ? (
+                          <Check className="w-3.5 h-3.5" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
                           handleFeedback("like", message.conversation_id);
                         }}
                         className={cn(
                           "p-1.5 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors",
                           message.feedback === "like" &&
                             "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400",
-                          "opacity-70 hover:opacity-100 focus:opacity-100 focus:outline-none"
+                          "opacity-70 hover:opacity-100 focus:opacity-100 focus:outline-none",
                         )}
                         aria-label="Like response"
                       >
@@ -635,7 +673,7 @@ export default function ChatPage() {
                           "p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors",
                           message.feedback === "dislike" &&
                             "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400",
-                          "opacity-70 hover:opacity-100 focus:opacity-100 focus:outline-none"
+                          "opacity-70 hover:opacity-100 focus:opacity-100 focus:outline-none",
                         )}
                         aria-label="Dislike response"
                       >

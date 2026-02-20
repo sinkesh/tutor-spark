@@ -15,10 +15,11 @@ import {
   ArrowRight,
   Clock,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getAgents } from "@/config/services";
 import { toast } from "sonner";
+import AgentCardSkeleton from "@/components/loader/AgentCardSkeleton";
 
 // Mock data
 const kpiData: KPIData = {
@@ -46,6 +47,8 @@ const recentActivity = [
 export default function AdminDashboard() {
   const [agentsData, setAgentsData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const navigate = useNavigate();
 
   const getAllAgents = async () => {
     try {
@@ -135,9 +138,36 @@ export default function AdminDashboard() {
                 </Link>
               </CardHeader>
               <CardContent className="space-y-4">
-                {agentsData.map((agent) => (
-                  <AgentCard key={agent.id} agent={agent} />
-                ))}
+                {isLoading ? (
+                  <div className="space-y-5">
+                    {Array.from({ length: 3 }).map((_, index) => (
+                      <AgentCardSkeleton key={index} />
+                    ))}
+                  </div>
+                ) : agentsData && agentsData.length > 0 ? (
+                  agentsData.map((agent) => (
+                    <AgentCard key={agent.id} agent={agent} />
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed rounded-xl bg-muted/30">
+                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                      <Bot className="w-7 h-7 text-primary" />
+                    </div>
+
+                    <h3 className="text-lg font-semibold mb-1">
+                      No Agents Found
+                    </h3>
+
+                    <p className="text-sm text-muted-foreground max-w-sm mb-4">
+                      You haven't created any AI agents yet. Start by creating
+                      one to manage your classroom interactions.
+                    </p>
+
+                    <Button onClick={() => navigate("/admin/agents/create")}>
+                      Create Agent
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

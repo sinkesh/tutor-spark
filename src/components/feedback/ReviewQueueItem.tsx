@@ -1,100 +1,130 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
-  AlertTriangle, 
-  Brain, 
-  ThumbsDown, 
-  RefreshCw, 
+import {
+  AlertTriangle,
+  Brain,
+  ThumbsDown,
+  RefreshCw,
   Zap,
   Clock,
   Bot,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ReviewItem, FailureType } from "@/types/feedback";
 
-interface ReviewQueueItemProps {
-  item: ReviewItem;
+interface AgentPerformanceItem {
+  subject_agent_id: string;
+  database: string;
+  collection: string;
+  document_id: string;
+
+  agent_metadata: {
+    agent_name: string;
+  };
+
+  performance: {
+    overall_score: number;
+    performance_level: string;
+    total_conversations: number;
+    health_status: string;
+  };
+}
+
+interface Props {
+  item: AgentPerformanceItem;
   isSelected: boolean;
   onSelect: () => void;
 }
 
-const failureTypeConfig: Record<FailureType, { icon: typeof AlertTriangle; label: string; color: string }> = {
-  negative_feedback: { icon: ThumbsDown, label: 'Negative Feedback', color: 'text-red-500 bg-red-500/10' },
-  low_confidence: { icon: Brain, label: 'Low Confidence', color: 'text-yellow-500 bg-yellow-500/10' },
-  hallucination: { icon: AlertTriangle, label: 'Hallucination', color: 'text-orange-500 bg-orange-500/10' },
-  repeat_failure: { icon: RefreshCw, label: 'Repeat Failure', color: 'text-purple-500 bg-purple-500/10' },
-  pattern_detected: { icon: Zap, label: 'Pattern Detected', color: 'text-blue-500 bg-blue-500/10' },
-};
+export function AgentPerformanceCard({ item, isSelected, onSelect }: Props) {
+  const performance = item.performance;
+  const score = performance.overall_score;
 
-export function ReviewQueueItem({ item, isSelected, onSelect }: ReviewQueueItemProps) {
-  const config = failureTypeConfig[item.failureType];
-  const FailureIcon = config.icon;
-  
-  const priorityColor = item.priority >= 80 
-    ? 'border-l-red-500' 
-    : item.priority >= 50 
-      ? 'border-l-yellow-500' 
-      : 'border-l-muted';
+  let color = "text-blue-500 bg-blue-500/10";
+  let borderColor = "border-l-blue-500";
 
-  const confidenceDisplay = Math.round(item.qualityScore.overallScore * 100);
+  if (score >= 80) {
+    color = "text-green-500 bg-green-500/10";
+    borderColor = "border-l-green-500";
+  } else if (score >= 50) {
+    color = "text-yellow-500 bg-yellow-500/10";
+    borderColor = "border-l-yellow-500";
+  } else {
+    color = "text-red-500 bg-red-500/10";
+    borderColor = "border-l-red-500";
+  }
 
   return (
     <div
       onClick={onSelect}
       className={cn(
-        "p-4 border-l-4 rounded-r-lg cursor-pointer transition-all duration-200",
-        "hover:bg-accent/50",
-        priorityColor,
-        isSelected ? "bg-accent shadow-md" : "bg-card"
+        "p-5 border-l-4 rounded-r-xl cursor-pointer transition-all duration-200",
+        "hover:bg-accent/50 shadow-sm",
+        borderColor,
+        isSelected ? "bg-[#f6b9a3] shadow-md scale-[1.01]" : "bg-card",
       )}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          {/* Failure Type Badge */}
-          <div className="flex items-center gap-2 mb-2">
-            <div className={cn("w-6 h-6 rounded flex items-center justify-center", config.color.split(' ')[1])}>
-              <FailureIcon className={cn("w-3.5 h-3.5", config.color.split(' ')[0])} />
+          {/* Status Badge */}
+          <div className="flex items-center gap-2 mb-3">
+            <div
+              className={cn(
+                "w-7 h-7 rounded-md flex items-center justify-center",
+                color.split(" ")[1],
+              )}
+            >
+              <Brain className={cn("w-4 h-4", color.split(" ")[0])} />
             </div>
-            <Badge variant="outline" className={cn("text-xs", config.color.split(' ')[0])}>
-              {config.label}
+
+            <Badge
+              variant="outline"
+              className={cn("text-xs", color.split(" ")[0])}
+            >
+              {performance.health_status}
             </Badge>
+
             <Badge variant="secondary" className="text-xs">
-              P{item.priority}
+              {performance.performance_level}
             </Badge>
           </div>
-          
-          {/* Question Preview */}
-          <p className="text-sm font-medium text-foreground line-clamp-2 mb-1">
-            {item.studentQuery}
+
+          {/* Agent Name */}
+          <p className="text-sm font-semibold text-foreground mb-2">
+            {item.agent_metadata.agent_name}
           </p>
-          
-          {/* Agent Info */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Bot className="w-3 h-3" />
-              {item.agentName}
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {new Date(item.createdAt).toLocaleDateString()}
-            </span>
+
+          {/* Info Row */}
+          <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+            <span>Database: {item.database}</span>
+
+            <span>Collection: {item.collection}</span>
+
+            <span>Conversations: {performance.total_conversations}</span>
           </div>
         </div>
-        
-        {/* Confidence Score */}
+
+        {/* Score Section */}
         <div className="flex flex-col items-end gap-2">
-          <div className={cn(
-            "text-lg font-bold",
-            confidenceDisplay >= 70 ? "text-green-500" :
-            confidenceDisplay >= 45 ? "text-yellow-500" : "text-red-500"
-          )}>
-            {confidenceDisplay}%
+          <div
+            className={cn(
+              "text-2xl font-bold",
+              score >= 80
+                ? "text-green-500"
+                : score >= 50
+                  ? "text-yellow-500"
+                  : "text-red-500",
+            )}
+          >
+            {Math.round(score)}%
           </div>
-          <ChevronRight className={cn(
-            "w-4 h-4 transition-transform",
-            isSelected ? "text-primary" : "text-muted-foreground"
-          )} />
+
+          <ChevronRight
+            className={cn(
+              "w-4 h-4 transition-transform",
+              isSelected ? "text-primary" : "text-muted-foreground",
+            )}
+          />
         </div>
       </div>
     </div>

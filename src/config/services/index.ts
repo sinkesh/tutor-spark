@@ -53,7 +53,7 @@ const apiDataJson = axios.create({
   instance.interceptors.request.use(addAuthToken);
   instance.interceptors.response.use(
     (response) => response,
-    handleUnauthorized
+    handleUnauthorized,
   );
 });
 
@@ -90,7 +90,7 @@ export const listStudent = async (): Promise<{
 };
 
 export const getStudentDetails = async (
-  id: string
+  id: string,
 ): Promise<{
   student_id: string;
   subject_agent: any[];
@@ -110,7 +110,7 @@ export const editStudentDetails = async (
     email: string;
     class_name: string;
     subject_agent: Array<{ name: string }>;
-  }
+  },
 ): Promise<{
   id: string;
   name: string;
@@ -120,7 +120,7 @@ export const editStudentDetails = async (
 }> => {
   const response = await apiDataJson.put(
     `${API_URL.STUDENT}/${id}`,
-    studentData
+    studentData,
   );
   return response.data;
 };
@@ -131,7 +131,7 @@ export const deleteStudentDetails = async (id: string) => {
 };
 
 export const getAiAgentsDetails = async (
-  agent_id: string
+  agent_id: string,
 ): Promise<{
   subject_agent: any[];
   name: string;
@@ -171,17 +171,29 @@ export const getChatHistory = async (id: string): Promise<any> => {
 
 export const getStudentAgent = async (id: string): Promise<any> => {
   const response = await apiDataJson.get(
-    `${API_URL.STUDENT_AGENT}/${id}/subjects`
+    `${API_URL.STUDENT_AGENT}/${id}/subjects`,
   );
   return response.data;
 };
 
 export const getStudentChatHis = async (
   id: string,
-  subject: string
+  subject: string,
 ): Promise<any> => {
   const response = await apiDataJson.get(
-    `${API_URL.STUDENT}/${id}/history/${subject}`
+    `${API_URL.STUDENT}/${id}/history/${subject}`,
+  );
+  return response.data;
+};
+
+export const getAllAgentPerformance = async (): Promise<any> => {
+  const response = await apiDataJson.get(`${API_URL.AGENT_PERFORMANCE}`);
+  return response.data;
+};
+
+export const getSingleAgentPerformance = async (id: string): Promise<any> => {
+  const response = await apiDataJson.get(
+    `${API_URL.SINGAL_AGENT_PERFORMANCE}/${id}`,
   );
   return response.data;
 };

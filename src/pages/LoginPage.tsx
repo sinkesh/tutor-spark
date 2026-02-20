@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +12,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Sparkles, AlertCircle, Eye, EyeOff } from "lucide-react";
+import {
+  GraduationCap,
+  Sparkles,
+  AlertCircle,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { login as apiLogin } from "@/config/services";
 import { useToast } from "@/components/ui/use-toast";
 import { User } from "@/types";
@@ -34,38 +41,38 @@ export default function LoginPage() {
     try {
       const response = await apiLogin({ email, password });
       const { access_token, refresh_token, user: userData } = response.data;
-      
+
       const user: User = {
         id: userData.user_id,
         email: userData.email,
         name: userData.name,
         role: userData.role,
-        class: userData.class || '',
+        class: userData.class || "",
         is_active: userData.is_active,
-        permissions: userData.permissions || []
+        permissions: userData.permissions || [],
       };
 
-      localStorage.setItem('access_token', access_token);
-      localStorage.setItem('refresh_token', refresh_token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem("access_token", access_token);
+      localStorage.setItem("refresh_token", refresh_token);
+      localStorage.setItem("user", JSON.stringify(user));
       await authLogin(user);
 
-      if (user.role === 'admin') {
-        navigate('/admin');
-      } else if (user.role === 'student') {
-        navigate('/student');
+      if (user.role === "admin") {
+        navigate("/admin");
+      } else if (user.role === "student") {
+        navigate("/student");
       } else {
-        navigate('/');
+        navigate("/");
       }
 
       toast({
         title: "Login successful",
         description: `Welcome back, ${user.name}!`,
       });
-
     } catch (err: any) {
-      console.error('Login error:', err);
-      const errorMessage = err.response?.data?.message || 'Invalid email or password';
+      console.error("Login error:", err);
+      const errorMessage =
+        err.response?.data?.message || "Invalid email or password";
       setError(errorMessage);
       toast({
         title: "Login failed",
@@ -163,17 +170,24 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
                   <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                  <div onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer">
-                    {showPassword ? <Eye className="w-6 h-6 text-primary" /> : <EyeOff className="w-6 h-6 text-primary" />}
-                  </div>
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                    <div
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
+                    >
+                      {showPassword ? (
+                        <Eye className="w-6 h-6 text-primary" />
+                      ) : (
+                        <EyeOff className="w-6 h-6 text-primary" />
+                      )}
+                    </div>
                   </div>
                 </div>
 
