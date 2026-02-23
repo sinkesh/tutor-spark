@@ -494,7 +494,7 @@ export default function FeedbackPage() {
           id: performance.agent_id,
           responseId: performance.agent_id,
           agentId: performance.agent_id,
-          agentName: performance.agent_metadata.agent_metadata.agent_name,
+          agentName: performance.agent_metadata.agent_name,
 
           agentVersion: "1.0",
           promptVersion: performance.performance_period,

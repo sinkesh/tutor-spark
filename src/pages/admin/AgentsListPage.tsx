@@ -30,7 +30,11 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { getAgents, getAiAgentsDetails, deleteAiAgentsDetails } from "@/config/services";
+import {
+  getAgents,
+  getAiAgentsDetails,
+  deleteAiAgentsDetails,
+} from "@/config/services";
 import { toast } from "sonner";
 import AgentCardSkeleton from "@/components/loader/AgentCardSkeleton";
 
@@ -119,21 +123,21 @@ export default function AgentsListPage() {
   };
 
   const handleEditAgent = (agent: AIAgent) => {
-    navigate(`/admin/agents/create`, { 
-      state: { 
+    navigate(`/admin/agents/create`, {
+      state: {
         isEditMode: true,
         agentData: {
           ...agent,
           type: agent.agent_type as AgentType,
           name: agent.agent_name,
-        }
-      } 
+        },
+      },
     });
   };
 
   const handleDeleteAgent = async (id: string) => {
     if (!id) return;
-    
+
     try {
       setIsDeleting(true);
       await deleteAiAgentsDetails(id);
@@ -241,7 +245,7 @@ export default function AgentsListPage() {
             className={cn(
               viewMode === "grid"
                 ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-                : "space-y-4"
+                : "space-y-4",
             )}
           >
             {Array.from({ length: 3 }).map((_, index) => (
@@ -253,12 +257,12 @@ export default function AgentsListPage() {
             className={cn(
               viewMode === "grid"
                 ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-                : "space-y-4"
+                : "space-y-4",
             )}
           >
-            {filteredAgents.map((agent) => (
+            {filteredAgents.map((agent, index) => (
               <AgentCard
-                key={agent.id}
+                key={index}
                 agent={agent}
                 onView={() => handleViewDetails(agent)}
                 onDelete={handleDeleteAgent}
@@ -290,7 +294,7 @@ export default function AgentsListPage() {
             <>
               <DialogHeader>
                 <div className="flex justify-between items-center">
-                  <DialogTitle className="text-2xl">
+                  <DialogTitle className="text-2xl capitalize">
                     {selectedAgent?.agent_name || "Agent Details"}
                   </DialogTitle>
                   {/* <Button
@@ -303,7 +307,10 @@ export default function AgentsListPage() {
                   </Button> */}
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Badge variant="outline" className="capitalize">
+                  <Badge
+                    variant="outline"
+                    className="capitalize bg-primary text-white"
+                  >
                     {selectedAgent?.agent_type}
                   </Badge>
                   <Badge
@@ -318,7 +325,7 @@ export default function AgentsListPage() {
                 </div>
               </DialogHeader>
 
-              <div className="space-y-6 py-4">
+              <div className="space-y-6 py-4 max-h-[calc(100vh-250px)] overflow-auto">
                 <div>
                   <h3 className="font-medium mb-2 flex items-center gap-2">
                     <Info className="h-4 w-4" />
@@ -340,7 +347,7 @@ export default function AgentsListPage() {
                         <div>
                           <p className="text-muted-foreground">Name</p>
                           <p>
-                            {agentDetails.agent_metadata?.agent_name || "N/A"}
+                            {agentDetails?.agent_metadata?.agent_name || "N/A"}
                           </p>
                         </div>
                         <div>
@@ -354,11 +361,14 @@ export default function AgentsListPage() {
                         <div>
                           <p className="text-muted-foreground">Teaching Tone</p>
                           <p>
-                            {agentDetails.agent_metadata.teaching_tone || "N/A"}
+                            {agentDetails?.agent_metadata.teaching_tone ||
+                              "N/A"}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-muted-foreground">Documents</p>
+                        <div className="col-span-2">
+                          <p className="text-muted-foreground pb-2">
+                            Documents
+                          </p>
 
                           <p className="flex flex-wrap gap-2">
                             {agentDetails?.file_names?.length > 0
@@ -370,7 +380,7 @@ export default function AgentsListPage() {
                                     >
                                       {file}
                                     </span>
-                                  )
+                                  ),
                                 )
                               : "N/A"}
                           </p>
@@ -383,7 +393,7 @@ export default function AgentsListPage() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Education Level</p>
-                    <p>{selectedAgent?.educationLevel || "N/A"}</p>
+                    <p>{agentDetails?.agent_metadata.agent_type || "N/A"}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Assigned Students</p>
@@ -415,7 +425,7 @@ export default function AgentsListPage() {
                           <Badge key={index} variant="secondary">
                             {obj}
                           </Badge>
-                        )
+                        ),
                       )}
                     </div>
                   </div>
