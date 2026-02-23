@@ -1,4 +1,4 @@
-export const BASE_URL = "http://13.233.214.195:3018";
+export const BASE_URL = "https://api.tecorb.in";
 export const VERSION = "/api/v1";
 
 export const API_URL = {
