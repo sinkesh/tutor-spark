@@ -688,10 +688,10 @@ export default function FeedbackPage() {
           <TabsList className="w-fit mb-4">
             <TabsTrigger value="queue" className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4" />
-              Review Queue
-              <Badge variant="secondary" className="ml-1">
+              Agent Performance
+              {/* <Badge variant="secondary" className="ml-1">
                 {pendingCount}
-              </Badge>
+              </Badge> */}
             </TabsTrigger>
             <TabsTrigger value="health" className="flex items-center gap-2">
               <Activity className="w-4 h-4" />
@@ -854,17 +854,19 @@ export default function FeedbackPage() {
                 />
               ))}
             </div>
-            <FlaggingRulesPanel
-              rules={rules}
-              onToggleRule={(id, active) =>
-                setRules((r) =>
-                  r.map((rule) =>
-                    rule.id === id ? { ...rule, isActive: active } : rule,
-                  ),
-                )
-              }
-              onAddRule={() => toast.info("Add rule dialog would open")}
-            />
+            <div className="opacity-60 pointer-events-none">
+              <FlaggingRulesPanel
+                rules={rules}
+                onToggleRule={(id, active) =>
+                  setRules((r) =>
+                    r.map((rule) =>
+                      rule.id === id ? { ...rule, isActive: active } : rule,
+                    ),
+                  )
+                }
+                onAddRule={() => toast.info("Add rule dialog would open")}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="triggers" className="flex-1 overflow-auto mt-0">

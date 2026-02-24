@@ -32,7 +32,13 @@ export function RetrainingTriggerCard({
   const ThresholdIcon = thresholdTypeIcons[trigger.thresholdType];
 
   return (
-    <Card className={!trigger.isActive ? "opacity-60" : ""}>
+    <Card
+      className={
+        !trigger.isActive
+          ? "opacity-60 pointer-events-none"
+          : "opacity-60 pointer-events-none"
+      }
+    >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

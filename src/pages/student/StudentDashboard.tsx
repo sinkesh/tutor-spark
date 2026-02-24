@@ -154,7 +154,6 @@ export default function StudentDashboard() {
                     <Link
                       key={cls?.subject_agent_id}
                       to={`/student/chat/${cls.name}`}
-                      // to={`/student/explore?class=${cls.id}`}
                       className="flex items-center gap-4 p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-all group"
                     >
                       <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -164,7 +163,10 @@ export default function StudentDashboard() {
                         <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors capitalize">
                           {cls.name}
                         </h3>
-                        <p className="text-sm text-muted-foreground">
+                        <p
+                          className="text-sm text-muted-foreground line-clamp-2"
+                          title={cls?.description}
+                        >
                           {cls?.description}
                         </p>
                       </div>

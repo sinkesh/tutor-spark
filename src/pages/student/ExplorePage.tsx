@@ -86,7 +86,7 @@ export default function ExplorePage() {
                 <div
                   className={cn(
                     "w-6 h-6 rounded flex items-center justify-center",
-                    color
+                    color,
                   )}
                 >
                   <Icon className="w-3 h-3" />
@@ -125,7 +125,10 @@ export default function ExplorePage() {
                     <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors capitalize">
                       {cls.name}
                     </h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p
+                      className="text-sm text-muted-foreground line-clamp-2"
+                      title={cls?.description}
+                    >
                       {cls?.description}
                     </p>
                   </div>
