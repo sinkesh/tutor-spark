@@ -12,6 +12,8 @@ import {
   Eye,
   Edit,
   Trash2,
+  BookOpen,
+  UserCheck,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -74,10 +76,17 @@ export default function AgentCard({
             <div
               className={cn(
                 "w-10 h-10 rounded-lg flex items-center justify-center",
-                getRandomColor()
+                getRandomColor(),
               )}
             >
-              <Bot className="w-5 h-5" />
+              {agent?.agent_type === "teaching" ||
+              agent?.agent_type === "teacher" ? (
+                <UserCheck className="w-5 h-5" />
+              ) : agent?.agent_type === "subject" ? (
+                <BookOpen className="w-5 h-5" />
+              ) : (
+                <Bot className="w-5 h-5" />
+              )}
             </div>
             <div>
               <CardTitle className="text-base capitalize">
@@ -93,8 +102,8 @@ export default function AgentCard({
                 >
                   {agent?.status}
                 </Badge> */}
-                <Badge variant="secondary" className="text-xs capitalize">
-                  {agent.agent_type}
+                <Badge variant="secondary" className="text-xs">
+                  {agent.class === "none" ? "For All" : agent.class}
                 </Badge>
               </div>
             </div>
@@ -110,20 +119,24 @@ export default function AgentCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onView?.(agent)} className="cursor-pointer">
+              <DropdownMenuItem
+                onClick={() => onView?.(agent)}
+                className="cursor-pointer"
+              >
                 <Eye className="w-4 h-4 mr-2" />
                 View Details
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => onEdit?.(agent)}
+                className="cursor-pointer"
                 disabled={onEdit === undefined}
               >
                 <Edit className="mr-2 h-4 w-4" />
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => onDelete?.(agent.subject_agent_id)}
-                className="text-destructive"
+                className="text-destructive cursor-pointer"
                 disabled={onDelete === undefined}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
@@ -141,19 +154,21 @@ export default function AgentCard({
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm font-medium">
-              {/* {agent.assignedStudents} */}100
+              {agent.unique_students === 0 ? "NA" : agent.unique_students}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <MessageCircle className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm font-medium">
-              {/* {agent.totalConversations} */}50
+              {agent.total_conversations === 0
+                ? "NA"
+                : agent.total_conversations}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-success" />
             <span className="text-sm font-medium text-success">
-              {/* {agent.accuracyScore}% */}72%
+              {agent.overall_score === 0 ? "NA" : `${agent.overall_score}%`}
             </span>
           </div>
         </div>

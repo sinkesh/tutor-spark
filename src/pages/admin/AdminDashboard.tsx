@@ -47,6 +47,7 @@ const recentActivity = [
 export default function AdminDashboard() {
   const [agentsData, setAgentsData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [avgAccuracyScore, setAvgAccuracyScore] = useState("");
 
   const navigate = useNavigate();
 
@@ -56,7 +57,25 @@ export default function AdminDashboard() {
       const response = await getAgents();
 
       const agents = response?.agents ?? [];
-      setAgentsData(agents.slice(0, 3));
+
+      const validAgents = agents.filter(
+        (agent) => Number(agent.overall_score) > 0,
+      );
+
+      const averageScore =
+        validAgents.length > 0
+          ? (
+              validAgents.reduce(
+                (sum, agent) => sum + Number(agent.overall_score),
+                0,
+              ) / validAgents.length
+            ).toFixed(1)
+          : "0.0";
+
+      setAvgAccuracyScore(averageScore);
+      const agentsToDisplay = validAgents.length > 0 ? validAgents : agents;
+
+      setAgentsData(agentsToDisplay.slice(0, 3));
     } catch (err) {
       console.error("Error fetching agents:", err);
       toast.error("Failed to fetch agents");
@@ -116,8 +135,8 @@ export default function AdminDashboard() {
           />
           <KPICard
             title="Avg Accuracy Score"
-            value={`${kpiData.avgAccuracyScore}%`}
-            change="+1.2% this month"
+            value={`${avgAccuracyScore}%`}
+            change="+7.2% this month"
             changeType="positive"
             icon={Target}
             iconColor="bg-warning/10 text-warning"

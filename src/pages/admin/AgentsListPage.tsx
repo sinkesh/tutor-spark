@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import PaginationComponent from "@/components/common/PaginationComponent";
 import { AIAgent, AgentType, AgentStatus } from "@/types";
 import {
   Plus,
@@ -65,6 +66,8 @@ export default function AgentsListPage() {
   const [agentDetails, setAgentDetails] = useState<any>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
   const navigate = useNavigate();
 
   // const filteredAgents = agentsData.filter((agent) => {
@@ -92,6 +95,20 @@ export default function AgentsListPage() {
       return matchesSearch && matchesType && matchesStatus;
     });
   }, [agentsData, searchQuery, typeFilter, statusFilter]);
+
+  const paginatedAgents = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAgents.slice(startIndex, endIndex);
+  }, [filteredAgents, currentPage]);
+
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredAgents.length / itemsPerPage);
+  }, [filteredAgents]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, typeFilter, statusFilter]);
 
   const getAllAgents = async () => {
     try {
@@ -260,7 +277,7 @@ export default function AgentsListPage() {
                 : "space-y-4",
             )}
           >
-            {filteredAgents.map((agent, index) => (
+            {paginatedAgents.map((agent, index) => (
               <AgentCard
                 key={index}
                 agent={agent}
@@ -281,6 +298,16 @@ export default function AgentsListPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Pagination */}
+        <PaginationComponent
+          currentPage={currentPage}
+          totalPages={totalPages}
+          itemsPerPage={itemsPerPage}
+          totalItems={filteredAgents.length}
+          onPageChange={setCurrentPage}
+          isLoading={isLoading}
+        />
       </div>
 
       {/* Agent Details Dialog */}
@@ -311,7 +338,9 @@ export default function AgentsListPage() {
                     variant="outline"
                     className="capitalize bg-primary text-white"
                   >
-                    {selectedAgent?.agent_type}
+                    {selectedAgent?.class === "none"
+                      ? selectedAgent?.subject
+                      : selectedAgent?.class}
                   </Badge>
                   <Badge
                     variant={
@@ -356,11 +385,15 @@ export default function AgentsListPage() {
                         </div>
                         <div>
                           <p className="text-muted-foreground">Class</p>
-                          <p>{agentDetails.class || "N/A"}</p>
+                          <p>
+                            {agentDetails.class === "none"
+                              ? "For all classes"
+                              : agentDetails.class || "N/A"}
+                          </p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Teaching Tone</p>
-                          <p>
+                          <p className="capitalize">
                             {agentDetails?.agent_metadata.teaching_tone ||
                               "N/A"}
                           </p>
@@ -376,7 +409,7 @@ export default function AgentsListPage() {
                                   (file: string, index: number) => (
                                     <span
                                       key={index}
-                                      className="border border-gray-300 px-2 py-1 rounded-full px-2 text-xs font-normal"
+                                      className="border border-gray-300 px-2 py-1 rounded-full text-xs font-normal"
                                     >
                                       {file}
                                     </span>
@@ -391,25 +424,25 @@ export default function AgentsListPage() {
                 )}
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
+                  {/* <div>
                     <p className="text-muted-foreground">Education Level</p>
                     <p>{agentDetails?.agent_metadata.agent_type || "N/A"}</p>
-                  </div>
+                  </div> */}
                   <div>
                     <p className="text-muted-foreground">Assigned Students</p>
-                    <p>{selectedAgent?.assignedStudents || 0}</p>
+                    <p>{selectedAgent?.assignedStudents || "NA"}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Accuracy Score</p>
                     <p>
                       {selectedAgent?.accuracyScore
-                        ? `${selectedAgent.accuracyScore}%`
-                        : "N/A"}
+                        ? `${selectedAgent?.accuracyScore}%`
+                        : "NA"}
                     </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Total Conversations</p>
-                    <p>{selectedAgent?.totalConversations || 0}</p>
+                    <p>{selectedAgent?.totalConversations || "NA"}</p>
                   </div>
                 </div>
 
@@ -432,7 +465,7 @@ export default function AgentsListPage() {
                 )}
               </div>
 
-              <div className="flex justify-between pt-2">
+              <div className="flex justify-end pt-2">
                 <div className="flex gap-2">
                   <Button
                     variant="outline"

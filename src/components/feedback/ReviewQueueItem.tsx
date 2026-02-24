@@ -116,7 +116,7 @@ export function AgentPerformanceCard({ item, isSelected, onSelect }: Props) {
                   : "text-red-500",
             )}
           >
-            {Math.round(score)}%
+            {Math.round(score) === 0 ? "NA" : `${Math.round(score)}%`}
           </div>
 
           <ChevronRight

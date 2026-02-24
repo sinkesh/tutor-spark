@@ -42,28 +42,34 @@ export default function LoginPage() {
       const response = await apiLogin({ email, password });
       const { access_token, refresh_token, user: userData } = response.data;
 
+      // Validate response data structure
+      if (!userData || !userData.user_id || !userData.email || !userData.name || !userData.role) {
+        throw new Error("Invalid response data from server");
+      }
+
       const user: User = {
         id: userData.user_id,
         email: userData.email,
         name: userData.name,
         role: userData.role,
         class: userData.class || "",
-        is_active: userData.is_active,
+        is_active: userData.is_active ?? true,
         permissions: userData.permissions || [],
       };
 
+      // Store tokens and user data
       localStorage.setItem("access_token", access_token);
       localStorage.setItem("refresh_token", refresh_token);
       localStorage.setItem("user", JSON.stringify(user));
+      
+      // Update auth context
       await authLogin(user);
 
-      if (user.role === "admin") {
-        navigate("/admin");
-      } else if (user.role === "student") {
-        navigate("/student");
-      } else {
-        navigate("/");
-      }
+      // Navigate based on role
+      const navigateTo = user.role === "admin" ? "/admin" : 
+                        user.role === "student" ? "/student" : "/";
+      
+      navigate(navigateTo);
 
       toast({
         title: "Login successful",
@@ -71,8 +77,38 @@ export default function LoginPage() {
       });
     } catch (err: any) {
       console.error("Login error:", err);
-      const errorMessage =
-        err.response?.data?.message || "Invalid email or password";
+      
+      let errorMessage = "Invalid email or password";
+      
+      // Handle different error scenarios
+      if (err.code === "ECONNABORTED" || err.message.includes("timeout")) {
+        errorMessage = "Connection timeout. Please try again.";
+      } else if (err.code === "NETWORK_ERROR" || !err.response) {
+        errorMessage = "Network error. Please check your connection.";
+      } else if (err.response) {
+        switch (err.response.status) {
+          case 400:
+            errorMessage = err.response.data?.message || "Invalid request format";
+            break;
+          case 401:
+            errorMessage = err.response.data?.message || "Invalid email or password";
+            break;
+          case 403:
+            errorMessage = "Access forbidden. Please contact administrator.";
+            break;
+          case 404:
+            errorMessage = "Service not found. Please try again later.";
+            break;
+          case 500:
+            errorMessage = "Server error. Please try again later.";
+            break;
+          default:
+            errorMessage = err.response.data?.message || `Error (${err.response.status})`;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
       setError(errorMessage);
       toast({
         title: "Login failed",

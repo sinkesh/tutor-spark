@@ -725,7 +725,7 @@ export default function FeedbackPage() {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Select
+                    {/* <Select
                       value={statusFilter}
                       onValueChange={setStatusFilter}
                     >
@@ -738,8 +738,8 @@ export default function FeedbackPage() {
                         <SelectItem value="in_review">In Review</SelectItem>
                         <SelectItem value="resolved">Resolved</SelectItem>
                       </SelectContent>
-                    </Select>
-                    <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    </Select> */}
+                    {/* <Select value={typeFilter} onValueChange={setTypeFilter}>
                       <SelectTrigger className="w-40">
                         <SelectValue />
                       </SelectTrigger>
@@ -755,7 +755,7 @@ export default function FeedbackPage() {
                           Hallucination
                         </SelectItem>
                       </SelectContent>
-                    </Select>
+                    </Select> */}
                   </div>
                 </div>
                 <ScrollArea className="flex-1 p-2">

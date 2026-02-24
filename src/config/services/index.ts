@@ -21,11 +21,14 @@ const addAuthToken = (config: any) => {
 // Response interceptor to handle 401 errors
 const handleUnauthorized = (error: any) => {
   if (error.response?.status === 401) {
-    // Clear auth data and redirect to login
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user");
-    window.location.href = "/login";
+    // Only redirect if not already on login page to prevent redirect loops
+    if (!window.location.pathname.includes('/login')) {
+      // Clear auth data and redirect to login
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+    }
   }
   return Promise.reject(error);
 };

@@ -28,6 +28,10 @@ export interface AIAgent {
   totalConversations: number;
   class_name?: string;
   subject?: string;
+  class?: string;
+  unique_students?: number;
+  total_conversations?: number;
+  overall_score?: number;
   file_names?: string[];
   agent_metadata?: {
     agent_name?: string;
@@ -98,6 +102,6 @@ export interface CreateStudent {
   subject_agent: [
     {
       name: string;
-    }
+    },
   ];
 }

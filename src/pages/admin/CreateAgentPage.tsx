@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -14,6 +15,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { AgentType } from "@/types";
 import { createAgents } from "@/config/services";
 import { cn } from "@/lib/utils";
@@ -38,30 +46,54 @@ const agentTypes: {
   description: string;
   icon: React.ElementType;
 }[] = [
-  {
-    value: "class",
-    label: "Class",
-    description: "Grade or classroom level agent",
-    icon: GraduationCap,
-  },
+  // {
+  //   value: "class",
+  //   label: "Class",
+  //   description: "Grade or classroom level agent",
+  //   icon: GraduationCap,
+  // },
   {
     value: "subject",
     label: "Subject",
     description: "Subject-specific teaching agent",
     icon: BookOpen,
   },
-  {
-    value: "course",
-    label: "Course",
-    description: "Individual course agent",
-    icon: Layers,
-  },
+  // {
+  //   value: "course",
+  //   label: "Course",
+  //   description: "Individual course agent",
+  //   icon: Layers,
+  // },
   {
     value: "teacher",
     label: "Teacher",
     description: "Personal teaching style agent",
     icon: User,
   },
+];
+
+const teachingToneOptions = [
+  { value: "friendly", label: "Friendly" },
+  { value: "professional", label: "Professional" },
+  { value: "encouraging", label: "Encouraging" },
+  { value: "formal", label: "Formal" },
+  { value: "casual", label: "Casual" },
+  { value: "enthusiastic", label: "Enthusiastic" },
+  { value: "patient", label: "Patient" },
+  { value: "strict", label: "Strict" },
+];
+
+const classOptions = [
+  { value: "3", label: "Class 3" },
+  { value: "4", label: "Class 4" },
+  { value: "5", label: "Class 5" },
+  { value: "6", label: "Class 6" },
+  { value: "7", label: "Class 7" },
+  { value: "8", label: "Class 8" },
+  { value: "9", label: "Class 9" },
+  { value: "10", label: "Class 10" },
+  { value: "11", label: "Class 11" },
+  { value: "12", label: "Class 12" },
 ];
 
 const steps = [
@@ -85,7 +117,7 @@ export default function CreateAgentPage() {
     type: "" as AgentType | "",
     name: "",
     description: "",
-    class: "",
+    class: "none",
     subject: "",
     educationLevel: "",
     learningObjectives: "",
@@ -98,19 +130,21 @@ export default function CreateAgentPage() {
   const fetchDetails = async (id: string) => {
     try {
       setIsLoading(true);
-      const details = await getAiAgentsDetails(id) as any;
-      console.log('Agent details:', details);
-      
+      const details = (await getAiAgentsDetails(id)) as any;
+      console.log("Agent details:", details);
+
       const fileObjects = [];
-      
+
       if (details.file_names && Array.isArray(details.file_names)) {
         details.file_names.forEach((fileName: string) => {
-          const file = new File([], fileName, { type: 'application/octet-stream' });
+          const file = new File([], fileName, {
+            type: "application/octet-stream",
+          });
           fileObjects.push(file);
         });
       }
 
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         type: details.agent_metadata?.agent_type || "",
         class: details.class || "",
@@ -124,7 +158,6 @@ export default function CreateAgentPage() {
         enableGlobalRags: details.enable_global_rags ?? true,
         documents: [...fileObjects],
       }));
-      
     } catch (err) {
       console.error("Error fetching agent details:", err);
       toast({
@@ -142,10 +175,19 @@ export default function CreateAgentPage() {
       const { agentData } = location.state;
       setIsEditMode(true);
       setCurrentStep(2);
-      
+
       fetchDetails(agentData?.subject_agent_id);
     }
   }, [location.state]);
+
+  // Auto-set type based on class field
+  useEffect(() => {
+    if (formData.class && formData.class !== "none") {
+      setFormData((prev) => ({ ...prev, type: "teacher" }));
+    } else {
+      setFormData((prev) => ({ ...prev, type: "subject" }));
+    }
+  }, [formData.class]);
 
   const handleFiles = useCallback((files: File[]) => {
     setFormData((prev) => ({
@@ -175,7 +217,9 @@ export default function CreateAgentPage() {
         return formData.type !== "";
       case 2:
         return (
-          formData.name.trim() !== "" && formData.description.trim() !== ""
+          formData.name.trim() !== "" &&
+          formData.description.trim() !== "" &&
+          formData.subject.trim() !== ""
         );
       case 3:
         return true;
@@ -194,25 +238,28 @@ export default function CreateAgentPage() {
       return;
     }
     setIsLoading(true);
-    
+
     try {
       const payload = new FormData();
       payload.append("class_", formData.class);
       payload.append("subject", formData.subject);
-      payload.append("agent_type", formData.educationLevel);
+      payload.append("agent_type", formData.type);
       payload.append("agent_name", formData.name);
       payload.append("description", formData.description);
-      payload.append("education_level", formData.educationLevel);
+      payload.append(
+        "education_level",
+        formData.educationLevel || formData.type,
+      );
       payload.append("teaching_tone", formData.teachingTone || "");
-      
+
       // const learningObjectives = formData.learningObjectives.split('\n').filter(Boolean);
       // payload.append("learning_objectives", JSON.stringify(learningObjectives));
-      
+
       // const metadata = {
       //   teaching_tone: formData.teachingTone,
       // };
       // payload.append("agent_metadata", JSON.stringify(metadata));
-      
+
       formData.documents.forEach((file) => {
         payload.append("files", file);
       });
@@ -233,14 +280,16 @@ export default function CreateAgentPage() {
           variant: "default",
         });
       }
-      
+
       // Navigate back to agents list
       navigate("/admin/agents");
     } catch (error: any) {
       console.error("Error saving agent:", error);
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to save agent. Please try again.",
+        description:
+          error.response?.data?.message ||
+          "Failed to save agent. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -291,8 +340,8 @@ export default function CreateAgentPage() {
                       currentStep > step.id
                         ? "bg-success text-success-foreground"
                         : currentStep === step.id
-                        ? "bg-primary text-primary-foreground shadow-glow"
-                        : "bg-muted text-muted-foreground"
+                          ? "bg-primary text-primary-foreground shadow-glow"
+                          : "bg-blue-100 text-muted-foreground",
                     )}
                   >
                     {currentStep > step.id ? (
@@ -306,7 +355,7 @@ export default function CreateAgentPage() {
                       "text-xs mt-2 font-medium",
                       currentStep >= step.id
                         ? "text-foreground"
-                        : "text-muted-foreground"
+                        : "text-muted-foreground",
                     )}
                   >
                     {step.title}
@@ -316,9 +365,8 @@ export default function CreateAgentPage() {
                   <div
                     className={cn(
                       "w-full h-0.5 mb-6 max-w-32",
-                      currentStep > step.id ? "bg-success" : "bg-muted"
+                      currentStep > step.id ? "bg-success" : "bg-blue-200",
                     )}
-                    // style={{ width: "60px" }}
                   />
                 )}
               </div>
@@ -348,7 +396,7 @@ export default function CreateAgentPage() {
                       "p-6 rounded-xl border-2 text-left transition-all duration-200",
                       formData.type === type.value
                         ? "border-primary bg-primary/5 shadow-glow"
-                        : "border-border hover:border-primary/50 hover:bg-muted/50"
+                        : "border-border hover:border-primary/50 hover:bg-muted/50",
                     )}
                   >
                     <div
@@ -356,7 +404,7 @@ export default function CreateAgentPage() {
                         "w-12 h-12 rounded-lg flex items-center justify-center mb-4",
                         formData.type === type.value
                           ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
+                          : "bg-muted",
                       )}
                     >
                       <type.icon className="w-6 h-6" />
@@ -386,17 +434,7 @@ export default function CreateAgentPage() {
                     }
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="class">Class</Label>
-                  <Input
-                    id="class"
-                    placeholder="10th"
-                    value={formData.class}
-                    onChange={(e) =>
-                      setFormData({ ...formData, class: e.target.value })
-                    }
-                  />
-                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="subject">Subject</Label>
                   <Input
@@ -408,6 +446,7 @@ export default function CreateAgentPage() {
                     }
                   />
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
                   <Textarea
@@ -420,53 +459,62 @@ export default function CreateAgentPage() {
                     rows={4}
                   />
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
+                  {formData.type === "subject" ? null : (
+                    <div className="space-y-2">
+                      <Label htmlFor="class">Class (Optional)</Label>
+                      <Select
+                        value={formData.class}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, class: value })
+                        }
+                        disabled={formData.type === "subject"}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              formData.type === "subject"
+                                ? "Not applicable for subject agents"
+                                : "Select class"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">
+                            No class (Subject agent)
+                          </SelectItem>
+                          {classOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
-                    <Label htmlFor="educationLevel">Agent Type</Label>
-                    <Input
-                      id="educationLevel"
-                      placeholder="e.g., High School"
-                      value={formData.educationLevel}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          educationLevel: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="teachingTone">
-                      Teaching Tone (Optional)
-                    </Label>
-                    <Input
-                      id="teachingTone"
-                      placeholder="e.g., Friendly, Professional"
+                    <Label htmlFor="teachingTone">Teaching Tone</Label>
+                    <Select
                       value={formData.teachingTone}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          teachingTone: e.target.value,
-                        })
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, teachingTone: value })
                       }
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select teaching tone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teachingToneOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-                {/* <div className="space-y-2">
-                  <Label htmlFor="objectives">Learning Objectives</Label>
-                  <Textarea
-                    id="objectives"
-                    placeholder="List the key learning objectives..."
-                    value={formData.learningObjectives}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        learningObjectives: e.target.value,
-                      })
-                    }
-                    rows={3}
-                  />
-                </div> */}
               </div>
             )}
 
@@ -495,7 +543,7 @@ export default function CreateAgentPage() {
                         file.type === "application/msword" ||
                         file.type ===
                           "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-                        file.type === "text/plain"
+                        file.type === "text/plain",
                     );
                     if (files.length > 0) {
                       handleFiles(files);
@@ -539,60 +587,61 @@ export default function CreateAgentPage() {
                   <div className="space-y-2">
                     <Label>Uploaded Files</Label>
                     <div className="space-y-2">
-                      {formData.documents && formData.documents.map((file, index) => { 
-                        // Check if it's an existing file (has no size) or a newly uploaded file
-                        const isExistingFile = file.size === 0;
-                        
-                        return (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between p-3 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
-                          >
-                            <div className="flex items-center gap-3">
-                              <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                              <div className="text-left">
-                                <p className="text-sm font-medium text-ellipsis overflow-hidden max-w-xs">
-                                  {file.name}
-                                  {isExistingFile && (
-                                    <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                                      Existing
-                                    </span>
-                                  )}
-                                </p>
-                                {!isExistingFile && file.size > 0 && (
-                                  <p className="text-xs text-muted-foreground">
-                                    {formatFileSize(file.size)}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeFile(index);
-                            }}
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
+                      {formData.documents &&
+                        formData.documents.map((file, index) => {
+                          // Check if it's an existing file (has no size) or a newly uploaded file
+                          const isExistingFile = file.size === 0;
+
+                          return (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-3 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
                             >
-                              <line x1="18" y1="6" x2="6" y2="18"></line>
-                              <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                          </Button>
-                        </div>
-                      )})
-                      }
+                              <div className="flex items-center gap-3">
+                                <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                                <div className="text-left">
+                                  <p className="text-sm font-medium text-ellipsis overflow-hidden max-w-xs">
+                                    {file.name}
+                                    {isExistingFile && (
+                                      <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                        Existing
+                                      </span>
+                                    )}
+                                  </p>
+                                  {!isExistingFile && file.size > 0 && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {formatFileSize(file.size)}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeFile(index);
+                                }}
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                              </Button>
+                            </div>
+                          );
+                        })}
                     </div>
                   </div>
                 )}
@@ -695,18 +744,24 @@ export default function CreateAgentPage() {
                     </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">
-                      Education Level
-                    </Label>
+                    <Label className="text-muted-foreground">Subject</Label>
                     <p className="font-medium text-foreground">
-                      {formData.educationLevel || "Not specified"}
+                      {formData.subject}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Class</Label>
+                    <p className="font-medium text-foreground">
+                      {formData.class && formData.class !== "none"
+                        ? formData.class
+                        : "Not specified"}
                     </p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">
                       Teaching Tone
                     </Label>
-                    <p className="font-medium text-foreground">
+                    <p className="font-medium text-foreground capitalize">
                       {formData.teachingTone || "Default"}
                     </p>
                   </div>
@@ -767,9 +822,9 @@ export default function CreateAgentPage() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                {currentStep === 5 ? "Creating..." : "Loading..."}
+                {currentStep === 4 ? "Creating..." : "Loading..."}
               </div>
-            ) : currentStep === 5 ? (
+            ) : currentStep === 4 ? (
               "Create Agent"
             ) : (
               <>

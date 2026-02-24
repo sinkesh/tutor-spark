@@ -237,7 +237,6 @@ export default function ChatPage() {
     }
   };
 
-  // Helper function to render feedback buttons
   const renderFeedbackButtons = (message: ChatMessage) => {
     if (message.role !== "assistant") return null;
 
@@ -288,7 +287,6 @@ export default function ChatPage() {
 
   /* -------------------- Send Message -------------------- */
   const handleSend = async (overrideValue?: string) => {
-    // Use the overrideValue (the A,B,C,D label) if provided, otherwise use inputValue
     const valueToSend = overrideValue || inputValue;
 
     if (!valueToSend.trim() || isLoading) return;
@@ -297,12 +295,12 @@ export default function ChatPage() {
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: valueToSend.trim(), // This will now be "A", "B", etc.
+      content: valueToSend.trim(),
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInputValue(""); // Clear input
+    setInputValue("");
     setIsLoading(true);
 
     try {
@@ -310,7 +308,7 @@ export default function ChatPage() {
         student_id: user.id,
         subject,
         class_name: user.class,
-        query: userMessage.content, // Sends "A", "B", "C", or "D"
+        query: userMessage.content,
       };
 
       const res = await studentQueryChat(payload);
