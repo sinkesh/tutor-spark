@@ -251,7 +251,7 @@ export default function LoginPage() {
                 </Button>
               </form>
 
-              <div className="mt-6 pt-6 border-t border-border">
+              <div className="mt-6 pt-6 border-t border-border hidden">
                 <p className="text-sm text-muted-foreground text-center mb-4">
                   Demo credentials:
                 </p>
