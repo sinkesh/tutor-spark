@@ -91,24 +91,24 @@ export function ReviewDetailPanel({
       icon: Edit2,
       description: "Modify agent system prompt",
     },
-    {
-      type: "rag_update",
-      label: "Update RAG",
-      icon: FileText,
-      description: "Re-index or add documents",
-    },
+    // {
+    //   type: "rag_update",
+    //   label: "Update RAG",
+    //   icon: FileText,
+    //   description: "Re-index or add documents",
+    // },
     {
       type: "knowledge_add",
-      label: "Add Knowledge",
+      label: "Add/Update Knowledge",
       icon: Upload,
       description: "Upload corrective content",
     },
-    {
-      type: "config_change",
-      label: "Config Change",
-      icon: Zap,
-      description: "Adjust model parameters",
-    },
+    // {
+    //   type: "config_change",
+    //   label: "Config Change",
+    //   icon: Zap,
+    //   description: "Adjust model parameters",
+    // },
   ];
 
   const handleResolve = () => {
