@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getAgents } from "@/config/services";
+import { getAgents, getRecentActivity } from "@/config/services";
 import { toast } from "sonner";
 import AgentCardSkeleton from "@/components/loader/AgentCardSkeleton";
 
@@ -29,25 +29,27 @@ const kpiData: KPIData = {
   avgAccuracyScore: 94.2,
 };
 
-const recentActivity = [
-  {
-    action: "Agent updated",
-    target: "Advanced Mathematics",
-    time: "5 mins ago",
-  },
-  { action: "New student joined", target: "Physics 101", time: "12 mins ago" },
-  {
-    action: "Feedback reviewed",
-    target: "English Literature",
-    time: "1 hour ago",
-  },
-  { action: "Agent created", target: "Chemistry Basics", time: "3 hours ago" },
-];
+// const recentActivity = [
+//   {
+//     action: "Agent updated",
+//     target: "Advanced Mathematics",
+//     time: "5 mins ago",
+//   },
+//   { action: "New student joined", target: "Physics 101", time: "12 mins ago" },
+//   {
+//     action: "Feedback reviewed",
+//     target: "English Literature",
+//     time: "1 hour ago",
+//   },
+//   { action: "Agent created", target: "Chemistry Basics", time: "3 hours ago" },
+// ];
 
 export default function AdminDashboard() {
   const [agentsData, setAgentsData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [avgAccuracyScore, setAvgAccuracyScore] = useState("");
+  const [recentActData, setRecentActData] = useState<any>([]);
+  const [isActivityLoading, setIsActivityLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -88,6 +90,39 @@ export default function AdminDashboard() {
     getAllAgents();
   }, []);
 
+  const fetchRecentActivity = async() => {
+    try {
+      setIsActivityLoading(true);
+      const response = await getRecentActivity();
+      
+      // Sort by time (most recent first) and take only 5
+      const sortedActivities = Array.isArray(response) 
+        ? response
+            .sort((a, b) => {
+              // Try to sort by timestamp if available, otherwise by time_ago
+              if (a.timestamp && b.timestamp) {
+                return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+              }
+              // Fallback: if no timestamp, maintain original order (assume API returns sorted)
+              return 0;
+            })
+            .slice(0, 5)
+        : [];
+      
+      setRecentActData(sortedActivities);
+    } catch (err) {
+      console.error("Error fetching recent activity:", err);
+      toast.error("Failed to fetch recent activity");
+      setRecentActData([]); // Set empty array on error
+    } finally {
+      setIsActivityLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchRecentActivity();
+  }, []);
+
   return (
     <AdminLayout>
       <div className="p-8">
@@ -108,7 +143,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
           <KPICard
             title="Total AI Agents"
             value={kpiData.totalAgents}
@@ -143,9 +178,9 @@ export default function AdminDashboard() {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Top Performing Agents */}
-          <div className="lg:col-span-2">
+          <div className="xl:col-span-2">
             <Card variant="default">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Top Performing Agents</CardTitle>
@@ -199,28 +234,51 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentActivity.map((activity, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start gap-3 animate-fade-in"
-                      style={{ animationDelay: `${index * 100}ms` }}
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground">
-                          {activity.action}
-                        </p>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {activity.target}
-                        </p>
-                      </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {activity.time}
-                      </span>
+                  {isActivityLoading ? (
+                    <div className="space-y-4">
+                      {Array.from({ length: 5 }).map((_, index) => (
+                        <div key={index} className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-secondary animate-pulse" />
+                          <div className="flex-1 space-y-2">
+                            <div className="h-4 bg-muted rounded w-3/4 animate-pulse" />
+                            <div className="h-3 bg-muted rounded w-1/2 animate-pulse" />
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : recentActData && recentActData.length > 0 ? (
+                    recentActData.map((activity, index) => (
+                      <div
+                        key={index}
+                        className="flex items-start gap-3 animate-fade-in"
+                        style={{ animationDelay: `${index * 100}ms` }}
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                          <Clock className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground capitalize">
+                            {activity?.activity_type === "agent_updated" ? "Agent Updated" : activity?.activity_type === "student_created" ? "Student Created" : activity?.activity_type === "feedback_reviewed" ? "Feedback Reviewed" : activity?.activity_type === "agent_created" ? "Agent Created" : activity?.activity_type === "student_updated" ? "Student Updated" : activity?.activity_type === "student_deleted" ? "Student Deleted" : activity?.activity_type === "agent_deleted" ? "Agent Deleted" : ""}
+                          </p>
+                          <p className="text-sm text-muted-foreground truncate" title={activity?.description}>
+                            {activity?.description}
+                          </p>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {activity?.time_ago}
+                        </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                        <Clock className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        No recent activity found
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

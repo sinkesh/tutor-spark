@@ -200,3 +200,8 @@ export const getSingleAgentPerformance = async (id: string): Promise<any> => {
   );
   return response.data;
 };
+
+export const getRecentActivity = async (): Promise<any> => {
+  const response = await apiDataJson.get(`${API_URL.RECENT_ACTIVITY}`);
+  return response.data;
+};

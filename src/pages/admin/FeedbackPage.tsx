@@ -49,6 +49,7 @@ import {
 } from "@/config/services";
 import { AgentPerformanceCardSkeleton } from "@/components/loader/AgentPerformanceCardSkeleton";
 import { useNavigate } from "react-router-dom";
+import PaginationComponent from "@/components/common/PaginationComponent";
 
 // Mock data
 const mockReviewItems: ReviewItem[] = [
@@ -448,6 +449,9 @@ export default function FeedbackPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [err, setError] = useState("");
   const [agentPerformance, setAgentPerformance] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 3;
+  const totalPages = Math.ceil(agentPerformance?.length / itemsPerPage);
 
   const navigate = useNavigate();
 
@@ -459,7 +463,13 @@ export default function FeedbackPage() {
       const res = await getAllAgentPerformance();
 
       if (res?.success) {
-        setAgentPerformance(res.agents || []);
+        const sortedAgents = (res?.agents || []).sort((a: any, b: any) => {
+          const scoreA = a?.metrics?.overall_score ?? 0;
+          const scoreB = b?.metrics?.overall_score ?? 0;
+          return scoreB - scoreA;
+        });
+
+        setAgentPerformance(sortedAgents);
         toast.success("Agent performance data loaded successfully");
       } else {
         throw new Error(res?.message || "Failed to fetch data");
@@ -486,21 +496,34 @@ export default function FeedbackPage() {
       if (res?.success && res?.performance) {
         const performance = res.performance;
 
-        const overallScore = performance.metrics.overall_score;
-        const hallucinationRisk = performance.metrics.hallucination_risk;
+        // Safe access with fallbacks
+        const overallScore = performance?.metrics?.overall_score ?? 0;
+        const hallucinationRisk = performance?.metrics?.hallucination_risk ?? 0;
+        const agentId = performance?.subject_agent_id ?? "";
+        const agentName =
+          performance?.agent_metadata?.agent_name ?? "Unknown Agent";
+        const lastUpdated = performance?.last_updated;
+        const criticalConfidence =
+          performance?.metrics?.critical_confidence ?? 0;
+        const ragRelevance = performance?.metrics?.rag_relevance ?? 0;
+        const answerCompleteness =
+          performance?.metrics?.answer_completeness ?? 0;
+        const performancePeriod = performance?.performance_period ?? "unknown";
+        const recommend = performance?.recommendations ?? [];
 
         const transformedItem: ReviewItem = {
           // REQUIRED FIELDS
-          id: performance.agent_id,
-          responseId: performance.agent_id,
-          agentId: performance.agent_id,
-          agentName: performance.agent_metadata.agent_name,
+          id: agentId,
+          responseId: agentId,
+          agentId: agentId,
+          agentName: agentName,
+          subject_agent_id: agentId,
 
           agentVersion: "1.0",
-          promptVersion: performance.performance_period,
+          promptVersion: performancePeriod,
 
-          createdAt: performance.last_updated,
-          updatedAt: performance.last_updated,
+          createdAt: lastUpdated ? new Date(lastUpdated) : new Date(),
+          updatedAt: lastUpdated ? new Date(lastUpdated) : new Date(),
 
           status: "pending", // must match union type in ReviewItem
 
@@ -520,52 +543,50 @@ export default function FeedbackPage() {
           },
 
           // CONTENT
-          studentQuery: `Performance report for ${performance.agent_metadata.agent_name}`,
-
-          aiResponse:
-            performance.recommendations?.join(" ") ||
-            "No recommendations available",
+          studentQuery: `Performance report for ${agentName}`,
+          aiResponse: recommend?.join(" ") || "No recommendations available",
 
           conversationContext: [],
-
           sourcesUsed: [],
 
+          // FEEDBACK EVENTS
           feedbackEvents: [
             {
-              id: `feedback-${performance.agent_id}`,
-              responseId: performance.agent_id,
-              agentId: performance.agent_id,
+              id: `feedback-${agentId}`,
+              responseId: agentId,
+              agentId: agentId,
               studentId: "unknown",
               sessionId: "unknown",
               contextHash: "unknown",
-              type: performance.trend_analysis.trend as any,
-              source: "implicit",
-              weight: overallScore / 100,
+              type: "thumbs_up",
+              source: "automated",
+              weight: 1.0,
               weightFactors: {
                 confidenceMultiplier: 1.0,
                 frequencyMultiplier: 1.0,
                 recencyMultiplier: 1.0,
                 userReliabilityScore: 0.9,
               },
-              createdAt: performance.last_updated,
+              createdAt: lastUpdated ? new Date(lastUpdated) : new Date(),
             },
           ],
 
+          // QUALITY SCORE
           qualityScore: {
-            id: `quality-${performance.agent_id}`,
-            responseId: performance.agent_id,
+            id: `quality-${agentId}`,
+            responseId: agentId,
             overallScore: overallScore / 100,
-            modelCertainty: performance.metrics.critical_confidence / 100,
-            ragRelevance: performance.metrics.rag_relevance / 100,
-            answerCompleteness: performance.metrics.answer_completeness / 100,
-            hallucinationRisk: performance.metrics.hallucination_risk / 100,
+            modelCertainty: criticalConfidence / 100,
+            ragRelevance: ragRelevance / 100,
+            answerCompleteness: answerCompleteness / 100,
+            hallucinationRisk: hallucinationRisk / 100,
             confidenceBucket:
               overallScore >= 80
                 ? "high"
-                : overallScore >= 50
+                : overallScore >= 65
                   ? "medium"
                   : "low",
-            calculatedAt: performance.last_updated,
+            calculatedAt: lastUpdated ? new Date(lastUpdated) : new Date(),
             version: "1.0",
           },
         };
@@ -651,7 +672,7 @@ export default function FeedbackPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-4 opacity-60 pointer-events-none">
             <FeedbackStatsCard
               title="Pending Reviews"
               value={pendingCount}
@@ -767,7 +788,7 @@ export default function FeedbackPage() {
                         ))}
                       </div>
                     ) : agentPerformance && agentPerformance.length > 0 ? (
-                      agentPerformance.map((item) => (
+                      agentPerformance?.map((item) => (
                         <AgentPerformanceCard
                           key={item.subject_agent_id}
                           item={item}
@@ -840,20 +861,65 @@ export default function FeedbackPage() {
 
           <TabsContent value="health" className="flex-1 overflow-auto mt-0">
             <div className="grid grid-cols-3 gap-4 mb-6">
-              {mockAgentMetrics.map((metrics, idx) => (
-                <AgentHealthCard
-                  key={metrics.agentId}
-                  metrics={metrics}
-                  agentName={
-                    [
-                      "Mathematics Tutor",
-                      "Physics Teacher",
-                      "Literature Guide",
-                    ][idx]
-                  }
-                />
-              ))}
+              {agentPerformance && agentPerformance.length > 0 ? (
+                agentPerformance
+                  .slice(
+                    (currentPage - 1) * itemsPerPage,
+                    currentPage * itemsPerPage,
+                  )
+                  .map((agent) => {
+                    const metrics: AgentMetrics = {
+                      agentId: agent.subject_agent_id,
+                      timestamp: new Date(agent.last_updated),
+                      accuracyScore: agent.metrics?.overall_score ?? 0,
+                      accuracyTrend: "stable",
+                      accuracyDelta: 0,
+                      avgConfidence:
+                        (agent.metrics?.critical_confidence ?? 0) / 100,
+                      confidenceTrend: "stable",
+                      confidenceDelta: 0,
+                      positiveRate: agent.metrics?.satisfaction_rate ?? 0,
+                      negativeRate: 0,
+                      feedbackSentiment: 0.5,
+                      responseConsistency: 0.8,
+                      hallucinationRate:
+                        (agent.metrics?.hallucination_risk ?? 0) / 100,
+                      healthScore: agent.metrics?.overall_score ?? 0,
+                      healthTrend: "stable",
+                    };
+
+                    return (
+                      <AgentHealthCard
+                        key={agent.subject_agent_id}
+                        metrics={metrics}
+                        agentName={
+                          agent.agent_metadata?.agent_name || "Unknown Agent"
+                        }
+                      />
+                    );
+                  })
+              ) : (
+                <div className="col-span-3 text-center py-12">
+                  <div className="text-muted-foreground">
+                    <Brain className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p>No agent performance data available</p>
+                  </div>
+                </div>
+              )}
             </div>
+            {/* Pagination */}
+            {totalPages > 1 && !isLoading && (
+              <div className="my-6">
+                <PaginationComponent
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={agentPerformance.length}
+                  onPageChange={setCurrentPage}
+                  isLoading={isLoading}
+                />
+              </div>
+            )}
             <div className="opacity-60 pointer-events-none">
               <FlaggingRulesPanel
                 rules={rules}

@@ -329,21 +329,21 @@ export function ReviewDetailPanel({
           </Tabs>
 
           {/* Correction Actions */}
-          <Card>
+          <Card className="w-full">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">
                 Correction Actions
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
+            <CardContent className="w-full space-y-3">
+              <div className="w-full grid xl:grid-cols-2 grid-cols-1 gap-2">
                 {correctionActions.map((action) => (
                   <Button
                     key={action.type}
                     variant={
                       selectedAction === action.type ? "default" : "outline"
                     }
-                    className="h-auto py-3 px-3 flex flex-col items-start gap-1"
+                    className="w-full h-auto py-3 px-3 flex flex-col items-start gap-1 text-left"
                     onClick={() => setSelectedAction(action.type)}
                   >
                     <div className="flex items-center gap-2">
@@ -352,7 +352,8 @@ export function ReviewDetailPanel({
                         {action.label}
                       </span>
                     </div>
-                    <span className="text-xs text-muted-foreground font-normal text-left">
+
+                    <span className="text-xs text-muted-foreground font-normal whitespace-pre-line break-words w-full">
                       {action.description}
                     </span>
                   </Button>

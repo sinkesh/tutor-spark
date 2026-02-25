@@ -86,10 +86,10 @@ export default function SettingsPage() {
               <Database className="w-4 h-4" />
               Data
             </TabsTrigger>
-            <TabsTrigger value="branding" className="flex items-center gap-2">
+            {/* <TabsTrigger value="branding" className="flex items-center gap-2">
               <Palette className="w-4 h-4" />
               Branding
-            </TabsTrigger>
+            </TabsTrigger> */}
           </TabsList>
 
           {/* AI Behavior Tab */}

@@ -147,7 +147,7 @@ export default function AgentCard({
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-4 h-11">
           {agent.description}
         </p>
         <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">

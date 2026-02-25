@@ -20,14 +20,31 @@ interface AgentPerformanceItem {
 
   agent_metadata: {
     agent_name: string;
+    agent_type: string;
+    description: string;
+    teaching_tone: string;
   };
 
-  performance: {
+  metrics: {
     overall_score: number;
-    performance_level: string;
-    total_conversations: number;
-    health_status: string;
+    critical_confidence: number;
+    rag_relevance: number;
+    answer_completeness: number;
+    hallucination_risk: number;
+    pedagogical_value: number;
+    satisfaction_rate: number;
+    feedback_counts: {
+      like: number;
+      dislike: number;
+      neutral: number;
+    };
+    confusion_distribution: object;
   };
+
+  performance_level: string;
+  total_conversations: number;
+  unique_students: number;
+  last_updated: string;
 }
 
 interface Props {
@@ -37,8 +54,12 @@ interface Props {
 }
 
 export function AgentPerformanceCard({ item, isSelected, onSelect }: Props) {
-  const performance = item.performance;
-  const score = performance.overall_score;
+  // Safe access with fallbacks
+  const score = item.metrics?.overall_score ?? 0;
+  const performanceLevel = item.performance_level ?? "Unknown";
+  const totalConversations = item.total_conversations ?? 0;
+  const healthStatus = item.performance_level ?? "Unknown";
+  const agentName = item.agent_metadata?.agent_name ?? "Unknown Agent";
 
   let color = "text-blue-500 bg-blue-500/10";
   let borderColor = "border-l-blue-500";
@@ -81,11 +102,11 @@ export function AgentPerformanceCard({ item, isSelected, onSelect }: Props) {
               variant="outline"
               className={cn("text-xs", color.split(" ")[0])}
             >
-              {performance.health_status}
+              {performanceLevel}
             </Badge>
 
             <Badge variant="secondary" className="text-xs">
-              {performance.performance_level}
+              {healthStatus}
             </Badge>
           </div>
 
@@ -100,7 +121,7 @@ export function AgentPerformanceCard({ item, isSelected, onSelect }: Props) {
 
             <span>Collection: {item.collection}</span>
 
-            <span>Conversations: {performance.total_conversations}</span>
+            <span>Conversations: {totalConversations}</span>
           </div>
         </div>
 
