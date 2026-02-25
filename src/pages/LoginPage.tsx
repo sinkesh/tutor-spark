@@ -43,7 +43,13 @@ export default function LoginPage() {
       const { access_token, refresh_token, user: userData } = response.data;
 
       // Validate response data structure
-      if (!userData || !userData.user_id || !userData.email || !userData.name || !userData.role) {
+      if (
+        !userData ||
+        !userData.user_id ||
+        !userData.email ||
+        !userData.name ||
+        !userData.role
+      ) {
         throw new Error("Invalid response data from server");
       }
 
@@ -61,14 +67,18 @@ export default function LoginPage() {
       localStorage.setItem("access_token", access_token);
       localStorage.setItem("refresh_token", refresh_token);
       localStorage.setItem("user", JSON.stringify(user));
-      
+
       // Update auth context
       await authLogin(user);
 
       // Navigate based on role
-      const navigateTo = user.role === "admin" ? "/admin" : 
-                        user.role === "student" ? "/student" : "/";
-      
+      const navigateTo =
+        user.role === "admin"
+          ? "/admin"
+          : user.role === "student"
+            ? "/student"
+            : "/";
+
       navigate(navigateTo);
 
       toast({
@@ -77,9 +87,9 @@ export default function LoginPage() {
       });
     } catch (err: any) {
       console.error("Login error:", err);
-      
+
       let errorMessage = "Invalid email or password";
-      
+
       // Handle different error scenarios
       if (err.code === "ECONNABORTED" || err.message.includes("timeout")) {
         errorMessage = "Connection timeout. Please try again.";
@@ -88,10 +98,12 @@ export default function LoginPage() {
       } else if (err.response) {
         switch (err.response.status) {
           case 400:
-            errorMessage = err.response.data?.message || "Invalid request format";
+            errorMessage =
+              err.response.data?.message || "Invalid request format";
             break;
           case 401:
-            errorMessage = err.response.data?.message || "Invalid email or password";
+            errorMessage =
+              err.response.data?.message || "Invalid email or password";
             break;
           case 403:
             errorMessage = "Access forbidden. Please contact administrator.";
@@ -103,12 +115,13 @@ export default function LoginPage() {
             errorMessage = "Server error. Please try again later.";
             break;
           default:
-            errorMessage = err.response.data?.message || `Error (${err.response.status})`;
+            errorMessage =
+              err.response.data?.message || `Error (${err.response.status})`;
         }
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
+
       setError(errorMessage);
       toast({
         title: "Login failed",
@@ -155,7 +168,7 @@ export default function LoginPage() {
 
           <div className="flex items-center gap-2 text-primary-foreground/60">
             <Sparkles className="w-5 h-5" />
-            <span>Powered by advanced AI technology</span>
+            <span>Powered by tecorb AI</span>
           </div>
         </div>
       </div>
