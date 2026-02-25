@@ -17,32 +17,9 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getAgents, getRecentActivity } from "@/config/services";
+import { getAgents, getDashboardCounts, getRecentActivity } from "@/config/services";
 import { toast } from "sonner";
 import AgentCardSkeleton from "@/components/loader/AgentCardSkeleton";
-
-// Mock data
-const kpiData: KPIData = {
-  totalAgents: 24,
-  activeStudents: 1847,
-  totalConversations: 45230,
-  avgAccuracyScore: 94.2,
-};
-
-// const recentActivity = [
-//   {
-//     action: "Agent updated",
-//     target: "Advanced Mathematics",
-//     time: "5 mins ago",
-//   },
-//   { action: "New student joined", target: "Physics 101", time: "12 mins ago" },
-//   {
-//     action: "Feedback reviewed",
-//     target: "English Literature",
-//     time: "1 hour ago",
-//   },
-//   { action: "Agent created", target: "Chemistry Basics", time: "3 hours ago" },
-// ];
 
 export default function AdminDashboard() {
   const [agentsData, setAgentsData] = useState<any[]>([]);
@@ -50,6 +27,7 @@ export default function AdminDashboard() {
   const [avgAccuracyScore, setAvgAccuracyScore] = useState("");
   const [recentActData, setRecentActData] = useState<any>([]);
   const [isActivityLoading, setIsActivityLoading] = useState(false);
+  const [dashboardCounts, setDashboardCounts] = useState<any>([]);
 
   const navigate = useNavigate();
 
@@ -123,6 +101,23 @@ export default function AdminDashboard() {
     fetchRecentActivity();
   }, []);
 
+  const fetchDashboardCounts = async() => {
+    try {
+      setIsLoading(true);
+      const response = await getDashboardCounts();
+      setDashboardCounts(response);
+    } catch (err) {
+      console.error("Error fetching dashboard counts:", err);
+      toast.error("Failed to fetch dashboard counts");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchDashboardCounts();
+  }, []);
+
   return (
     <AdminLayout>
       <div className="p-8">
@@ -146,27 +141,30 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
           <KPICard
             title="Total AI Agents"
-            value={kpiData.totalAgents}
+            value={dashboardCounts?.agents?.total}
             change="+3 this week"
             changeType="positive"
             icon={Bot}
             iconColor="bg-primary/10 text-primary"
+            isLoading={isLoading}
           />
           <KPICard
             title="Active Students"
-            value={kpiData.activeStudents.toLocaleString()}
+            value={dashboardCounts?.students?.total}
             change="+127 this week"
             changeType="positive"
             icon={Users}
             iconColor="bg-accent/10 text-accent"
+            isLoading={isLoading}
           />
           <KPICard
             title="Total Conversations"
-            value={kpiData.totalConversations.toLocaleString()}
+            value={dashboardCounts?.agents?.total_conversations}
             change="+2,340 today"
             changeType="positive"
             icon={MessageCircle}
             iconColor="bg-success/10 text-success"
+            isLoading={isLoading}
           />
           <KPICard
             title="Avg Accuracy Score"
@@ -175,6 +173,7 @@ export default function AdminDashboard() {
             changeType="positive"
             icon={Target}
             iconColor="bg-warning/10 text-warning"
+            isLoading={isLoading}
           />
         </div>
 
@@ -199,8 +198,8 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 ) : agentsData && agentsData.length > 0 ? (
-                  agentsData.map((agent) => (
-                    <AgentCard key={agent.id} agent={agent} />
+                  agentsData.map((agent, index) => (
+                    <AgentCard key={index} agent={agent} />
                   ))
                 ) : (
                   <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed rounded-xl bg-muted/30">

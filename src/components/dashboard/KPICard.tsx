@@ -9,6 +9,7 @@ interface KPICardProps {
   changeType?: 'positive' | 'negative' | 'neutral';
   icon: LucideIcon;
   iconColor?: string;
+  isLoading?: boolean;
 }
 
 export default function KPICard({ 
@@ -17,7 +18,8 @@ export default function KPICard({
   change, 
   changeType = 'neutral', 
   icon: Icon,
-  iconColor = 'bg-primary/10 text-primary'
+  iconColor = 'bg-primary/10 text-primary',
+  isLoading = false
 }: KPICardProps) {
   return (
     <Card variant="elevated" className="animate-fade-in">
@@ -25,7 +27,7 @@ export default function KPICard({
         <div className="flex items-start justify-between">
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold text-foreground">{value}</p>
+           {isLoading ? <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div> : <p className="text-3xl font-bold text-foreground">{value}</p> }
             {change && (
               <p className={cn(
                 "text-sm font-medium",

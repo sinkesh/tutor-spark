@@ -205,3 +205,8 @@ export const getRecentActivity = async (): Promise<any> => {
   const response = await apiDataJson.get(`${API_URL.RECENT_ACTIVITY}`);
   return response.data;
 };
+
+export const getDashboardCounts = async (): Promise<any> => {
+  const response = await apiDataJson.get(`${API_URL.DASHBOARD_COUNTS}`);
+  return response.data;
+};

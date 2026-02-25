@@ -141,8 +141,8 @@ export default function GlobalKnowledgePage() {
 
         <Tabs defaultValue="prompts" className="space-y-6">
           <TabsList>
-            <TabsTrigger value="prompts">Global Prompts</TabsTrigger>
-            <TabsTrigger value="rags">Global RAGs</TabsTrigger>
+            <TabsTrigger value="prompts">Prompts</TabsTrigger>
+            <TabsTrigger value="rags">RAGs</TabsTrigger>
           </TabsList>
 
           {/* Global Prompts Tab */}

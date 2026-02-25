@@ -19,4 +19,5 @@ export const API_URL = {
   AGENT_PERFORMANCE: "/performance/all-agents-performance",
   SINGAL_AGENT_PERFORMANCE: "/performance/agent-performance",
   RECENT_ACTIVITY: "/activity/recent",
+  DASHBOARD_COUNTS: "/admin/dashboard-counts",
 };
