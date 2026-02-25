@@ -31,6 +31,12 @@ export default function AdminDashboard() {
 
   const navigate = useNavigate();
 
+  useEffect(() => {
+    getAllAgents();
+    fetchRecentActivity();
+    fetchDashboardCounts();
+  }, []);
+
   const getAllAgents = async () => {
     try {
       setIsLoading(true);
@@ -64,24 +70,17 @@ export default function AdminDashboard() {
     }
   };
 
-  useEffect(() => {
-    getAllAgents();
-  }, []);
-
   const fetchRecentActivity = async() => {
     try {
       setIsActivityLoading(true);
       const response = await getRecentActivity();
       
-      // Sort by time (most recent first) and take only 5
       const sortedActivities = Array.isArray(response) 
         ? response
             .sort((a, b) => {
-              // Try to sort by timestamp if available, otherwise by time_ago
               if (a.timestamp && b.timestamp) {
                 return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
               }
-              // Fallback: if no timestamp, maintain original order (assume API returns sorted)
               return 0;
             })
             .slice(0, 5)
@@ -91,15 +90,11 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error("Error fetching recent activity:", err);
       toast.error("Failed to fetch recent activity");
-      setRecentActData([]); // Set empty array on error
+      setRecentActData([]);
     } finally {
       setIsActivityLoading(false);
     }
   }
-
-  useEffect(() => {
-    fetchRecentActivity();
-  }, []);
 
   const fetchDashboardCounts = async() => {
     try {
@@ -113,10 +108,6 @@ export default function AdminDashboard() {
       setIsLoading(false);
     }
   }
-
-  useEffect(() => {
-    fetchDashboardCounts();
-  }, []);
 
   return (
     <AdminLayout>

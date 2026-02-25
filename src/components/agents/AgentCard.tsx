@@ -108,6 +108,7 @@ export default function AgentCard({
               </div>
             </div>
           </div>
+          {onView === undefined && onEdit === undefined && onDelete === undefined ? null : (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -122,6 +123,7 @@ export default function AgentCard({
               <DropdownMenuItem
                 onClick={() => onView?.(agent)}
                 className="cursor-pointer"
+                disabled={onView === undefined}
               >
                 <Eye className="w-4 h-4 mr-2" />
                 View Details
@@ -144,6 +146,7 @@ export default function AgentCard({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          )}
         </div>
       </CardHeader>
       <CardContent>

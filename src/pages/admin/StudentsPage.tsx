@@ -20,7 +20,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -61,7 +60,7 @@ import {
   editStudentDetails,
   deleteStudentDetails,
   changePassword,
-  getStudentAgent,
+  getDashboardCounts,
 } from "@/config/services";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -94,73 +93,18 @@ interface Student {
   joinedAt?: string;
 }
 
-// const mockStudents: Student[] = [
-//   {
-//     student_id: "student_001",
-//     name: "Alice Johnson",
-//     email: "alice@school.edu",
-//     class: "10th",
-//     subject_agent: [{ name: "Math" }, { name: "Physics" }],
-//     status: "active",
-//     lastActive: "2 hours ago",
-//     totalConversations: 156,
-//     joinedAt: "2024-01-05",
-//   },
-//   {
-//     student_id: "student_1002",
-//     name: "Bob Smith",
-//     email: "bob@school.edu",
-//     class: "11th",
-//     subject_agent: [{ name: "English" }, { name: "History" }],
-//     status: "active",
-//     lastActive: "1 day ago",
-//     totalConversations: 89,
-//     joinedAt: "2024-01-08",
-//   },
-//   {
-//     student_id: "test_user_01",
-//     name: "Carol Williams",
-//     email: "carol@school.edu",
-//     class: "12th",
-//     subject_agent: [{ name: "Biology" }, { name: "Chemistry" }],
-//     status: "inactive",
-//     lastActive: "1 week ago",
-//     totalConversations: 45,
-//     joinedAt: "2024-01-10",
-//   },
-//   {
-//     student_id: "student_002",
-//     name: "David Brown",
-//     email: "david@school.edu",
-//     class: "10th",
-//     subject_agent: [{ name: "Math" }, { name: "Computer Science" }],
-//     status: "active",
-//     lastActive: "5 hours ago",
-//     totalConversations: 234,
-//     joinedAt: "2024-01-03",
-//   },
-//   {
-//     student_id: "test_student_1",
-//     name: "Eva Martinez",
-//     email: "eva@school.edu",
-//     class: "11th",
-//     subject_agent: [{ name: "Physics" }, { name: "Chemistry" }],
-//     status: "active",
-//     lastActive: "30 minutes ago",
-//     totalConversations: 178,
-//     joinedAt: "2024-01-12",
-//   },
-// ];
-
-// const mockClasses = [
-//   "Advanced Math",
-//   "Physics",
-//   "Chemistry",
-//   "Biology",
-//   "English Literature",
-//   "History",
-//   "Computer Science",
-// ];
+const classOptions = [
+  { value: "3", label: "3rd" },
+  { value: "4", label: "4th" },
+  { value: "5", label: "5th" },
+  { value: "6", label: "6th" },
+  { value: "7", label: "7th" },
+  { value: "8", label: "8th" },
+  { value: "9", label: "9th" },
+  { value: "10", label: "10th" },
+  { value: "11", label: "11th" },
+  { value: "12", label: "12th" },
+];
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -194,11 +138,13 @@ export default function StudentsPage() {
   });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [dashboardCounts, setDashboardCounts] = useState<any>([]);
 
   const { user } = useAuth();
 
   useEffect(() => {
     fetchStudentsList();
+    fetchDashboardCounts();
   }, []);
 
   const handleChangePassword = (studentId: string) => {
@@ -206,6 +152,19 @@ export default function StudentsPage() {
     setPasswordData({ current_password: "", new_password: "" });
     setIsChangePasswordDialogOpen(true);
   };
+
+    const fetchDashboardCounts = async() => {
+      try {
+        setIsLoading(true);
+        const response = await getDashboardCounts();
+        setDashboardCounts(response);
+      } catch (err) {
+        console.error("Error fetching dashboard counts:", err);
+        toast.error("Failed to fetch dashboard counts");
+      } finally {
+        setIsLoading(false);
+      }
+    }
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -594,7 +553,7 @@ export default function StudentsPage() {
                   </DialogHeader>
                   <div className="space-y-4 pb-4">
                     {/* Name Field */}
-                    <div className="">
+                    <div className="pt-4">
                       <Label htmlFor="name" className="text-right mt-2">
                         Name <span className="text-red-500">*</span>
                       </Label>
@@ -681,14 +640,24 @@ export default function StudentsPage() {
                       <Label htmlFor="standard" className="text-right mt-2">
                         Standard <span className="text-red-500">*</span>
                       </Label>
-                      <div className="">
-                        <Input
-                          id="standard"
+                      <div>
+                        <Select
                           value={newStudent.class_name}
-                          onChange={(e) => handleStandardChange(e.target.value)}
-                          placeholder="e.g., 10th, 11th, 12th"
-                          className={errors.class_name ? "border-red-500" : ""}
-                        />
+                          onValueChange={(value) => handleStandardChange(value)}
+                        >
+                          <SelectTrigger
+                            className={errors.class_name ? "border-red-500 bg-white" : "bg-white"}
+                          >
+                            <SelectValue placeholder="Select standard" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {classOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         {errors.class_name && (
                           <p className="text-sm text-red-500">
                             {errors.class_name}
@@ -791,7 +760,7 @@ export default function StudentsPage() {
                   <Users className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{stats.total}</p>
+                  <p className="text-2xl font-bold">{dashboardCounts?.students?.total}</p>
                   <p className="text-sm text-muted-foreground">
                     Total Students
                   </p>
@@ -807,7 +776,7 @@ export default function StudentsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {stats.active === 0 ? 5 : stats.active}
+                    {dashboardCounts?.students?.total}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Active Students
@@ -824,7 +793,7 @@ export default function StudentsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {stats.totalConversations.toLocaleString()}
+                    {dashboardCounts?.agents?.total_conversations}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Total Conversations
@@ -955,6 +924,7 @@ export default function StudentsPage() {
                             onClick={() =>
                               handleEditStudent(student.student_id)
                             }
+                            className="cursor-pointer"
                           >
                             <Edit2 className="w-4 h-4 mr-2" />
                             Edit
@@ -963,12 +933,13 @@ export default function StudentsPage() {
                             onClick={() =>
                               handleChangePassword(student.student_id)
                             }
+                            className="cursor-pointer"
                           >
                             <Edit2 className="w-4 h-4 mr-2" />
                             Change Password
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            className="text-destructive"
+                            className="text-destructive cursor-pointer"
                             onClick={() =>
                               handleDeleteStudent(student.student_id)
                             }
@@ -1078,3 +1049,4 @@ export default function StudentsPage() {
     </AdminLayout>
   );
 }
+

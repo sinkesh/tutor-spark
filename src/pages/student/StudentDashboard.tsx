@@ -74,7 +74,13 @@ export default function StudentDashboard() {
       setIsLoading(true);
 
       const res = await getStudentAgent(user?.id);
-      setIsSubject(res.subjects.slice(0, 3));
+      
+      const allSubjects = [
+        ...(res?.student_subjects || []),
+        ...(res?.general_subjects || [])
+      ];
+      
+      setIsSubject(allSubjects);
       toast.success("Data get successfully");
     } catch (err) {
       console.log(err);

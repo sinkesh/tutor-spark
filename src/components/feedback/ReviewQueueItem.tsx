@@ -54,12 +54,10 @@ interface Props {
 }
 
 export function AgentPerformanceCard({ item, isSelected, onSelect }: Props) {
-  // Safe access with fallbacks
   const score = item.metrics?.overall_score ?? 0;
   const performanceLevel = item.performance_level ?? "Unknown";
   const totalConversations = item.total_conversations ?? 0;
   const healthStatus = item.performance_level ?? "Unknown";
-  const agentName = item.agent_metadata?.agent_name ?? "Unknown Agent";
 
   let color = "text-blue-500 bg-blue-500/10";
   let borderColor = "border-l-blue-500";
@@ -80,7 +78,7 @@ export function AgentPerformanceCard({ item, isSelected, onSelect }: Props) {
       onClick={onSelect}
       className={cn(
         "p-5 border-l-4 rounded-r-xl cursor-pointer transition-all duration-200",
-        "hover:bg-accent/50 shadow-sm",
+        "hover:bg-accent/50 shadow-sm group",
         borderColor,
         isSelected ? "bg-[#f6b9a3] shadow-md scale-[1.01]" : "bg-card",
       )}
@@ -91,16 +89,16 @@ export function AgentPerformanceCard({ item, isSelected, onSelect }: Props) {
           <div className="flex items-center gap-2 mb-3">
             <div
               className={cn(
-                "w-7 h-7 rounded-md flex items-center justify-center",
+                "w-7 h-7 rounded-md flex items-center justify-center group-hover:text-white",
                 color.split(" ")[1],
               )}
             >
-              <Brain className={cn("w-4 h-4", color.split(" ")[0])} />
+              <Brain className={cn("w-4 h-4 group-hover:text-white", isSelected && "!text-white", color.split(" ")[0])} />
             </div>
 
             <Badge
               variant="outline"
-              className={cn("text-xs", color.split(" ")[0])}
+              className={cn("text-xs group-hover:text-white", isSelected ? "!text-white" : "", color.split(" ")[0])}
             >
               {performanceLevel}
             </Badge>
@@ -111,7 +109,7 @@ export function AgentPerformanceCard({ item, isSelected, onSelect }: Props) {
           </div>
 
           {/* Agent Name */}
-          <p className="text-sm font-semibold text-foreground mb-2">
+          <p className="text-sm font-semibold text-foreground mb-2 capitalize">
             {item.agent_metadata.agent_name}
           </p>
 
@@ -129,7 +127,8 @@ export function AgentPerformanceCard({ item, isSelected, onSelect }: Props) {
         <div className="flex flex-col items-end gap-2">
           <div
             className={cn(
-              "text-2xl font-bold",
+              "text-2xl font-bold group-hover:text-white",
+              isSelected ? "!text-white" : "",
               score >= 80
                 ? "text-green-500"
                 : score >= 50
@@ -142,7 +141,7 @@ export function AgentPerformanceCard({ item, isSelected, onSelect }: Props) {
 
           <ChevronRight
             className={cn(
-              "w-4 h-4 transition-transform",
+              "w-4 h-4 transition-transform group-hover:text-white",
               isSelected ? "text-primary" : "text-muted-foreground",
             )}
           />

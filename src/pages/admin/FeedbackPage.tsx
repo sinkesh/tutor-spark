@@ -499,7 +499,7 @@ export default function FeedbackPage() {
         // Safe access with fallbacks
         const overallScore = performance?.metrics?.overall_score ?? 0;
         const hallucinationRisk = performance?.metrics?.hallucination_risk ?? 0;
-        const agentId = performance?.subject_agent_id ?? "";
+        const agentId = performance?.agent_id ?? "";
         const agentName =
           performance?.agent_metadata?.agent_name ?? "Unknown Agent";
         const lastUpdated = performance?.last_updated;
@@ -525,7 +525,7 @@ export default function FeedbackPage() {
           createdAt: lastUpdated ? new Date(lastUpdated) : new Date(),
           updatedAt: lastUpdated ? new Date(lastUpdated) : new Date(),
 
-          status: "pending", // must match union type in ReviewItem
+          status: "pending",
 
           failureType:
             hallucinationRisk > 20
@@ -672,7 +672,7 @@ export default function FeedbackPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-4 opacity-60 pointer-events-none">
+          <div className="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-4 opacity-60 pointer-events-none">
             <FeedbackStatsCard
               title="Pending Reviews"
               value={pendingCount}

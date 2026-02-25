@@ -35,10 +35,14 @@ export default function ExplorePage() {
     try {
       setIsLoading(true);
 
-      // const res = await agentOfClass({ class_name: "8" });
       const res = await getStudentAgent(user?.id);
-
-      setIsSubject(res.subjects);
+      
+      const allSubjects = [
+        ...(res?.student_subjects || []),
+        ...(res?.general_subjects || [])
+      ];
+      
+      setIsSubject(allSubjects);
       toast.success("Data get successfully");
     } catch (err) {
       console.log(err);
@@ -51,6 +55,7 @@ export default function ExplorePage() {
   useEffect(() => {
     getSubject();
   }, []);
+  
   return (
     <StudentLayout>
       <div className="p-8">

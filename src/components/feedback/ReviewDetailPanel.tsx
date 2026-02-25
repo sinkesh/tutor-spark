@@ -116,7 +116,6 @@ export function ReviewDetailPanel({
       onResolve(item.id, selectedAction, notes);
     }
   };
-  console.log("item.agentName===", item);
   return (
     <div className="h-full flex flex-col">
       <ScrollArea className="flex-1">
