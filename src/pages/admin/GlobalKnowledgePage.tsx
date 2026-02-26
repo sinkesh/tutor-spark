@@ -85,6 +85,7 @@ export default function GlobalKnowledgePage() {
   const [rags, setRags] = useState([]);
   const [showAddPrompt, setShowAddPrompt] = useState(false);
   const [newPrompt, setNewPrompt] = useState({ title: "", content: "" });
+  const [isLoading, setIsLoading] = useState(false);
 
   // Upload dialog state
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -98,6 +99,7 @@ export default function GlobalKnowledgePage() {
 
   const fetchGlobalRag = async () => {
     try {
+      setIsLoading(true);
       const response = await globalRagKnowledge();
       if (
         response?.status === "success" &&
@@ -123,6 +125,8 @@ export default function GlobalKnowledgePage() {
     } catch (error) {
       console.error("Error fetching global RAGs:", error);
       toast.error("Failed to fetch documents");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -526,66 +530,102 @@ export default function GlobalKnowledgePage() {
             </div>
 
             <div className="grid gap-4">
-              {rags.map((rag) => (
-                <Card key={rag.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center">
-                          <FileText className="w-6 h-6 text-muted-foreground" />
+              {isLoading ? (
+                // Loading State
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i} className="overflow-hidden">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-lg bg-muted animate-pulse" />
+                            <div className="space-y-2">
+                              <div className="h-4 w-48 bg-muted rounded animate-pulse" />
+                              <div className="h-3 w-32 bg-muted rounded animate-pulse" />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="h-6 w-24 bg-muted rounded-full animate-pulse" />
+                            <div className="w-8 h-8 bg-muted rounded animate-pulse" />
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-medium break-all line-clamp-2">
-                            {rag.name}
-                          </h3>
-                          {/* <p className="text-sm text-muted-foreground break-all line-clamp-2">
-                            {rag.description}
-                          </p> */}
-                          <p className="text-xs text-muted-foreground mt-1 break-all">
-                            {rag.size} • Uploaded {rag.uploadedAt} • Used by{" "}
-                            {rag.usedByAgents} agents
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div>
-                          {/* <button
-                            onClick={() => handleEnable(rag.id, rag.indexed)}
-                            className={`w-fit px-2 py-1 mb-1 rounded-full flex items-center gap-1 text-xs ${rag.indexed ? "bg-red-100 hover:bg-red-200 text-red-500" : "bg-green-100 hover:bg-green-200 text-green-500"}`}
-                          >
-                            {rag.indexed ? (
-                              <>
-                                <X className="w-3 h-3" />
-                                Disable
-                              </>
-                            ) : (
-                              <>
-                                <Check className="w-3 h-3" />
-                                Enable
-                              </>
-                            )}
-                          </button> */}
-                          {rag.indexed ? (
-                            <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20">
-                              {rag.chunks} chunks indexed
-                              {rag.totalChunks > rag.chunks &&
-                                ` / ${rag.totalChunks}`}
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary">Pending indexing</Badge>
-                          )}
-                        </div>
-                        {/* <Button variant="ghost" size="icon-sm">
-                          <RefreshCw className="w-4 h-4" />
-                        </Button> */}
-                        <Button variant="ghost" size="icon-sm" onClick={() => handleDelete(rag.id)}>
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : rags.length === 0 ? (
+                // Empty State
+                <Card className="border-dashed">
+                  <CardContent className="p-12 text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                      <FileText className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      No RAG Documents Available
+                    </h3>
+                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                      Upload your first knowledge document to get started with RAG (Retrieval Augmented Generation) for your agents.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      <Button 
+                        onClick={() => setShowUploadDialog(true)}
+                        className="gap-2"
+                      >
+                        <Upload className="w-4 h-4" />
+                        Upload First Document
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => window.location.reload()}
+                        className="gap-2"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Refresh
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                // RAG List
+                rags.map((rag) => (
+                  <Card key={rag.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center">
+                            <FileText className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium break-all line-clamp-2">
+                              {rag.name}
+                            </h3>
+                            <p className="text-xs text-muted-foreground mt-1 break-all">
+                              {rag.size} • Uploaded {rag.uploadedAt} • Used by{" "}
+                              {rag.usedByAgents} agents
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div>
+                            {rag.indexed ? (
+                              <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20">
+                                {rag.chunks} chunks indexed
+                                {rag.totalChunks > rag.chunks &&
+                                  ` / ${rag.totalChunks}`}
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary">Pending indexing</Badge>
+                            )}
+                          </div>
+                          <Button variant="ghost" size="icon-sm" onClick={() => handleDelete(rag.id)}>
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </TabsContent>
         </Tabs>

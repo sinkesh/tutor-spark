@@ -1,6 +1,6 @@
-// export const BASE_URL = "https://api.tecorb.in";
-export const BASE_URL =
-  "https://7bff-2401-4900-1c65-8e5e-64f5-1915-73e9-5193.ngrok-free.app";
+export const BASE_URL = "https://api.tecorb.in";
+// export const BASE_URL =
+//   "https://7bff-2401-4900-1c65-8e5e-64f5-1915-73e9-5193.ngrok-free.app";
 export const VERSION = "/api/v1";
 
 export const API_URL = {
@@ -24,5 +24,5 @@ export const API_URL = {
   GLOBAL_PROMPT_ENABLE: "/admin/global-prompt/enable",
   SHARED_KNOWLEDGE_UPLOAD: "/admin/shared-knowledge/upload",
   GLOBAL_RAG_KNOWLEDGE: "/admin/global-rag-knowledge",
-  SHARED_KNOWLEDGE_ENABLE: "/admin/shared-knowledge"
+  SHARED_KNOWLEDGE_ENABLE: "/admin/shared-knowledge",
 };
