@@ -210,3 +210,28 @@ export const getDashboardCounts = async (): Promise<any> => {
   const response = await apiDataJson.get(`${API_URL.DASHBOARD_COUNTS}`);
   return response.data;
 };
+
+export const globalPromptEnable = async (data: any) => {
+  const response = await apiDataJson.post(API_URL.GLOBAL_PROMPT_ENABLE, data);
+  return response.data;
+};
+
+export const sharedKnowledgeUpload = async (data: any) => {
+  const response = await api.post(API_URL.SHARED_KNOWLEDGE_UPLOAD, data);
+  return response.data;
+};
+
+export const globalRagKnowledge = async () => {
+  const response = await apiDataJson.get(API_URL.GLOBAL_RAG_KNOWLEDGE);
+  return response.data;
+};
+
+export const sharedKnowledgeEnable = async (data: any) => {
+  const response = await apiDataJson.post(`${API_URL.SHARED_KNOWLEDGE_ENABLE}/${data.document_id}/enable`, data);
+  return response.data;
+};
+
+export const deleteRagKnowledge = async (document_id: any) => {
+  const response = await apiDataJson.delete(`${API_URL.SHARED_KNOWLEDGE_ENABLE}/${document_id}`);
+  return response.data;
+};

@@ -1,4 +1,6 @@
-import { useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -6,7 +8,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,17 +15,33 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   Globe,
   Plus,
   FileText,
   Trash2,
   Upload,
+  RefreshCw,
   GripVertical,
   Edit2,
   Check,
   X,
-  RefreshCw,
 } from "lucide-react";
+import {
+  globalPromptEnable,
+  globalRagKnowledge,
+  sharedKnowledgeUpload,
+  sharedKnowledgeEnable,
+  deleteRagKnowledge,
+} from "@/config/services";
 
 const mockGlobalPrompts = [
   {
@@ -33,7 +50,7 @@ const mockGlobalPrompts = [
     content:
       "Always communicate respectfully with students. Use encouraging language and avoid criticism.",
     priority: 1,
-    enabled: true,
+    enabled: false,
     version: 3,
   },
   // {
@@ -49,8 +66,8 @@ const mockGlobalPrompts = [
     title: "Safety Guidelines",
     content:
       "Never provide content that is harmful, inappropriate, or off-topic. Redirect to learning materials.",
-    priority: 3,
-    enabled: true,
+    priority: 2,
+    enabled: false,
     version: 1,
   },
   // {
@@ -63,55 +80,75 @@ const mockGlobalPrompts = [
   // },
 ];
 
-const mockGlobalRAGs = [
-  {
-    id: "1",
-    name: "General Education Guidelines.pdf",
-    size: "4.2 MB",
-    uploadedAt: "2024-01-10",
-    usedByAgents: 12,
-    indexed: true,
-    chunks: 156,
-  },
-  {
-    id: "2",
-    name: "Academic Standards 2024.docx",
-    size: "2.8 MB",
-    uploadedAt: "2024-01-12",
-    usedByAgents: 8,
-    indexed: true,
-    chunks: 89,
-  },
-  {
-    id: "3",
-    name: "Teaching Best Practices.pdf",
-    size: "3.1 MB",
-    uploadedAt: "2024-01-14",
-    usedByAgents: 15,
-    indexed: true,
-    chunks: 112,
-  },
-  {
-    id: "4",
-    name: "Student Support Handbook.pdf",
-    size: "1.9 MB",
-    uploadedAt: "2024-01-18",
-    usedByAgents: 6,
-    indexed: false,
-    chunks: 0,
-  },
-];
-
 export default function GlobalKnowledgePage() {
   const [prompts, setPrompts] = useState(mockGlobalPrompts);
-  const [rags, setRags] = useState(mockGlobalRAGs);
+  const [rags, setRags] = useState([]);
   const [showAddPrompt, setShowAddPrompt] = useState(false);
   const [newPrompt, setNewPrompt] = useState({ title: "", content: "" });
 
-  const togglePrompt = (id: string) => {
-    setPrompts(
-      prompts.map((p) => (p.id === id ? { ...p, enabled: !p.enabled } : p)),
-    );
+  // Upload dialog state
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [uploadDescription, setUploadDescription] = useState("");
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    fetchGlobalRag();
+  }, []);
+
+  const fetchGlobalRag = async () => {
+    try {
+      const response = await globalRagKnowledge();
+      if (
+        response?.status === "success" &&
+        response?.shared_documents?.documents
+      ) {
+        const documents = response.shared_documents.documents.map(
+          (doc: any) => ({
+            id: doc.document_id,
+            name: doc.document_name,
+            description: doc.description,
+            size: doc.estimated_size,
+            uploadedAt: new Date(doc.upload_date).toLocaleDateString(),
+            usedByAgents: doc.used_by_count || 0,
+            indexed: doc.status === "indexed",
+            chunks: doc.indexed_chunks || 0,
+            totalChunks: doc.total_chunks || 0,
+            fileNames: doc.file_names || [],
+            status: doc.status,
+          }),
+        );
+        setRags(documents);
+      }
+    } catch (error) {
+      console.error("Error fetching global RAGs:", error);
+      toast.error("Failed to fetch documents");
+    }
+  };
+
+  const togglePrompt = async (id: string) => {
+    const prompt = prompts.find((p) => p.id === id);
+    if (prompt) {
+      try {
+        const contentToSend = prompt.enabled ? "" : prompt.content;
+        await globalPromptEnable({
+          content: contentToSend,
+        });
+
+        setPrompts(
+          prompts.map((p) => (p.id === id ? { ...p, enabled: !p.enabled } : p)),
+        );
+
+        if (prompt.enabled) {
+          toast.success("Global prompt disabled successfully");
+        } else {
+          toast.success("Global prompt enabled successfully");
+        }
+      } catch (error) {
+        console.error("Error toggling global prompt:", error);
+        toast.error("Failed to toggle global prompt");
+      }
+    }
   };
 
   const handleAddPrompt = () => {
@@ -129,7 +166,86 @@ export default function GlobalKnowledgePage() {
     ]);
     setNewPrompt({ title: "", content: "" });
     setShowAddPrompt(false);
+    toast.success("Prompt added successfully");
   };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setUploadedFile(file);
+    }
+  };
+
+  const handleUploadSubmit = async () => {
+    if (!uploadedFile || !uploadDescription.trim()) {
+      toast.error("Please provide a description and select a file");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("description", uploadDescription);
+      formData.append("document_name", uploadedFile.name);
+      formData.append("files", uploadedFile);
+
+      const response = await sharedKnowledgeUpload(formData);
+
+      if (response?.status === "indexed") {
+        setUploadDescription("");
+        setUploadedFile(null);
+        setShowUploadDialog(false);
+
+        toast.success("Document uploaded successfully");
+
+        await fetchGlobalRag();
+      } else {
+        throw new Error(response?.message || "Upload failed");
+      }
+    } catch (error: any) {
+      console.error("Error uploading document:", error);
+      toast.error(error?.message || "Failed to upload document");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const resetUploadDialog = () => {
+    setUploadDescription("");
+    setUploadedFile(null);
+    setShowUploadDialog(false);
+  };
+
+  const handleDelete = async (documentId: string) => {
+    try {
+      const response = await deleteRagKnowledge(documentId);
+      if (response?.status === "success") {
+        toast.success("Document deleted successfully");
+        await fetchGlobalRag();
+      } else {
+        throw new Error(response?.message || "Delete failed");
+      }
+    } catch (error: any) {
+      console.error("Error deleting document:", error);
+      toast.error(error?.message || "Failed to delete document");
+    }
+  };
+
+  // const handleEnable = async (documentId: string, currentState: boolean) => {
+  //   try {
+  //     const response = await sharedKnowledgeEnable({ document_id: documentId });
+  //     if (response?.success) {
+  //       const action = currentState ? "disabled" : "enabled";
+  //       toast.success(`Document ${action} successfully`);
+  //       await fetchGlobalRag(); // Refresh list
+  //     } else {
+  //       throw new Error(response?.message || "Action failed");
+  //     }
+  //   } catch (error: any) {
+  //     console.error("Error toggling document:", error);
+  //     toast.error(error?.message || "Failed to toggle document");
+  //   }
+  // };
 
   return (
     <AdminLayout>
@@ -248,12 +364,12 @@ export default function GlobalKnowledgePage() {
                                 onCheckedChange={() => togglePrompt(prompt.id)}
                               />
                             </div>
-                            <Button variant="ghost" size="icon-sm">
+                            {/* <Button variant="ghost" size="icon-sm">
                               <Edit2 className="w-4 h-4" />
                             </Button>
                             <Button variant="ghost" size="icon-sm">
                               <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
+                            </Button> */}
                           </div>
                         </div>
                         <p className="text-sm text-muted-foreground">
@@ -278,10 +394,135 @@ export default function GlobalKnowledgePage() {
                   Documents accessible by all AI agents
                 </p>
               </div>
-              <Button>
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Document
-              </Button>
+              <Dialog
+                open={showUploadDialog}
+                onOpenChange={setShowUploadDialog}
+              >
+                <DialogTrigger asChild>
+                  <Button>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Document
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Upload Document</DialogTitle>
+                    <DialogDescription>
+                      Upload a document to add to the global knowledge base.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <label
+                        htmlFor="description"
+                        className="text-sm font-medium"
+                      >
+                        Description
+                      </label>
+                      <Textarea
+                        id="description"
+                        placeholder="Enter document description..."
+                        value={uploadDescription}
+                        onChange={(e) => setUploadDescription(e.target.value)}
+                        className="min-h-[80px]"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <label htmlFor="file" className="text-sm font-medium">
+                        Document
+                      </label>
+                      <div className="relative">
+                        <Input
+                          id="file"
+                          type="file"
+                          onChange={handleFileUpload}
+                          accept=".pdf,.doc,.docx,.txt"
+                          className="cursor-pointer sr-only"
+                        />
+                        <div
+                          className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                          onClick={() =>
+                            document.getElementById("file")?.click()
+                          }
+                        >
+                          <Upload className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
+                          <p className="text-sm font-medium mb-1">
+                            {uploadedFile ? "File Selected" : "Click to upload"}
+                          </p>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            PDF, DOC, DOCX, TXT (Max 10MB)
+                          </p>
+                          {uploadedFile ? (
+                            <div className="flex items-center justify-center gap-2 p-3 bg-muted/50 rounded-md">
+                              <FileText className="w-4 h-4 text-primary" />
+                              <div className="text-left">
+                                <p className="text-sm font-medium truncate max-w-[200px]">
+                                  {uploadedFile.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {(uploadedFile.size / 1024 / 1024).toFixed(2)}{" "}
+                                  MB
+                                </p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setUploadedFile(null);
+                                }}
+                                className="ml-auto"
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                document.getElementById("file")?.click();
+                              }}
+                            >
+                              <Upload className="w-4 h-4 mr-2" />
+                              Choose File
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={resetUploadDialog}
+                      disabled={isUploading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleUploadSubmit}
+                      disabled={
+                        !uploadedFile ||
+                        !uploadDescription.trim() ||
+                        isUploading
+                      }
+                    >
+                      {isUploading ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        "Done"
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
 
             <div className="grid gap-4">
@@ -294,25 +535,50 @@ export default function GlobalKnowledgePage() {
                           <FileText className="w-6 h-6 text-muted-foreground" />
                         </div>
                         <div>
-                          <h3 className="font-medium">{rag.name}</h3>
-                          <p className="text-sm text-muted-foreground">
+                          <h3 className="font-medium break-all line-clamp-2">
+                            {rag.name}
+                          </h3>
+                          {/* <p className="text-sm text-muted-foreground break-all line-clamp-2">
+                            {rag.description}
+                          </p> */}
+                          <p className="text-xs text-muted-foreground mt-1 break-all">
                             {rag.size} • Uploaded {rag.uploadedAt} • Used by{" "}
                             {rag.usedByAgents} agents
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        {rag.indexed ? (
-                          <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20">
-                            {rag.chunks} chunks indexed
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">Pending indexing</Badge>
-                        )}
-                        <Button variant="ghost" size="icon-sm">
+                        <div>
+                          {/* <button
+                            onClick={() => handleEnable(rag.id, rag.indexed)}
+                            className={`w-fit px-2 py-1 mb-1 rounded-full flex items-center gap-1 text-xs ${rag.indexed ? "bg-red-100 hover:bg-red-200 text-red-500" : "bg-green-100 hover:bg-green-200 text-green-500"}`}
+                          >
+                            {rag.indexed ? (
+                              <>
+                                <X className="w-3 h-3" />
+                                Disable
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-3 h-3" />
+                                Enable
+                              </>
+                            )}
+                          </button> */}
+                          {rag.indexed ? (
+                            <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20">
+                              {rag.chunks} chunks indexed
+                              {rag.totalChunks > rag.chunks &&
+                                ` / ${rag.totalChunks}`}
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">Pending indexing</Badge>
+                          )}
+                        </div>
+                        {/* <Button variant="ghost" size="icon-sm">
                           <RefreshCw className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon-sm">
+                        </Button> */}
+                        <Button variant="ghost" size="icon-sm" onClick={() => handleDelete(rag.id)}>
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
                       </div>

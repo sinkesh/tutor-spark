@@ -450,10 +450,27 @@ export default function FeedbackPage() {
   const [err, setError] = useState("");
   const [agentPerformance, setAgentPerformance] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 3;
+  const [itemsPerPage, setItemsPerPage] = useState(3);
   const totalPages = Math.ceil(agentPerformance?.length / itemsPerPage);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+  const updateItemsPerPage = () => {
+    if (window.innerWidth >= 1280) {
+      setItemsPerPage(3);
+    } else if (window.innerWidth >= 768) {
+      setItemsPerPage(2);
+    } else {
+      setItemsPerPage(2);
+    }
+  };
+
+  updateItemsPerPage();
+  window.addEventListener("resize", updateItemsPerPage);
+
+  return () => window.removeEventListener("resize", updateItemsPerPage);
+}, []);
 
   const fetchAgentPerformance = async () => {
     try {
@@ -860,7 +877,7 @@ export default function FeedbackPage() {
           </TabsContent>
 
           <TabsContent value="health" className="flex-1 overflow-auto mt-0">
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid xl:grid-cols-3 lg:grid-cols-2 grid-cols-1 gap-4 mb-6">
               {agentPerformance && agentPerformance.length > 0 ? (
                 agentPerformance
                   .slice(

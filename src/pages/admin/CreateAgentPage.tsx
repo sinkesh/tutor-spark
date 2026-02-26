@@ -123,8 +123,8 @@ export default function CreateAgentPage() {
     learningObjectives: "",
     teachingTone: "",
     documents: [],
-    enableGlobalPrompts: true,
-    enableGlobalRags: true,
+    enableGlobalPrompts: false,
+    enableGlobalRags: false,
   });
 
   const fetchDetails = async (id: string) => {
@@ -154,8 +154,8 @@ export default function CreateAgentPage() {
         subject: details.subject || "",
         educationLevel: details.agent_metadata?.agent_type || "",
         teachingTone: details.agent_metadata?.teaching_tone || "",
-        enableGlobalPrompts: details.enable_global_prompts ?? true,
-        enableGlobalRags: details.enable_global_rags ?? true,
+        enableGlobalPrompts: details.enable_global_prompts ?? false,
+        enableGlobalRags: details.enable_global_rags ?? false,
         documents: [...fileObjects],
       }));
     } catch (err) {
@@ -251,6 +251,8 @@ export default function CreateAgentPage() {
         formData.educationLevel || formData.type,
       );
       payload.append("teaching_tone", formData.teachingTone || "");
+      payload.append("global_prompt_enabled", formData.enableGlobalPrompts.toString());
+      payload.append("global_rag_enabled", formData.enableGlobalRags.toString());
 
       // const learningObjectives = formData.learningObjectives.split('\n').filter(Boolean);
       // payload.append("learning_objectives", JSON.stringify(learningObjectives));
@@ -463,7 +465,7 @@ export default function CreateAgentPage() {
                 <div className="grid grid-cols-2 gap-4">
                   {formData.type === "subject" ? null : (
                     <div className="space-y-2">
-                      <Label htmlFor="class">Class (Optional)</Label>
+                      <Label htmlFor="class">Class</Label>
                       <Select
                         value={formData.class}
                         onValueChange={(value) =>

@@ -1,6 +1,6 @@
-export const BASE_URL = "https://api.tecorb.in";
-// export const BASE_URL =
-//   "https://b90f-2401-4900-1c62-60be-1db8-d206-98e8-3ae3.ngrok-free.app";
+// export const BASE_URL = "https://api.tecorb.in";
+export const BASE_URL =
+  "https://7bff-2401-4900-1c65-8e5e-64f5-1915-73e9-5193.ngrok-free.app";
 export const VERSION = "/api/v1";
 
 export const API_URL = {
@@ -21,4 +21,8 @@ export const API_URL = {
   SINGAL_AGENT_PERFORMANCE: "/performance/agent-performance",
   RECENT_ACTIVITY: "/activity/recent",
   DASHBOARD_COUNTS: "/admin/dashboard-counts",
+  GLOBAL_PROMPT_ENABLE: "/admin/global-prompt/enable",
+  SHARED_KNOWLEDGE_UPLOAD: "/admin/shared-knowledge/upload",
+  GLOBAL_RAG_KNOWLEDGE: "/admin/global-rag-knowledge",
+  SHARED_KNOWLEDGE_ENABLE: "/admin/shared-knowledge"
 };

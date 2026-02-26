@@ -3,7 +3,7 @@ import StudentLayout from "@/components/layout/StudentLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Search, Bot, BookOpen, Layers, GraduationCap } from "lucide-react";
+import { Search, Bot, BookOpen, Layers, GraduationCap, User } from "lucide-react";
 import { Link } from "react-router-dom";
 import { agentOfClass, getStudentAgent } from "@/config/services";
 import { toast } from "sonner";
@@ -11,17 +11,13 @@ import SubjectSkeletonItem from "@/components/loader/SubjectSkeletonItem";
 import { useAuth } from "@/contexts/AuthContext";
 
 const typeIcons = {
-  class: GraduationCap,
   subject: BookOpen,
-  course: Layers,
-  agent: Bot,
+  // teacher: User,
 };
 
 const typeColors = {
-  class: "text-primary bg-primary/10",
-  subject: "text-accent bg-accent/10",
-  course: "text-success bg-success/10",
-  agent: "text-warning bg-warning/10",
+  subject: "text-primary bg-primary/10",
+  // teacher: "text-warning bg-warning/10",
 };
 
 export default function ExplorePage() {
@@ -63,7 +59,7 @@ export default function ExplorePage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">Explore</h1>
           <p className="text-muted-foreground mt-1">
-            Browse all your classes, subjects, and AI teachers
+            Browse all your subjects
           </p>
         </div>
 
@@ -73,7 +69,7 @@ export default function ExplorePage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Search agents, subjects, or courses..."
+                placeholder="Search subjects..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
