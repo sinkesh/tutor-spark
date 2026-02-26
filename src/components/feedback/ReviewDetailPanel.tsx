@@ -127,7 +127,9 @@ export function ReviewDetailPanel({
                 <Bot className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">{item.agentName}</h3>
+                <h3 className="font-semibold text-lg capitalize">
+                  {item.agentName}
+                </h3>
                 <p className="text-sm text-muted-foreground">
                   v{item.agentVersion} • {item.promptVersion}
                 </p>

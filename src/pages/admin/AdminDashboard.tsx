@@ -17,7 +17,11 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getAgents, getDashboardCounts, getRecentActivity } from "@/config/services";
+import {
+  getAgents,
+  getDashboardCounts,
+  getRecentActivity,
+} from "@/config/services";
 import { toast } from "sonner";
 import AgentCardSkeleton from "@/components/loader/AgentCardSkeleton";
 
@@ -70,22 +74,25 @@ export default function AdminDashboard() {
     }
   };
 
-  const fetchRecentActivity = async() => {
+  const fetchRecentActivity = async () => {
     try {
       setIsActivityLoading(true);
       const response = await getRecentActivity();
-      
-      const sortedActivities = Array.isArray(response) 
+
+      const sortedActivities = Array.isArray(response)
         ? response
             .sort((a, b) => {
               if (a.timestamp && b.timestamp) {
-                return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+                return (
+                  new Date(b.timestamp).getTime() -
+                  new Date(a.timestamp).getTime()
+                );
               }
               return 0;
             })
             .slice(0, 5)
         : [];
-      
+
       setRecentActData(sortedActivities);
     } catch (err) {
       console.error("Error fetching recent activity:", err);
@@ -94,9 +101,9 @@ export default function AdminDashboard() {
     } finally {
       setIsActivityLoading(false);
     }
-  }
+  };
 
-  const fetchDashboardCounts = async() => {
+  const fetchDashboardCounts = async () => {
     try {
       setIsLoading(true);
       const response = await getDashboardCounts();
@@ -107,7 +114,7 @@ export default function AdminDashboard() {
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   return (
     <AdminLayout>
@@ -142,7 +149,7 @@ export default function AdminDashboard() {
           <KPICard
             title="Active Students"
             value={dashboardCounts?.students?.total}
-            change="+127 this week"
+            change="+2 this week"
             changeType="positive"
             icon={Users}
             iconColor="bg-accent/10 text-accent"
@@ -151,7 +158,7 @@ export default function AdminDashboard() {
           <KPICard
             title="Total Conversations"
             value={dashboardCounts?.agents?.total_conversations}
-            change="+2,340 today"
+            change="+23 today"
             changeType="positive"
             icon={MessageCircle}
             iconColor="bg-success/10 text-success"
@@ -248,14 +255,35 @@ export default function AdminDashboard() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground capitalize">
-                            {activity?.activity_type === "agent_updated" ? "Agent Updated" : activity?.activity_type === "student_created" ? "Student Created" : activity?.activity_type === "feedback_reviewed" ? "Feedback Reviewed" : activity?.activity_type === "agent_created" ? "Agent Created" : activity?.activity_type === "student_updated" ? "Student Updated" : activity?.activity_type === "student_deleted" ? "Student Deleted" : activity?.activity_type === "agent_deleted" ? "Agent Deleted" : ""}
+                            {activity?.activity_type === "agent_updated"
+                              ? "Agent Updated"
+                              : activity?.activity_type === "student_created"
+                                ? "Student Created"
+                                : activity?.activity_type ===
+                                    "feedback_reviewed"
+                                  ? "Feedback Reviewed"
+                                  : activity?.activity_type === "agent_created"
+                                    ? "Agent Created"
+                                    : activity?.activity_type ===
+                                        "student_updated"
+                                      ? "Student Updated"
+                                      : activity?.activity_type ===
+                                          "student_deleted"
+                                        ? "Student Deleted"
+                                        : activity?.activity_type ===
+                                            "agent_deleted"
+                                          ? "Agent Deleted"
+                                          : ""}
                           </p>
-                          <p className="text-sm text-muted-foreground truncate" title={activity?.description}>
+                          <p
+                            className="text-sm text-muted-foreground truncate"
+                            title={activity?.description}
+                          >
                             {activity?.description}
                           </p>
                           <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {activity?.time_ago}
-                        </span>
+                            {activity?.time_ago}
+                          </span>
                         </div>
                       </div>
                     ))

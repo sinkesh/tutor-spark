@@ -62,7 +62,7 @@ import {
   changePassword,
   getDashboardCounts,
 } from "@/config/services";
-import { useAuth } from "@/contexts/AuthContext";
+import PaginationComponent from "@/components/common/PaginationComponent";
 
 interface SubjectAgent {
   subject: string;
@@ -139,8 +139,10 @@ export default function StudentsPage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [dashboardCounts, setDashboardCounts] = useState<any>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
-  const { user } = useAuth();
+  // const { user } = useAuth();
 
   useEffect(() => {
     fetchStudentsList();
@@ -336,6 +338,13 @@ export default function StudentsPage() {
     }
   };
 
+  const paginatedStudents = students.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const totalPages = Math.ceil(students.length / itemsPerPage);
+
   const handleEditStudent = async (studentId: string) => {
     try {
       setIsLoading(true);
@@ -344,15 +353,14 @@ export default function StudentsPage() {
         setCurrentStudentId(studentId);
         setIsEditMode(true);
 
-        // Safely format subject_agent, handling null/undefined cases
         let formattedSubjects: Array<{ subject: string; id: string }> = [];
 
         if (res.subject_agent && Array.isArray(res.subject_agent)) {
           formattedSubjects = res.subject_agent
-            .filter((subject) => subject && subject.name) // Filter out any null/undefined entries
+            .filter((subject) => subject && subject.subject)
             .map((subject) => ({
-              subject: subject.name,
-              id: subject.name.toLowerCase().replace(/\s+/g, "-"),
+              subject: subject.subject,
+              id: subject.subject.toLowerCase().replace(/\s+/g, "-"),
             }));
         }
 
@@ -365,7 +373,6 @@ export default function StudentsPage() {
           subject_agent: formattedSubjects,
         });
 
-        // Fetch subjects for the class if class exists
         if (res.class_name) {
           try {
             const subjects = await agentOfClass({ class_name: res.class_name });
@@ -378,7 +385,6 @@ export default function StudentsPage() {
           setIsSubject([]);
         }
 
-        // Open the dialog after state is updated
         setIsAddDialogOpen(true);
       }
     } catch (err) {
@@ -397,27 +403,24 @@ export default function StudentsPage() {
       setIsSubmitting(true);
 
       if (isEditMode && currentStudentId) {
-        // Format data for API
         const studentData = {
           name: newStudent.name,
           email: newStudent.email,
           password: newStudent.password,
           class_name: newStudent.class_name,
           subject_agent: newStudent.subject_agent.map((subject: any) => ({
-            subject: subject.subject || subject.name,
+            subject: subject.subject,
           })),
         };
 
-        // Update existing student
         const res = await editStudentDetails(currentStudentId, studentData);
         if (res) {
           toast.success("Student updated successfully");
           setIsAddDialogOpen(false);
           resetForm();
-          fetchStudentsList(); // Refresh the list
+          fetchStudentsList();
         }
       } else {
-        // Create new student
         const res = await createStudent(newStudent);
         if (res) {
           toast.success("Student created successfully");
@@ -494,6 +497,8 @@ export default function StudentsPage() {
       0,
     ),
   };
+
+  console.log("newStudent===", newStudent);
 
   return (
     <AdminLayout>
@@ -828,22 +833,23 @@ export default function StudentsPage() {
         </div>
 
         {/* Students Table */}
-        <Card>
+        <Card className="w-full">
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Class</TableHead>
-                  <TableHead>Subjects</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Last Active</TableHead>
-                  <TableHead className="w-[50px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Student ID</TableHead>
+                    <TableHead className="whitespace-nowrap">Name</TableHead>
+                    <TableHead className="whitespace-nowrap">Class</TableHead>
+                    <TableHead className="whitespace-nowrap">Subjects</TableHead>
+                    {/* <TableHead className="whitespace-nowrap">Status</TableHead> */}
+                    <TableHead className="whitespace-nowrap">Last Active</TableHead>
+                    <TableHead className="whitespace-nowrap w-[50px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
-                {filteredStudents.map((student) => (
+                {paginatedStudents.map((student) => (
                   <TableRow key={student.student_id}>
                     <TableCell className="font-mono text-sm">
                       {student.student_id}
@@ -892,7 +898,7 @@ export default function StudentsPage() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    {/* <TableCell>
                       <Badge
                         variant={
                           student.status === "active" ? "default" : "secondary"
@@ -905,7 +911,7 @@ export default function StudentsPage() {
                       >
                         {student.status || "inactive"}
                       </Badge>
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Calendar className="w-3 h-3 flex-shrink-0" />
@@ -954,8 +960,21 @@ export default function StudentsPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
+        
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <PaginationComponent
+            currentPage={currentPage}
+            totalPages={totalPages}
+            itemsPerPage={itemsPerPage}
+            totalItems={students.length}
+            onPageChange={setCurrentPage}
+            isLoading={isLoading}
+          />
+        )}
       </div>
 
       <Dialog

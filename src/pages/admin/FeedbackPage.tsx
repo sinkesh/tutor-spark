@@ -672,7 +672,7 @@ export default function FeedbackPage() {
           </div>
 
           {/* Stats */}
-          <div className="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-4 opacity-60 pointer-events-none">
+          <div className="hidden grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-4 opacity-60 pointer-events-none">
             <FeedbackStatsCard
               title="Pending Reviews"
               value={pendingCount}
