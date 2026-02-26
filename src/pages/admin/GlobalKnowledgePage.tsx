@@ -24,68 +24,34 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Globe,
   Plus,
-  FileText,
-  Trash2,
   Upload,
-  RefreshCw,
+  FileText,
+  Globe,
   GripVertical,
   Edit2,
   Check,
   X,
+  Trash2,
+  RefreshCw,
 } from "lucide-react";
 import {
   globalPromptEnable,
   globalRagKnowledge,
   sharedKnowledgeUpload,
-  sharedKnowledgeEnable,
   deleteRagKnowledge,
+  globalPrompts,
+  deleteGlobalPrompts,
+  createGlobalPrompts,
 } from "@/config/services";
 
-const mockGlobalPrompts = [
-  {
-    id: "1",
-    title: "Respectful Communication",
-    content:
-      "Always communicate respectfully with students. Use encouraging language and avoid criticism.",
-    priority: 1,
-    enabled: false,
-    version: 3,
-  },
-  // {
-  //   id: '2',
-  //   title: 'Learning-First Approach',
-  //   content: 'Focus on helping students understand concepts rather than just providing answers. Ask guiding questions.',
-  //   priority: 2,
-  //   enabled: true,
-  //   version: 2,
-  // },
-  {
-    id: "3",
-    title: "Safety Guidelines",
-    content:
-      "Never provide content that is harmful, inappropriate, or off-topic. Redirect to learning materials.",
-    priority: 2,
-    enabled: false,
-    version: 1,
-  },
-  // {
-  //   id: '4',
-  //   title: 'Citation Requirements',
-  //   content: 'When referencing specific facts or data, cite the source from the knowledge base.',
-  //   priority: 4,
-  //   enabled: false,
-  //   version: 1,
-  // },
-];
-
 export default function GlobalKnowledgePage() {
-  const [prompts, setPrompts] = useState(mockGlobalPrompts);
+  const [prompts, setPrompts] = useState([]);
   const [rags, setRags] = useState([]);
   const [showAddPrompt, setShowAddPrompt] = useState(false);
   const [newPrompt, setNewPrompt] = useState({ title: "", content: "" });
   const [isLoading, setIsLoading] = useState(false);
+  const [isPromptsLoading, setIsPromptsLoading] = useState(false);
 
   // Upload dialog state
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -95,7 +61,33 @@ export default function GlobalKnowledgePage() {
 
   useEffect(() => {
     fetchGlobalRag();
+    fetchGlobalPrompts();
   }, []);
+
+  const fetchGlobalPrompts = async () => {
+    try {
+      setIsPromptsLoading(true);
+      const response = await globalPrompts();
+      if (response?.status === "success" && response?.prompts) {
+        const promptsData = response.prompts.map((prompt: any) => ({
+          id: prompt.id,
+          title: prompt.name,
+          content: prompt.content,
+          priority: prompt.priority || 1,
+          enabled: prompt.enabled || false,
+          version: prompt.version || "v1",
+          created_at: prompt.created_at,
+          updated_at: prompt.updated_at,
+        }));
+        setPrompts(promptsData);
+      }
+    } catch (error) {
+      console.error("Error fetching global prompts:", error);
+      toast.error("Failed to fetch prompts");
+    } finally {
+      setIsPromptsLoading(false);
+    }
+  };
 
   const fetchGlobalRag = async () => {
     try {
@@ -155,22 +147,33 @@ export default function GlobalKnowledgePage() {
     }
   };
 
-  const handleAddPrompt = () => {
-    if (!newPrompt.title || !newPrompt.content) return;
-    setPrompts([
-      ...prompts,
-      {
-        id: String(Date.now()),
-        title: newPrompt.title,
+  const handleAddPrompt = async () => {
+    if (!newPrompt.title.trim() || !newPrompt.content.trim()) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    try {
+      const promptData = {
+        name: newPrompt.title,
         content: newPrompt.content,
-        priority: prompts.length + 1,
-        enabled: true,
-        version: 1,
-      },
-    ]);
-    setNewPrompt({ title: "", content: "" });
-    setShowAddPrompt(false);
-    toast.success("Prompt added successfully");
+        priority: 1,
+        version: "v1",
+      };
+
+      const response = await createGlobalPrompts(promptData);
+      if (response?.status === "success") {
+        toast.success("Prompt created successfully");
+        setNewPrompt({ title: "", content: "" });
+        setShowAddPrompt(false);
+        await fetchGlobalPrompts();
+      } else {
+        throw new Error(response?.message || "Create failed");
+      }
+    } catch (error: any) {
+      console.error("Error creating prompt:", error);
+      toast.error(error?.message || "Failed to create prompt");
+    }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -218,6 +221,21 @@ export default function GlobalKnowledgePage() {
     setUploadDescription("");
     setUploadedFile(null);
     setShowUploadDialog(false);
+  };
+
+  const handleDeletePrompt = async (promptId: string) => {
+    try {
+      const response = await deleteGlobalPrompts(promptId);
+      if (response?.status === "success") {
+        toast.success("Prompt deleted successfully");
+        await fetchGlobalPrompts();
+      } else {
+        throw new Error(response?.message || "Delete failed");
+      }
+    } catch (error: any) {
+      console.error("Error deleting prompt:", error);
+      toast.error(error?.message || "Failed to delete prompt");
+    }
   };
 
   const handleDelete = async (documentId: string) => {
@@ -368,12 +386,12 @@ export default function GlobalKnowledgePage() {
                                 onCheckedChange={() => togglePrompt(prompt.id)}
                               />
                             </div>
-                            {/* <Button variant="ghost" size="icon-sm">
+                            <Button variant="ghost" size="icon-sm" disabled>
                               <Edit2 className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon-sm">
+                            <Button variant="ghost" size="icon-sm" onClick={() => handleDeletePrompt(prompt.id)}>
                               <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button> */}
+                            </Button>
                           </div>
                         </div>
                         <p className="text-sm text-muted-foreground">

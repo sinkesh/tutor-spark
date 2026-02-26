@@ -84,31 +84,36 @@ export function ReviewDetailPanel({
     label: string;
     icon: typeof Edit2;
     description: string;
+    isDisabled: boolean;
   }[] = [
     {
       type: "prompt_edit",
       label: "Edit Prompt",
       icon: Edit2,
       description: "Modify agent system prompt",
+      isDisabled: true,
     },
-    // {
-    //   type: "rag_update",
-    //   label: "Update RAG",
-    //   icon: FileText,
-    //   description: "Re-index or add documents",
-    // },
+    {
+      type: "rag_update",
+      label: "Update RAG",
+      icon: FileText,
+      description: "Re-index or add documents",
+      isDisabled: true,
+    },
     {
       type: "knowledge_add",
-      label: "Add/Update Knowledge",
+      label: "Add Knowledge",
       icon: Upload,
       description: "Upload corrective content",
+      isDisabled: true,
     },
-    // {
-    //   type: "config_change",
-    //   label: "Config Change",
-    //   icon: Zap,
-    //   description: "Adjust model parameters",
-    // },
+    {
+      type: "config_change",
+      label: "Config Change",
+      icon: Zap,
+      description: "Adjust model parameters",
+      isDisabled: false,
+    },
   ];
 
   const handleResolve = () => {
@@ -344,7 +349,7 @@ export function ReviewDetailPanel({
                     variant={
                       selectedAction === action.type ? "default" : "outline"
                     }
-                    className="w-full h-auto py-3 px-3 flex flex-col items-start gap-1 text-left"
+                    className={`w-full h-auto py-3 px-3 flex flex-col items-start gap-1 text-left ${action.isDisabled ? "opacity-80 pointer-events-none" : ""}`}
                     onClick={() => setSelectedAction(action.type)}
                   >
                     <div className="flex items-center gap-2">

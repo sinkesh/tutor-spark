@@ -235,3 +235,18 @@ export const deleteRagKnowledge = async (document_id: any) => {
   const response = await apiDataJson.delete(`${API_URL.SHARED_KNOWLEDGE_ENABLE}/${document_id}`);
   return response.data;
 };
+
+export const createGlobalPrompts = async (data: any) => {
+  const response = await apiDataJson.post(API_URL.GLOBAL_PROMPTS, data);
+  return response.data;
+};
+
+export const globalPrompts = async () => {
+  const response = await apiDataJson.get(API_URL.GLOBAL_PROMPTS);
+  return response.data;
+};
+
+export const deleteGlobalPrompts = async (id: any) => {
+  const response = await apiDataJson.delete(API_URL.GLOBAL_PROMPTS + "/" + id);
+  return response.data;
+};

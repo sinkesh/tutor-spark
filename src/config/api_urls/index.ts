@@ -25,4 +25,5 @@ export const API_URL = {
   SHARED_KNOWLEDGE_UPLOAD: "/admin/shared-knowledge/upload",
   GLOBAL_RAG_KNOWLEDGE: "/admin/global-rag-knowledge",
   SHARED_KNOWLEDGE_ENABLE: "/admin/shared-knowledge",
+  GLOBAL_PROMPTS: "/admin/global-prompts",
 };
