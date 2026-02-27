@@ -50,7 +50,7 @@ export default function ProfilePage() {
 
   return (
     <StudentLayout>
-      <div className="p-8">
+      <div className="md:p-8 p-4">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
@@ -83,7 +83,7 @@ export default function ProfilePage() {
                 {/* Avatar */}
                 <div className="flex items-center gap-6">
                   <div className="relative">
-                    <div className="w-24 h-24 rounded-full bg-accent/10 flex items-center justify-center">
+                    <div className="md:w-24 md:h-24 w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center">
                       <span className="text-3xl font-bold text-accent">
                         {user?.name.charAt(0)}
                       </span>
@@ -96,14 +96,14 @@ export default function ProfilePage() {
                       <Camera className="w-4 h-4" />
                     </Button>
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-semibold text-lg">{user?.name}</h3>
-                    <p className="text-muted-foreground">{user?.email}</p>
+                    <p className="text-muted-foreground break-all">{user?.email}</p>
                     <Badge className="mt-2 capitalize">{user?.role}</Badge>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-70 pointer-events-none">
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name</Label>
                     <Input
@@ -123,7 +123,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <Button>
+                <Button className='opacity-70 pointer-events-none'>
                   <Save className="w-4 h-4 mr-2" />
                   Save Changes
                 </Button>
@@ -131,13 +131,13 @@ export default function ProfilePage() {
             </Card>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <Card>
                 <CardContent className="p-4 flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <MessageSquare className="w-5 h-5 text-primary" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-2xl font-bold">156</p>
                     <p className="text-sm text-muted-foreground">Total Conversations</p>
                   </div>
@@ -148,7 +148,7 @@ export default function ProfilePage() {
                   <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
                     <BookOpen className="w-5 h-5 text-accent" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-2xl font-bold">4</p>
                     <p className="text-sm text-muted-foreground">Enrolled Courses</p>
                   </div>
@@ -159,7 +159,7 @@ export default function ProfilePage() {
                   <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
                     <Calendar className="w-5 h-5 text-muted-foreground" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm font-medium">Member since</p>
                     <p className="text-sm text-muted-foreground">Jan 2024</p>
                   </div>
@@ -242,7 +242,7 @@ export default function ProfilePage() {
                 </CardTitle>
                 <CardDescription>Control how you receive notifications</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 opacity-70 pointer-events-none">
                 <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
                   <div>
                     <p className="font-medium">Email Updates</p>
@@ -284,7 +284,7 @@ export default function ProfilePage() {
                 </CardTitle>
                 <CardDescription>Manage your account security</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 opacity-70 pointer-events-none">
                 <Button variant="outline" className="w-full justify-start">
                   <Shield className="w-4 h-4 mr-2" />
                   Change Password

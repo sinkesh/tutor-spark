@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import StudentLayout from '@/components/layout/StudentLayout';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,8 @@ import {
   Clock,
   Filter,
 } from 'lucide-react';
+import { getRecentActivityStudent } from '@/config/services';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ConversationHistory {
   id: string;
@@ -121,6 +123,9 @@ const groupByDate = (conversations: ConversationHistory[]) => {
 export default function HistoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+    const [isLoading, setIsLoading] = useState(false);
+    const [recentActivity, setRecentActivity] = useState(null);
+    const { user } = useAuth();
 
   const filteredHistory = mockHistory.filter((conv) => {
     const matchesSearch =
@@ -131,6 +136,23 @@ export default function HistoryPage() {
   });
 
   const groupedHistory = groupByDate(filteredHistory);
+
+  useEffect(()=> {
+    fetchRecentActivity();
+  }, []);
+
+    const fetchRecentActivity = async () => {
+      try {
+        setIsLoading(true);
+  
+        const res = await getRecentActivityStudent(user?.id);
+        setRecentActivity(res);
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
   return (
     <StudentLayout>
@@ -149,14 +171,14 @@ export default function HistoryPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <Card>
             <CardContent className="p-4 flex items-center gap-4">
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <MessageSquare className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{mockHistory.length}</p>
+                <p className="text-2xl font-bold">{recentActivity?.total_count}</p>
                 <p className="text-sm text-muted-foreground">Total Conversations</p>
               </div>
             </CardContent>
@@ -167,13 +189,13 @@ export default function HistoryPage() {
                 <Bot className="w-5 h-5 text-accent" />
               </div>
               <div>
-                <p className="text-2xl font-bold">4</p>
+                <p className="text-2xl font-bold">{recentActivity?.agents_used_count}</p>
                 <p className="text-sm text-muted-foreground">AI Teachers Used</p>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 flex items-center gap-4">
+            <CardContent className="p-4 flex items-center gap-4 opacity-70 pointer-events-none">
               <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
                 <Clock className="w-5 h-5 text-muted-foreground" />
               </div>

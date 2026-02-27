@@ -7,12 +7,12 @@ import {
   GraduationCap,
   Home,
   FolderTree,
-  MessageCircle,
   History,
   User,
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Menu,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -31,13 +31,24 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background flex">
+      {/* Mobile backdrop */}
+      {mobileSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+      
       {/* Sidebar */}
       <aside 
         className={cn(
-          "fixed left-0 top-0 h-full bg-card border-r border-border transition-all duration-300 z-50",
+          "fixed left-0 top-0 h-screen overflow-y-auto bg-card border-r border-border transition-all duration-300 z-50 lg:relative",
+          "transform lg:transform-none",
+          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
           collapsed ? "w-20" : "w-64"
         )}
       >
@@ -119,10 +130,20 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
 
       {/* Main content */}
       <main className={cn(
-        "flex-1 transition-all duration-300",
-        collapsed ? "ml-20" : "ml-64"
+        "flex-1 transition-all duration-300 h-screen overflow-y-auto",
+        collapsed ? "w-[calc(100%-80px)]" : "w-[calc(100%-256px)]"
       )}>
-        <div className="min-h-screen">
+        <div className="">
+          <div className='w-full bg-background'>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+              className="lg:hidden"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+          </div>
           {children}
         </div>
       </main>

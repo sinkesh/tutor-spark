@@ -12,7 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getStudentAgent } from "@/config/services";
+import { getRecentActivityStudent, getStudentAgent } from "@/config/services";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import SubjectSkeletonItem from "@/components/loader/SubjectSkeletonItem";
@@ -67,6 +67,7 @@ const suggestedAgents = [
 export default function StudentDashboard() {
   const [isSubject, setIsSubject] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [recentActivity, setRecentActivity] = useState(null);
   const { user } = useAuth();
 
   const getSubject = async () => {
@@ -92,7 +93,21 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     getSubject();
+    fetchRecentActivity();
   }, []);
+
+  const fetchRecentActivity = async () => {
+    try {
+      setIsLoading(true);
+
+      const res = await getRecentActivityStudent(user?.id);
+      setRecentActivity(res);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <StudentLayout>
@@ -111,20 +126,20 @@ export default function StudentDashboard() {
         {/* Quick Start */}
         <Card variant="glow" className="mb-8 overflow-hidden">
           <CardContent className="p-6">
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 rounded-2xl gradient-accent flex items-center justify-center shadow-lg">
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              <div className="w-16 h-16 rounded-2xl gradient-accent flex items-center justify-center shadow-lg flex-shrink-0">
                 <Sparkles className="w-8 h-8 text-accent-foreground" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 text-center sm:text-left">
                 <h2 className="text-xl font-semibold text-foreground mb-1">
                   Ready to learn?
                 </h2>
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground mb-4 sm:mb-0">
                   Pick up where you left off or explore new topics
                 </p>
               </div>
-              <Link to="/student/chat/1">
-                <Button variant="gradient-accent" size="lg">
+              <Link to="/student/explore" className="w-full sm:w-auto">
+                <Button variant="gradient-accent" size="lg" className="w-full sm:w-auto">
                   Start Learning
                   <ArrowRight className="w-5 h-5" />
                 </Button>
@@ -195,10 +210,10 @@ export default function StudentDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {isSubject?.slice(0, 3).map((cls) => (
+                {recentActivity?.recent_activity?.slice(0, 3).map((cls) => (
                   <Link
-                    key={cls}
-                    to={`/student/explore?class=${cls.id}`}
+                    key={cls?.agent_id}
+                    to={`/student/explore?class=${cls?.agent_id}`}
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors group"
                   >
                     <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
@@ -207,10 +222,10 @@ export default function StudentDashboard() {
 
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                        {cls.name}
+                        {cls?.subject}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        2 hours ago
+                        {cls?.time_ago}
                       </p>
                     </div>
                   </Link>

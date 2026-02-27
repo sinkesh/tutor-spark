@@ -250,3 +250,8 @@ export const deleteGlobalPrompts = async (id: any) => {
   const response = await apiDataJson.delete(API_URL.GLOBAL_PROMPTS + "/" + id);
   return response.data;
 };
+
+export const getRecentActivityStudent = async (studentId: string) => {
+  const response = await apiDataJson.get(`${API_URL.STUDENT}/${studentId}/recent-activity`);
+  return response.data;
+};
