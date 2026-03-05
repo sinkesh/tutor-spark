@@ -3,7 +3,14 @@ import StudentLayout from "@/components/layout/StudentLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Search, Bot, BookOpen, Layers, GraduationCap, User } from "lucide-react";
+import {
+  Search,
+  Bot,
+  BookOpen,
+  Layers,
+  GraduationCap,
+  User,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { agentOfClass, getStudentAgent } from "@/config/services";
 import { toast } from "sonner";
@@ -32,12 +39,12 @@ export default function ExplorePage() {
       setIsLoading(true);
 
       const res = await getStudentAgent(user?.id);
-      
+
       const allSubjects = [
         ...(res?.student_subjects || []),
-        ...(res?.general_subjects || [])
+        ...(res?.general_subjects || []),
       ];
-      
+
       setIsSubject(allSubjects);
       toast.success("Data get successfully");
     } catch (err) {
@@ -51,16 +58,14 @@ export default function ExplorePage() {
   useEffect(() => {
     getSubject();
   }, []);
-  
+
   return (
     <StudentLayout>
-      <div className="p-8">
+      <div className="md:p-8 p-4">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">Explore</h1>
-          <p className="text-muted-foreground mt-1">
-            Browse all your subjects
-          </p>
+          <p className="text-muted-foreground mt-1">Browse all your subjects</p>
         </div>
 
         {/* Search */}

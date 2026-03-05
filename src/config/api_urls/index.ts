@@ -1,6 +1,5 @@
 export const BASE_URL = "https://api.tecorb.in";
-// export const BASE_URL =
-//   "https://0eec-2401-4900-1c62-86bc-800a-dadd-e50b-8bb5.ngrok-free.app";
+// export const BASE_URL = "https://6a83-38-254-184-90.ngrok-free.app";
 export const VERSION = "/api/v1";
 
 export const API_URL = {

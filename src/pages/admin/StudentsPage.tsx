@@ -155,18 +155,18 @@ export default function StudentsPage() {
     setIsChangePasswordDialogOpen(true);
   };
 
-    const fetchDashboardCounts = async() => {
-      try {
-        setIsLoading(true);
-        const response = await getDashboardCounts();
-        setDashboardCounts(response);
-      } catch (err) {
-        console.error("Error fetching dashboard counts:", err);
-        toast.error("Failed to fetch dashboard counts");
-      } finally {
-        setIsLoading(false);
-      }
+  const fetchDashboardCounts = async () => {
+    try {
+      setIsLoading(true);
+      const response = await getDashboardCounts();
+      setDashboardCounts(response);
+    } catch (err) {
+      console.error("Error fetching dashboard counts:", err);
+      toast.error("Failed to fetch dashboard counts");
+    } finally {
+      setIsLoading(false);
     }
+  };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -340,7 +340,7 @@ export default function StudentsPage() {
 
   const paginatedStudents = students.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   const totalPages = Math.ceil(students.length / itemsPerPage);
@@ -502,7 +502,7 @@ export default function StudentsPage() {
 
   return (
     <AdminLayout>
-      <div className="p-8">
+      <div className="md:p-8 p-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -651,13 +651,20 @@ export default function StudentsPage() {
                           onValueChange={(value) => handleStandardChange(value)}
                         >
                           <SelectTrigger
-                            className={errors.class_name ? "border-red-500 bg-white" : "bg-white"}
+                            className={
+                              errors.class_name
+                                ? "border-red-500 bg-white"
+                                : "bg-white"
+                            }
                           >
                             <SelectValue placeholder="Select standard" />
                           </SelectTrigger>
                           <SelectContent>
                             {classOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
                                 {option.label}
                               </SelectItem>
                             ))}
@@ -765,7 +772,9 @@ export default function StudentsPage() {
                   <Users className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{dashboardCounts?.students?.total}</p>
+                  <p className="text-2xl font-bold">
+                    {dashboardCounts?.students?.total}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     Total Students
                   </p>
@@ -839,66 +848,78 @@ export default function StudentsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="whitespace-nowrap">Student ID</TableHead>
+                    <TableHead className="whitespace-nowrap">
+                      Student ID
+                    </TableHead>
                     <TableHead className="whitespace-nowrap">Name</TableHead>
                     <TableHead className="whitespace-nowrap">Class</TableHead>
-                    <TableHead className="whitespace-nowrap">Subjects</TableHead>
+                    <TableHead className="whitespace-nowrap">
+                      Subjects
+                    </TableHead>
                     {/* <TableHead className="whitespace-nowrap">Status</TableHead> */}
-                    <TableHead className="whitespace-nowrap">Last Active</TableHead>
-                    <TableHead className="whitespace-nowrap w-[50px]">Actions</TableHead>
+                    <TableHead className="whitespace-nowrap">
+                      Last Active
+                    </TableHead>
+                    <TableHead className="whitespace-nowrap w-[50px]">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
-              <TableBody>
-                {paginatedStudents.map((student) => (
-                  <TableRow key={student.student_id}>
-                    <TableCell className="font-mono text-sm">
-                      {student.student_id}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-sm font-semibold text-primary">
-                            {student.name?.charAt(0) || "?"}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-medium">{student.name || "N/A"}</p>
-                          {student.email ? (
-                            <span className="flex items-center gap-1">
-                              <Mail className="w-3 h-3 flex-shrink-0" />
-                              <span className="truncate max-w-[200px]">
-                                {student.email}
-                              </span>
+                <TableBody>
+                  {paginatedStudents.map((student) => (
+                    <TableRow key={student.student_id}>
+                      <TableCell className="font-mono text-sm">
+                        {student.student_id}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-sm font-semibold text-primary">
+                              {student.name?.charAt(0) || "?"}
                             </span>
-                          ) : null}
+                          </div>
+                          <div>
+                            <p className="font-medium">
+                              {student.name || "N/A"}
+                            </p>
+                            {student.email ? (
+                              <span className="flex items-center gap-1">
+                                <Mail className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate max-w-[200px]">
+                                  {student.email}
+                                </span>
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{student.class || "N/A"}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1 max-w-[200px]">
-                        {student.subject_agent?.length ? (
-                          student.subject_agent.map(
-                            (subject: any, idx: number) => (
-                              <Badge
-                                key={`${student.student_id}-subj-${idx}`}
-                                variant="secondary"
-                                className="text-xs"
-                              >
-                                {subject.subject}
-                              </Badge>
-                            ),
-                          )
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            No subjects
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    {/* <TableCell>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {student.class || "N/A"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1 max-w-[200px]">
+                          {student.subject_agent?.length ? (
+                            student.subject_agent.map(
+                              (subject: any, idx: number) => (
+                                <Badge
+                                  key={`${student.student_id}-subj-${idx}`}
+                                  variant="secondary"
+                                  className="text-xs"
+                                >
+                                  {subject.subject}
+                                </Badge>
+                              ),
+                            )
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              No subjects
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      {/* <TableCell>
                       <Badge
                         variant={
                           student.status === "active" ? "default" : "secondary"
@@ -912,58 +933,58 @@ export default function StudentsPage() {
                         {student.status || "inactive"}
                       </Badge>
                     </TableCell> */}
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Calendar className="w-3 h-3 flex-shrink-0" />
-                        {student.lastActive || "N/A"}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon-sm">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleEditStudent(student.student_id)
-                            }
-                            className="cursor-pointer"
-                          >
-                            <Edit2 className="w-4 h-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleChangePassword(student.student_id)
-                            }
-                            className="cursor-pointer"
-                          >
-                            <Edit2 className="w-4 h-4 mr-2" />
-                            Change Password
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive cursor-pointer"
-                            onClick={() =>
-                              handleDeleteStudent(student.student_id)
-                            }
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Remove
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      <TableCell>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Calendar className="w-3 h-3 flex-shrink-0" />
+                          {student.lastActive || "N/A"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon-sm">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleEditStudent(student.student_id)
+                              }
+                              className="cursor-pointer"
+                            >
+                              <Edit2 className="w-4 h-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleChangePassword(student.student_id)
+                              }
+                              className="cursor-pointer"
+                            >
+                              <Edit2 className="w-4 h-4 mr-2" />
+                              Change Password
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive cursor-pointer"
+                              onClick={() =>
+                                handleDeleteStudent(student.student_id)
+                              }
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Remove
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Pagination */}
         {totalPages > 1 && (
           <PaginationComponent
@@ -1068,4 +1089,3 @@ export default function StudentsPage() {
     </AdminLayout>
   );
 }
-

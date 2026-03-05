@@ -75,12 +75,12 @@ export default function StudentDashboard() {
       setIsLoading(true);
 
       const res = await getStudentAgent(user?.id);
-      
+
       const allSubjects = [
         ...(res?.student_subjects || []),
-        ...(res?.general_subjects || [])
+        ...(res?.general_subjects || []),
       ];
-      
+
       setIsSubject(allSubjects);
       toast.success("Data get successfully");
     } catch (err) {
@@ -111,7 +111,7 @@ export default function StudentDashboard() {
 
   return (
     <StudentLayout>
-      <div className="p-8">
+      <div className="md:p-8 p-4">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">
@@ -139,7 +139,11 @@ export default function StudentDashboard() {
                 </p>
               </div>
               <Link to="/student/explore" className="w-full sm:w-auto">
-                <Button variant="gradient-accent" size="lg" className="w-full sm:w-auto">
+                <Button
+                  variant="gradient-accent"
+                  size="lg"
+                  className="w-full sm:w-auto"
+                >
                   Start Learning
                   <ArrowRight className="w-5 h-5" />
                 </Button>

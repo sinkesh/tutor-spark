@@ -3,12 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -271,7 +266,7 @@ export default function GlobalKnowledgePage() {
 
   return (
     <AdminLayout>
-      <div className="p-8">
+      <div className="md:p-8 p-4">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
@@ -389,7 +384,11 @@ export default function GlobalKnowledgePage() {
                             <Button variant="ghost" size="icon-sm" disabled>
                               <Edit2 className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon-sm" onClick={() => handleDeletePrompt(prompt.id)}>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => handleDeletePrompt(prompt.id)}
+                            >
                               <Trash2 className="w-4 h-4 text-destructive" />
                             </Button>
                           </div>
@@ -582,18 +581,19 @@ export default function GlobalKnowledgePage() {
                       No RAG Documents Available
                     </h3>
                     <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                      Upload your first knowledge document to get started with RAG (Retrieval Augmented Generation) for your agents.
+                      Upload your first knowledge document to get started with
+                      RAG (Retrieval Augmented Generation) for your agents.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                      <Button 
+                      <Button
                         onClick={() => setShowUploadDialog(true)}
                         className="gap-2"
                       >
                         <Upload className="w-4 h-4" />
                         Upload First Document
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={() => window.location.reload()}
                         className="gap-2"
                       >
@@ -632,10 +632,16 @@ export default function GlobalKnowledgePage() {
                                   ` / ${rag.totalChunks}`}
                               </Badge>
                             ) : (
-                              <Badge variant="secondary">Pending indexing</Badge>
+                              <Badge variant="secondary">
+                                Pending indexing
+                              </Badge>
                             )}
                           </div>
-                          <Button variant="ghost" size="icon-sm" onClick={() => handleDelete(rag.id)}>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => handleDelete(rag.id)}
+                          >
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
                         </div>

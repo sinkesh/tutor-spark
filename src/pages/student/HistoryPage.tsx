@@ -1,17 +1,17 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import StudentLayout from '@/components/layout/StudentLayout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import StudentLayout from "@/components/layout/StudentLayout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   History,
   Search,
@@ -21,15 +21,15 @@ import {
   ChevronRight,
   Clock,
   Filter,
-} from 'lucide-react';
-import { getRecentActivityStudent } from '@/config/services';
-import { useAuth } from '@/contexts/AuthContext';
+} from "lucide-react";
+import { getRecentActivityStudent } from "@/config/services";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ConversationHistory {
   id: string;
   agentId: string;
   agentName: string;
-  agentType: 'class' | 'subject' | 'course' | 'teacher';
+  agentType: "class" | "subject" | "course" | "teacher";
   preview: string;
   messageCount: number;
   lastMessage: string;
@@ -38,60 +38,60 @@ interface ConversationHistory {
 
 const mockHistory: ConversationHistory[] = [
   {
-    id: '1',
-    agentId: '1',
-    agentName: 'Advanced Mathematics Tutor',
-    agentType: 'subject',
-    preview: 'Can you explain the chain rule in calculus?',
+    id: "1",
+    agentId: "1",
+    agentName: "Advanced Mathematics Tutor",
+    agentType: "subject",
+    preview: "Can you explain the chain rule in calculus?",
     messageCount: 12,
-    lastMessage: '2 hours ago',
-    createdAt: '2024-01-20',
+    lastMessage: "2 hours ago",
+    createdAt: "2024-01-20",
   },
   {
-    id: '2',
-    agentId: '2',
-    agentName: 'Physics Teacher',
-    agentType: 'subject',
-    preview: 'What is the difference between velocity and acceleration?',
+    id: "2",
+    agentId: "2",
+    agentName: "Physics Teacher",
+    agentType: "subject",
+    preview: "What is the difference between velocity and acceleration?",
     messageCount: 8,
-    lastMessage: '1 day ago',
-    createdAt: '2024-01-19',
+    lastMessage: "1 day ago",
+    createdAt: "2024-01-19",
   },
   {
-    id: '3',
-    agentId: '3',
-    agentName: 'English Literature Guide',
-    agentType: 'course',
-    preview: 'Help me analyze the themes in Hamlet',
+    id: "3",
+    agentId: "3",
+    agentName: "English Literature Guide",
+    agentType: "course",
+    preview: "Help me analyze the themes in Hamlet",
     messageCount: 15,
-    lastMessage: '2 days ago',
-    createdAt: '2024-01-18',
+    lastMessage: "2 days ago",
+    createdAt: "2024-01-18",
   },
   {
-    id: '4',
-    agentId: '1',
-    agentName: 'Advanced Mathematics Tutor',
-    agentType: 'subject',
-    preview: 'How do I solve quadratic equations?',
+    id: "4",
+    agentId: "1",
+    agentName: "Advanced Mathematics Tutor",
+    agentType: "subject",
+    preview: "How do I solve quadratic equations?",
     messageCount: 6,
-    lastMessage: '3 days ago',
-    createdAt: '2024-01-17',
+    lastMessage: "3 days ago",
+    createdAt: "2024-01-17",
   },
   {
-    id: '5',
-    agentId: '4',
-    agentName: 'Biology Tutor',
-    agentType: 'subject',
-    preview: 'Explain the process of photosynthesis',
+    id: "5",
+    agentId: "4",
+    agentName: "Biology Tutor",
+    agentType: "subject",
+    preview: "Explain the process of photosynthesis",
     messageCount: 10,
-    lastMessage: '1 week ago',
-    createdAt: '2024-01-13',
+    lastMessage: "1 week ago",
+    createdAt: "2024-01-13",
   },
 ];
 
 const groupByDate = (conversations: ConversationHistory[]) => {
   const groups: { [key: string]: ConversationHistory[] } = {};
-  
+
   conversations.forEach((conv) => {
     const date = new Date(conv.createdAt);
     const today = new Date();
@@ -102,13 +102,13 @@ const groupByDate = (conversations: ConversationHistory[]) => {
 
     let groupKey: string;
     if (date.toDateString() === today.toDateString()) {
-      groupKey = 'Today';
+      groupKey = "Today";
     } else if (date.toDateString() === yesterday.toDateString()) {
-      groupKey = 'Yesterday';
+      groupKey = "Yesterday";
     } else if (date > lastWeek) {
-      groupKey = 'This Week';
+      groupKey = "This Week";
     } else {
-      groupKey = 'Earlier';
+      groupKey = "Earlier";
     }
 
     if (!groups[groupKey]) {
@@ -121,42 +121,42 @@ const groupByDate = (conversations: ConversationHistory[]) => {
 };
 
 export default function HistoryPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-    const [isLoading, setIsLoading] = useState(false);
-    const [recentActivity, setRecentActivity] = useState(null);
-    const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [isLoading, setIsLoading] = useState(false);
+  const [recentActivity, setRecentActivity] = useState(null);
+  const { user } = useAuth();
 
   const filteredHistory = mockHistory.filter((conv) => {
     const matchesSearch =
       conv.agentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       conv.preview.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === 'all' || conv.agentType === typeFilter;
+    const matchesType = typeFilter === "all" || conv.agentType === typeFilter;
     return matchesSearch && matchesType;
   });
 
   const groupedHistory = groupByDate(filteredHistory);
 
-  useEffect(()=> {
+  useEffect(() => {
     fetchRecentActivity();
   }, []);
 
-    const fetchRecentActivity = async () => {
-      try {
-        setIsLoading(true);
-  
-        const res = await getRecentActivityStudent(user?.id);
-        setRecentActivity(res);
-      } catch (err) {
-        console.log(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchRecentActivity = async () => {
+    try {
+      setIsLoading(true);
+
+      const res = await getRecentActivityStudent(user?.id);
+      setRecentActivity(res);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <StudentLayout>
-      <div className="p-8">
+      <div className="md:p-8 p-4">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
@@ -164,8 +164,12 @@ export default function HistoryPage() {
               <History className="w-6 h-6 text-accent-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Conversation History</h1>
-              <p className="text-muted-foreground">Review and continue past learning sessions</p>
+              <h1 className="text-2xl font-bold text-foreground">
+                Conversation History
+              </h1>
+              <p className="text-muted-foreground">
+                Review and continue past learning sessions
+              </p>
             </div>
           </div>
         </div>
@@ -178,8 +182,12 @@ export default function HistoryPage() {
                 <MessageSquare className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{recentActivity?.total_count}</p>
-                <p className="text-sm text-muted-foreground">Total Conversations</p>
+                <p className="text-2xl font-bold">
+                  {recentActivity?.total_count}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Total Conversations
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -189,8 +197,12 @@ export default function HistoryPage() {
                 <Bot className="w-5 h-5 text-accent" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{recentActivity?.agents_used_count}</p>
-                <p className="text-sm text-muted-foreground">AI Teachers Used</p>
+                <p className="text-2xl font-bold">
+                  {recentActivity?.agents_used_count}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  AI Teachers Used
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -253,8 +265,13 @@ export default function HistoryPage() {
                             </div>
                             <div>
                               <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-medium">{conv.agentName}</h4>
-                                <Badge variant="secondary" className="capitalize text-xs">
+                                <h4 className="font-medium">
+                                  {conv.agentName}
+                                </h4>
+                                <Badge
+                                  variant="secondary"
+                                  className="capitalize text-xs"
+                                >
                                   {conv.agentType}
                                 </Badge>
                               </div>
@@ -289,9 +306,9 @@ export default function HistoryPage() {
                 <History className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
                 <h3 className="font-medium mb-2">No conversations found</h3>
                 <p className="text-sm text-muted-foreground">
-                  {searchQuery || typeFilter !== 'all'
-                    ? 'Try adjusting your search or filter'
-                    : 'Start chatting with an AI teacher to see your history here'}
+                  {searchQuery || typeFilter !== "all"
+                    ? "Try adjusting your search or filter"
+                    : "Start chatting with an AI teacher to see your history here"}
                 </p>
               </CardContent>
             </Card>
