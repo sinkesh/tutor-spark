@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS Test</title>
+</head>
+<body>
+    <h1>TTS API Test</h1>
+    <button onclick="testTTS()">Test TTS</button>
+    <div id="status"></div>
+
+    <script>
+        async function testTTS() {
+            const status = document.getElementById('status');
+            status.textContent = 'Testing TTS...';
+            
+            try {
+                const response = await fetch('http://localhost:8080/tts-stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: "This is a test of the text to speech functionality",
+                        voice: 'en-IN-NeerjaNeural',
+                        rate: '+30%'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+                
+                audio.play();
+                status.textContent = 'TTS playing...';
+                
+                audio.onended = () => {
+                    URL.revokeObjectURL(audioUrl);
+                    status.textContent = 'TTS completed';
+                };
+                
+                audio.onerror = () => {
+                    URL.revokeObjectURL(audioUrl);
+                    status.textContent = 'TTS playback failed';
+                };
+                
+            } catch (error) {
+                console.error('TTS test failed:', error);
+                status.textContent = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

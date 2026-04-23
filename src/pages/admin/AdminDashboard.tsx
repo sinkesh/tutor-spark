@@ -14,6 +14,9 @@ import {
   Plus,
   ArrowRight,
   Clock,
+  ShieldCheck,
+  Sparkles,
+  Activity,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -118,9 +121,51 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout>
-      <div className="md:p-8 p-4">
+      <div className="p-4 sm:p-6 lg:p-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="dashboard-hero mb-8">
+          <div className="relative flex flex-col gap-5 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative">
+              <Badge variant="secondary" className="dashboard-chip mb-4 border-0 bg-transparent px-0 py-0 text-[11px]">
+                <Sparkles className="h-3.5 w-3.5 text-fuchsia-500" />
+                Admin control center
+              </Badge>
+              <h1 className="text-3xl font-black tracking-[-0.04em] text-foreground sm:text-5xl">
+                Command the platform
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
+                Track platform health, student momentum, agent performance, and moderation from one brighter, more operational control deck.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <div className="dashboard-chip normal-case tracking-normal text-xs sm:text-sm">
+                  <Activity className="h-4 w-4 text-sky-500" />
+                  Live platform pulse
+                </div>
+                <div className="dashboard-chip normal-case tracking-normal text-xs sm:text-sm">
+                  <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                  Safer oversight flow
+                </div>
+              </div>
+            </div>
+            <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="metric-tile rounded-[24px] px-4 py-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <ShieldCheck className="h-4 w-4 text-success" />
+                  System online
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">Live services connected</p>
+              </div>
+              <Link to="/admin/agents/create">
+                <Button variant="gradient" size="lg" className="w-full sm:w-auto">
+                  <Plus className="w-5 h-5" />
+                  Create Agent
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        <div className="hidden items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
             <p className="text-muted-foreground mt-1">
@@ -178,7 +223,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Top Performing Agents */}
           <div className="xl:col-span-2">
-            <Card variant="default">
+            <Card variant="elevated" className="insight-card border-0">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Top Performing Agents</CardTitle>
                 <Link to="/admin/agents">
@@ -200,8 +245,8 @@ export default function AdminDashboard() {
                     <AgentCard key={index} agent={agent} />
                   ))
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed rounded-xl bg-muted/30">
-                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <div className="flex flex-col items-center justify-center rounded-[28px] border border-dashed border-border/80 bg-muted/30 py-16 text-center">
+                    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
                       <Bot className="w-7 h-7 text-primary" />
                     </div>
 
@@ -225,7 +270,7 @@ export default function AdminDashboard() {
 
           {/* Recent Activity */}
           <div>
-            <Card variant="default">
+            <Card variant="elevated" className="insight-card border-0">
               <CardHeader>
                 <CardTitle>Recent Activity</CardTitle>
               </CardHeader>
@@ -247,10 +292,10 @@ export default function AdminDashboard() {
                     recentActData.map((activity, index) => (
                       <div
                         key={index}
-                        className="flex items-start gap-3 animate-fade-in"
+                        className="hover-lift flex items-start gap-3 rounded-[22px] border border-transparent p-3 animate-fade-in hover:border-white/70 hover:bg-white/70 dark:hover:border-white/10 dark:hover:bg-white/5"
                         style={{ animationDelay: `${index * 100}ms` }}
                       >
-                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                        <div className="dashboard-orb flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[16px] bg-gradient-to-br from-fuchsia-500/15 to-sky-500/20">
                           <Clock className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -302,7 +347,7 @@ export default function AdminDashboard() {
             </Card>
 
             {/* Quick Actions */}
-            <Card variant="default" className="mt-6">
+            <Card variant="elevated" className="insight-card mt-6 border-0">
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>

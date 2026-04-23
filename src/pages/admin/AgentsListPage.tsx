@@ -28,6 +28,7 @@ import {
   Book,
   Info,
   X,
+  Bot,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -175,25 +176,30 @@ export default function AgentsListPage() {
 
   return (
     <AdminLayout>
-      <div className="md:p-8 p-4">
+      <div className="p-4 sm:p-6 lg:p-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">AI Agents</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage your AI teaching agents
-            </p>
+        <div className="hero-card mb-8">
+          <div className="relative flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7 learning-grid">
+            <div>
+              <Badge variant="secondary" className="mb-3 border border-white/70 bg-white/70">
+                Agent studio
+              </Badge>
+              <h1 className="text-2xl font-bold text-foreground sm:text-4xl">AI Agents</h1>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
+                Design, review, and operate the AI teaching assistants powering every subject.
+              </p>
+            </div>
+            <Link to="/admin/agents/create">
+              <Button variant="gradient" size="lg" className="w-full sm:w-auto">
+                <Plus className="w-5 h-5" />
+                Create Agent
+              </Button>
+            </Link>
           </div>
-          <Link to="/admin/agents/create">
-            <Button variant="gradient" size="lg">
-              <Plus className="w-5 h-5" />
-              Create Agent
-            </Button>
-          </Link>
         </div>
 
         {/* Filters */}
-        <Card variant="default" className="mb-6">
+        <Card variant="elevated" className="mb-6">
           <CardContent className="p-4">
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="relative flex-1">
@@ -202,7 +208,7 @@ export default function AgentsListPage() {
                   placeholder="Search agents..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="border-white/70 bg-white/80 pl-10"
                 />
               </div>
 
@@ -290,8 +296,11 @@ export default function AgentsListPage() {
         )}
 
         {filteredAgents.length === 0 && !isLoading && (
-          <Card variant="default" className="py-12">
+          <Card variant="elevated" className="py-12">
             <CardContent className="text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Bot className="h-7 w-7" />
+              </div>
               <p className="text-muted-foreground">
                 No agents found matching your criteria
               </p>

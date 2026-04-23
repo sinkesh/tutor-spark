@@ -1,5 +1,5 @@
-export const BASE_URL = "https://api.tecorb.in";
-// export const BASE_URL = "https://6a83-38-254-184-90.ngrok-free.app";
+// export const BASE_URL = "https://api.tecorb.in";
+export const BASE_URL = "http://localhost:8000";
 export const VERSION = "/api/v1";
 
 export const API_URL = {
@@ -25,4 +25,9 @@ export const API_URL = {
   GLOBAL_RAG_KNOWLEDGE: "/admin/global-rag-knowledge",
   SHARED_KNOWLEDGE_ENABLE: "/admin/shared-knowledge",
   GLOBAL_PROMPTS: "/admin/global-prompts",
+  STUDENT_AGENT_DOCUMENTS: "/student/documents/agent-documents",
+  STUDENT_DOCUMENT_METADATA: "/student/{student_id}/agents/{agent_id}/documents/{document_id}",
+  STUDENT_DOCUMENT_PREVIEW: "/student/{student_id}/agents/{agent_id}/documents/{document_id}/preview",
+  TOPICS_EXTRACT: "/topics/extract",
+  TOPICS_PREVIEW: "/topics/extract/preview",
 };

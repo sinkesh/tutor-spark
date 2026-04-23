@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/components/theme-provider";
 
 // Pages
 import LoginPage from "@/pages/LoginPage";
@@ -20,7 +21,11 @@ import SettingsPage from "@/pages/admin/SettingsPage";
 import StudentDashboard from "@/pages/student/StudentDashboard";
 import ExplorePage from "@/pages/student/ExplorePage";
 import ChatPage from "@/pages/student/ChatPage";
+import NewChatPage from "@/pages/student/NewChatPage";
+import ChatSessionPage from "@/pages/student/ChatSessionPage";
+import NewAgentChatPage from "@/pages/student/NewAgentChatPage";
 import HistoryPage from "@/pages/student/HistoryPage";
+import ConversationHistoryPage from "@/pages/student/ConversationHistoryPage";
 import ProfilePage from "@/pages/student/ProfilePage";
 import NotFound from "./pages/NotFound";
 
@@ -173,6 +178,34 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      {/* New Chat Interface Routes */}
+      <Route
+        path="/student/chat"
+        element={
+          <ProtectedRoute allowedRole="student">
+            <NewChatPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/chat/session/:sessionId"
+        element={
+          <ProtectedRoute allowedRole="student">
+            <ChatSessionPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/chat/new/subject/:subjectName"
+        element={
+          <ProtectedRoute allowedRole="student">
+            <NewAgentChatPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Legacy Chat Route (for backward compatibility) */}
       <Route
         path="/student/chat/:subjectName"
         element={
@@ -186,6 +219,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="student">
             <HistoryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/conversation-history"
+        element={
+          <ProtectedRoute allowedRole="student">
+            <ConversationHistoryPage />
           </ProtectedRoute>
         }
       />
@@ -205,17 +246,19 @@ function AppRoutes() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter basename="/Teacher_AI_Agent">
-          <AppRoutes />
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+  <ThemeProvider attribute="class" defaultTheme="light" enableSystem storageKey="ai-teachers-theme">
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter basename="/Teacher_AI_Agent">
+            <AppRoutes />
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;

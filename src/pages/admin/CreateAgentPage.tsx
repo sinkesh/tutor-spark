@@ -268,14 +268,24 @@ export default function CreateAgentPage() {
 
       if (isEditMode && formData.id) {
         const updateData = Object.fromEntries(payload.entries());
-        await updateAiAgentsDetails(formData.id, updateData);
+        const response = await updateAiAgentsDetails(formData.id, updateData);
+        console.log('Agent update response:', response);
         toast({
           title: "Success",
           description: "Agent updated successfully",
           variant: "default",
         });
       } else {
-        await createAgents(payload);
+        const response = await createAgents(payload);
+        console.log('Agent creation response:', response);
+        
+        // Capture the returned agent ID if available
+        if (response?.data?.subject_agent_id) {
+          console.log('New agent ID created:', response.data.subject_agent_id);
+          // Store the new agent ID for potential immediate use
+          localStorage.setItem('last_created_agent_id', response.data.subject_agent_id);
+        }
+        
         toast({
           title: "Success",
           description: "Agent created successfully",

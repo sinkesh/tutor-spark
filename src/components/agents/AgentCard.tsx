@@ -68,15 +68,17 @@ export default function AgentCard({
   onEdit,
   onDelete,
 }: AgentCardProps) {
+  const accentColor = getRandomColor();
+
   return (
-    <Card variant="interactive" className="group">
-      <CardHeader className="pb-3">
+    <Card variant="interactive" className="insight-card group border-0">
+      <CardHeader className="relative pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div
               className={cn(
-                "w-10 h-10 rounded-lg flex items-center justify-center",
-                getRandomColor(),
+                "dashboard-orb h-11 w-11 rounded-[18px] flex items-center justify-center ring-1 ring-white/50",
+                accentColor,
               )}
             >
               {agent?.agent_type === "teaching" ||
@@ -102,7 +104,7 @@ export default function AgentCard({
                 >
                   {agent?.status}
                 </Badge> */}
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="rounded-full border border-white/70 bg-white/70 text-xs dark:border-white/10 dark:bg-white/10">
                   {agent.class === "none" ? "For All" : agent.class}
                 </Badge>
               </div>
@@ -150,17 +152,17 @@ export default function AgentCard({
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-4 h-11">
+        <p className="mb-4 h-11 text-sm text-muted-foreground line-clamp-2">
           {agent.description}
         </p>
-        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
-          <div className="flex items-center gap-2">
+        <div className="grid grid-cols-3 gap-3 border-t border-white/60 pt-4 dark:border-white/10">
+          <div className="flex items-center gap-2 rounded-2xl bg-white/60 px-2 py-2 dark:bg-white/5">
             <Users className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm font-medium">
               {agent.unique_students === 0 ? "NA" : agent.unique_students}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-2xl bg-white/60 px-2 py-2 dark:bg-white/5">
             <MessageCircle className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm font-medium">
               {agent.total_conversations === 0
@@ -168,7 +170,7 @@ export default function AgentCard({
                 : agent.total_conversations}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-2xl bg-white/60 px-2 py-2 dark:bg-white/5">
             <TrendingUp className="w-4 h-4 text-success" />
             <span className="text-sm font-medium text-success">
               {agent.overall_score === 0 ? "NA" : `${agent.overall_score}%`}

@@ -61,6 +61,7 @@ import {
   deleteStudentDetails,
   changePassword,
   getDashboardCounts,
+  getAgents,
 } from "@/config/services";
 import PaginationComponent from "@/components/common/PaginationComponent";
 
@@ -288,12 +289,50 @@ export default function StudentsPage() {
     try {
       setIsSubmitting(true);
 
+      // For new students, automatically assign available agents if none selected
+      let studentData = { ...newStudent };
+      
+      if (!isEditMode && (!studentData.subject_agent || studentData.subject_agent.length === 0)) {
+        console.log('No subjects selected for new student, fetching available agents...');
+        try {
+          // Get available agents to assign to new student
+          const agentsResponse = await getAgents();
+          const availableAgents = agentsResponse.agents || [];
+          
+          if (availableAgents.length > 0) {
+            // Assign first few available agents to the new student
+            const assignedAgents = availableAgents.slice(0, 3).map((agent: any) => ({
+              name: agent.subject || agent.agent_name,
+              subject_agent_id: agent.subject_agent_id
+            }));
+            
+            studentData = {
+              ...studentData,
+              subject_agent: assignedAgents
+            };
+            
+            console.log('Automatically assigned agents to new student:', assignedAgents);
+          }
+        } catch (agentError) {
+          console.warn('Failed to fetch available agents for auto-assignment:', agentError);
+        }
+      }
+
+      // Ensure subject_agent array has proper structure with agent IDs
+      const formattedStudentData = {
+        ...studentData,
+        subject_agent: studentData.subject_agent?.map((agent: any) => ({
+          name: agent.name || agent.subject,
+          subject_agent_id: agent.subject_agent_id || agent.id
+        })) || []
+      };
+
+      console.log('Submitting student data:', formattedStudentData);
+
       if (isEditMode && currentStudentId) {
         // Update existing student
-        const res = await createStudent({
-          ...newStudent,
-          student_id: currentStudentId,
-        });
+        const res = await editStudentDetails(currentStudentId, formattedStudentData);
+        console.log('Student update response:', res);
         if (res) {
           toast.success("Student updated successfully");
           setIsAddDialogOpen(false);
@@ -302,7 +341,8 @@ export default function StudentsPage() {
         }
       } else {
         // Create new student
-        const res = await createStudent(newStudent);
+        const res = await createStudent(formattedStudentData);
+        console.log('Student creation response:', res);
         if (res) {
           toast.success("Student created successfully");
           setIsAddDialogOpen(false);
@@ -701,7 +741,7 @@ export default function StudentsPage() {
 
                             return (
                               <button
-                                key={subject.id}
+                                key={subject.id || subject.subject}
                                 type="button"
                                 onClick={() => handleSubjectToggle(subject)}
                                 className={`capitalize text-xs px-3 py-1.5 rounded-full transition-colors ${
