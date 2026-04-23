@@ -276,7 +276,7 @@ export default function UnifiedSidebar({
             placeholder={activeView === 'sessions' ? "Search conversations..." : "Search subjects..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="rounded-[20px] border-white/10 bg-white/8 pl-10 shadow-none placeholder:text-white/35 dark:bg-white/8"
+            className="rounded-[20px] border-white/10 bg-slate-900/35 pl-10 text-white shadow-none placeholder:text-white/35 focus-visible:ring-white/20 dark:bg-slate-900/35"
           />
         </div>
       </div>

@@ -194,7 +194,7 @@ export default function UnifiedLayout({
               collapsed ? "p-2" : "p-3"
             )}>
               <div className={cn(
-                "flex gap-1 rounded-[22px] border border-white/10 bg-white/8 p-1 backdrop-blur-sm",
+                "flex gap-1 rounded-[22px] border border-white/10 bg-slate-900/35 p-1 shadow-none backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/35",
                 collapsed ? "flex-col" : ""
               )}>
                 <Button
@@ -203,6 +203,7 @@ export default function UnifiedLayout({
                   onClick={() => setActiveView('sessions')}
                   className={cn(
                     "relative rounded-[18px] text-xs transition-all duration-200 active:scale-95",
+                    activeView !== 'sessions' && "text-white/70 hover:bg-white/10 hover:text-white dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white",
                     collapsed ? "w-8 h-8 p-0" : "flex-1"
                   )}
                   title={collapsed ? "Chats" : ""}
@@ -223,6 +224,7 @@ export default function UnifiedLayout({
                   onClick={() => setActiveView('subjects')}
                   className={cn(
                     "rounded-[18px] text-xs transition-all duration-200 active:scale-95",
+                    activeView !== 'subjects' && "text-white/70 hover:bg-white/10 hover:text-white dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white",
                     collapsed ? "w-8 h-8 p-0" : "flex-1"
                   )}
                   title={collapsed ? "Subjects" : ""}
