@@ -153,8 +153,8 @@ export default function UnifiedLayout({
       {/* Enhanced Unified Sidebar */}
       <aside 
         className={cn(
-          "dashboard-sidebar fixed left-0 top-0 z-50 h-screen overflow-y-auto border-r border-white/10 transition-all duration-300 ease-in-out lg:relative lg:shadow-none",
-          "transform lg:transform-none",
+          "dashboard-sidebar fixed left-0 top-0 z-50 h-full border-r border-white/10 text-white transition-all duration-300 ease-in-out lg:overflow-hidden lg:rounded-[28px]",
+          "transform lg:translate-x-0",
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
           collapsed ? "w-20" : "w-72" // Reduced from w-80 to w-72
         )}
@@ -162,16 +162,16 @@ export default function UnifiedLayout({
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex h-20 items-center justify-between border-b border-white/10 px-4">
-            <Link to="/student" className="flex items-center gap-3 group">
-              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white/14 shadow-lg shadow-cyan-950/20 ring-1 ring-white/10 transition-transform duration-200 group-hover:scale-105">
+            <Link to="/student" className="flex items-center gap-3">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white/14 shadow-lg shadow-cyan-950/20 ring-1 ring-white/10">
                 <GraduationCap className="h-5 w-5 text-cyan-100" />
               </div>
               {!collapsed && (
                 <div>
-                  <span className="block font-bold text-white transition-colors duration-200">
-                    AI Teachers
+                  <span className="sidebar-brand-title block text-white">
+                    AI Student
                   </span>
-                  <span className="block text-[11px] font-medium uppercase tracking-[0.24em] text-cyan-100/55">
+                  <span className="sidebar-brand-kicker block text-[11px] uppercase text-cyan-100/55">
                     smart chat deck
                   </span>
                 </div>
@@ -184,6 +184,14 @@ export default function UnifiedLayout({
               className="hidden text-white/60 hover:bg-white/10 hover:text-white lg:flex"
             >
               {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setMobileSidebarOpen(false)}
+              className="text-white/70 hover:bg-white/10 hover:text-white lg:hidden"
+            >
+              <X className="w-4 h-4" />
             </Button>
           </div>
 
@@ -271,7 +279,7 @@ export default function UnifiedLayout({
             ) : (
               /* Regular Navigation for Other Pages */
               <>
-                <div className="sidebar-section-label pt-4">Navigation</div>
+                <div className="sidebar-section-label pt-4 text-white/45">Navigation</div>
                 <nav className="p-4 space-y-1">
                 {navItems.map((item, index) => {
                   const isActive = location.pathname === item.path || 
@@ -284,21 +292,21 @@ export default function UnifiedLayout({
                       className={cn(
                         "group sidebar-nav-item active:scale-95",
                         isActive 
-                          ? "sidebar-nav-active"
+                          ? "bg-white/14 text-white shadow-lg shadow-slate-950/20 ring-1 ring-white/14"
                           : "text-white/68 hover:bg-white/10 hover:text-white"
                       )}
                       style={{
                         animationDelay: `${index * 50}ms`
                       }}
                     >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-white" : "text-white/45")} />
                       {!collapsed && (
                         <>
-                          <span className="text-sm font-medium">{item.label}</span>
+                          <span className="sidebar-nav-label text-sm text-white">{item.label}</span>
                         </>
                       )}
                       {isActive && !collapsed && (
-                        <div className="w-2 h-2 rounded-full bg-fuchsia-500 animate-pulse" />
+                        <div className="w-2 h-2 rounded-full bg-white/85 animate-pulse" />
                       )}
                     </Link>
                   );
@@ -308,19 +316,19 @@ export default function UnifiedLayout({
             )}
           </div>
 
-          <div className="border-t border-white/10 p-4 text-xs text-white/45">
+          <div className="sidebar-meta-copy border-t border-white/10 p-4 text-xs text-white/45">
             {!collapsed ? "Chats and subjects" : ""}
           </div>
         </div>
       </aside>
 
       {/* Enhanced Main Content */}
-      <main className={cn(
-        "dashboard-main dashboard-panel flex-1 h-screen overflow-y-auto transition-all duration-300 ease-in-out lg:my-3 lg:mr-3 lg:rounded-[32px]",
-        collapsed ? "w-[calc(100%-80px)]" : "w-[calc(100%-288px)]" // Adjusted for new sidebar width
+      <div className={cn(
+        "flex min-w-0 min-h-0 flex-1 flex-col overflow-hidden transition-all duration-300 ease-in-out h-screen lg:mb-3 lg:mr-3 lg:h-[calc(100vh-0.75rem)]",
+        collapsed ? "lg:ml-[5.75rem]" : "lg:ml-[18.75rem]" // Adjusted for new sidebar width plus gutter
       )}>
         {/* Header */}
-        <div className="pro-header sticky top-0 z-30">
+        <div className="pro-header sticky top-0 z-30 shrink-0 lg:mb-3 lg:overflow-hidden lg:rounded-[24px] lg:border lg:border-white/45 lg:bg-white/78 dark:lg:border-white/10 dark:lg:bg-slate-950/60">
           <div className="p-3">
             <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -410,12 +418,13 @@ export default function UnifiedLayout({
           </div>
           </div>
         </div>
+        <main className="dashboard-main dashboard-panel min-h-0 flex-1 overflow-y-auto lg:rounded-[32px]">
+          <div className="h-full animate-in fade-in-0 duration-500"> {/* Reduced from 73px */}
+            {children}
+          </div>
+        </main>
+      </div>
 
-        {/* Page Content */}
-        <div className="h-[calc(100vh-65px)] animate-in fade-in-0 duration-500"> {/* Reduced from 73px */}
-          {children}
-        </div>
-      </main>
     </div>
   );
 }

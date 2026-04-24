@@ -70,7 +70,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Sidebar */}
       <aside 
         className={cn(
-          "dashboard-sidebar fixed left-0 top-0 z-50 h-full border-r border-white/10 transition-all duration-300",
+          "dashboard-sidebar fixed left-0 top-0 z-50 h-full border-r border-white/10 text-white transition-all duration-300 lg:overflow-hidden lg:rounded-[28px]",
           "transform lg:translate-x-0",
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
           collapsed ? "w-20" : "w-64"
@@ -85,8 +85,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               </div>
               {!collapsed && (
                 <div>
-                  <span className="block font-bold text-white">AI Teachers</span>
-                  <span className="block text-[11px] font-medium uppercase tracking-[0.24em] text-cyan-100/55">control deck</span>
+                  <span className="sidebar-brand-title block text-white">AI Teachers</span>
+                  <span className="sidebar-brand-kicker block text-[11px] uppercase text-cyan-100/55">control deck</span>
                 </div>
               )}
             </Link>
@@ -108,7 +108,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </Button>
           </div>
 
-          <div className="sidebar-section-label pt-4">Control</div>
+          <div className="sidebar-section-label pt-4 text-white/45">Control</div>
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
@@ -123,29 +123,29 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   className={cn(
                     "group sidebar-nav-item",
                     isActive
-                      ? "sidebar-nav-active"
+                      ? "bg-white/14 text-white shadow-lg shadow-slate-950/20 ring-1 ring-white/14"
                       : "text-white/68 hover:bg-white/10 hover:text-white"
                   )}
                 >
-                  <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-fuchsia-500" : "text-white/45")} />
-                  {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
+                  <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-white" : "text-white/45")} />
+                  {!collapsed && <span className="sidebar-nav-label text-sm text-white">{item.label}</span>}
                 </Link>
               );
             })}
           </nav>
 
-          <div className="border-t border-white/10 p-4 text-xs text-white/45">
+          <div className="sidebar-meta-copy border-t border-white/10 p-4 text-xs text-white/45">
             {!collapsed ? "Operations and oversight" : ""}
           </div>
         </div>
       </aside>
 
       {/* Main content */}
-      <main className={cn(
-        "dashboard-main dashboard-panel flex-1 transition-all duration-300 lg:my-3 lg:mr-3 lg:min-h-[calc(100vh-1.5rem)] lg:rounded-[32px]",
-        collapsed ? "lg:ml-20" : "lg:ml-64"
+      <div className={cn(
+        "flex min-w-0 min-h-0 flex-1 flex-col overflow-hidden transition-all duration-300 h-screen lg:mb-3 lg:mr-3 lg:h-[calc(100vh-0.75rem)]",
+        collapsed ? "lg:ml-[5.75rem]" : "lg:ml-[16.75rem]"
       )}>
-        <header className="dashboard-header sticky top-0 z-30 flex h-20 items-center gap-2 px-3 sm:gap-3 sm:px-4">
+        <header className="dashboard-header sticky top-0 z-30 shrink-0 flex h-20 items-center gap-2 px-3 sm:gap-3 sm:px-4 lg:mb-3 lg:rounded-[24px] lg:border lg:border-white/45 lg:bg-white/72 dark:lg:border-white/10 dark:lg:bg-slate-950/55">
           <Button variant="ghost" size="icon" onClick={() => setMobileSidebarOpen(true)} className="header-action lg:hidden">
             <Menu className="w-5 h-5" />
           </Button>
@@ -191,10 +191,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <div className="min-h-screen">
-          {children}
-        </div>
-      </main>
+        <main className="dashboard-main dashboard-panel min-h-0 flex-1 overflow-y-auto lg:rounded-[32px]">
+          <div className="min-h-full">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

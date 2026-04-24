@@ -102,7 +102,7 @@ export default function ChatPageLayout({
               </div>
               {!collapsed && (
                 <span className="font-bold text-foreground transition-colors duration-200 group-hover:text-primary">
-                  AI Teachers
+                  AI Student
                 </span>
               )}
             </Link>
