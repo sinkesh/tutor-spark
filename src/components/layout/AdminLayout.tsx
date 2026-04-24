@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import ThemeToggle from '@/components/theme-toggle';
+import GlobalPageSearch from '@/components/layout/GlobalPageSearch';
 import {
   GraduationCap,
   LayoutDashboard,
@@ -145,51 +146,54 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         "flex min-w-0 min-h-0 flex-1 flex-col overflow-hidden transition-all duration-300 h-screen lg:mb-3 lg:mr-3 lg:h-[calc(100vh-0.75rem)]",
         collapsed ? "lg:ml-[5.75rem]" : "lg:ml-[16.75rem]"
       )}>
-        <header className="dashboard-header sticky top-0 z-30 shrink-0 flex h-20 items-center gap-2 px-3 sm:gap-3 sm:px-4 lg:mb-3 lg:rounded-[24px] lg:border lg:border-white/45 lg:bg-white/72 dark:lg:border-white/10 dark:lg:bg-slate-950/55">
-          <Button variant="ghost" size="icon" onClick={() => setMobileSidebarOpen(true)} className="header-action lg:hidden">
+        <header className="dashboard-header dashboard-header-row sticky top-0 z-30 shrink-0 flex h-20 items-center gap-2 px-3 sm:gap-3 sm:px-4 lg:mb-3 lg:rounded-[24px] lg:border lg:border-white/45 lg:bg-white/72 dark:lg:border-white/10 dark:lg:bg-slate-950/55">
+          <Button variant="ghost" size="icon" onClick={() => setMobileSidebarOpen(true)} className="dashboard-header-leading header-action lg:hidden">
             <Menu className="w-5 h-5" />
           </Button>
-          <div className="min-w-0 flex-1">
+          <div className="dashboard-header-title min-w-0 lg:max-w-xs">
             <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Admin Space</p>
             <h1 className="truncate text-lg font-semibold text-foreground">
               {currentNavItem?.label || "AI Teachers Admin"}
             </h1>
           </div>
-          <Button variant="ghost" size="icon" className="header-action relative">
-            <Bell className="h-4 w-4" />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-fuchsia-500" />
-          </Button>
-          <ThemeToggle collapsed />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="profile-pill">
-                <span className="profile-avatar h-9 w-9">
-                  {user?.name?.charAt(0)}
-                </span>
-                <span className="hidden min-w-0 text-left sm:block">
-                  <span className="block max-w-32 truncate text-sm leading-4">{user?.name}</span>
-                  <span className="block max-w-32 truncate text-[11px] leading-3 text-muted-foreground">{user?.email}</span>
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 rounded-2xl">
-              <DropdownMenuLabel>
-                <span className="block truncate">{user?.name}</span>
-                <span className="block truncate text-xs font-normal text-muted-foreground">{user?.email}</span>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/admin/settings">
-                  <User className="mr-2 h-4 w-4" />
-                  Profile
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive">
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <GlobalPageSearch className="flex-1 max-w-none min-w-[2.75rem] sm:min-w-[12rem]" />
+          <div className="dashboard-header-actions flex shrink-0 items-center gap-1 sm:gap-2">
+            <Button variant="ghost" size="icon" className="header-action relative">
+              <Bell className="h-4 w-4" />
+              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-fuchsia-500" />
+            </Button>
+            <ThemeToggle collapsed />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="profile-pill">
+                  <span className="profile-avatar h-9 w-9">
+                    {user?.name?.charAt(0)}
+                  </span>
+                  <span className="hidden min-w-0 text-left sm:block">
+                    <span className="block max-w-32 truncate text-sm leading-4">{user?.name}</span>
+                    <span className="block max-w-32 truncate text-[11px] leading-3 text-muted-foreground">{user?.email}</span>
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 rounded-2xl">
+                <DropdownMenuLabel>
+                  <span className="block truncate">{user?.name}</span>
+                  <span className="block truncate text-xs font-normal text-muted-foreground">{user?.email}</span>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/admin/settings">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
         <main className="dashboard-main dashboard-panel min-h-0 flex-1 overflow-y-auto lg:rounded-[32px]">
           <div className="min-h-full">

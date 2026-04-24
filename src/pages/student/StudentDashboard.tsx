@@ -99,16 +99,13 @@ export default function StudentDashboard() {
       const res = await getStudentAgent(user?.id);
       console.log('Student subjects response:', res);
 
-      const allSubjects = [
-        ...(res?.student_subjects || []),
-        ...(res?.general_subjects || []),
-      ];
+      const assignedSubjects = res?.student_subjects || [];
 
-      console.log('All available subjects:', allSubjects);
+      console.log('Assigned student subjects:', assignedSubjects);
 
       // Enhance subjects with additional metadata and pre-cache agent info
       const enhancedSubjects = await Promise.all(
-        allSubjects.map(async (subject) => {
+        assignedSubjects.map(async (subject) => {
           const displayName = subject.name || subject.subject || 'Unknown Subject';
 
           // Pre-cache agent info for better performance
@@ -325,7 +322,7 @@ export default function StudentDashboard() {
                       No Subjects Available
                     </h3>
                     <p className="text-muted-foreground mb-6">
-                      You haven't been assigned any subjects yet. Please contact your administrator or explore available subjects.
+                      You haven't been assigned any subjects yet. Please contact your administrator to get your subjects added.
                     </p>
                     <div className="flex gap-3 justify-center">
                       <Link to="/student/explore">

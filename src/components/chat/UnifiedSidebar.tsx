@@ -108,11 +108,7 @@ export default function UnifiedSidebar({
     try {
       setIsLoadingSubjects(true);
       const response = await getStudentAgent(user.id);
-      const allSubjects = [
-        ...(response?.student_subjects || []),
-        ...(response?.general_subjects || []),
-      ];
-      setSubjects(allSubjects);
+      setSubjects(response?.student_subjects || []);
     } catch (error) {
       console.error('Failed to load subjects:', error);
       toast.error('Failed to load subjects');

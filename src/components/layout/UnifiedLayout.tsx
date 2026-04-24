@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import ThemeToggle from '@/components/theme-toggle';
+import GlobalPageSearch from '@/components/layout/GlobalPageSearch';
 import {
   GraduationCap,
   Home,
@@ -123,11 +124,7 @@ export default function UnifiedLayout({
     try {
       setIsLoadingSubjects(true);
       const response = await getStudentAgent(user.id);
-      const allSubjects = [
-        ...(response?.student_subjects || []),
-        ...(response?.general_subjects || []),
-      ];
-      setSubjects(allSubjects);
+      setSubjects(response?.student_subjects || []);
     } catch (error) {
       console.error('Failed to load subjects:', error);
       toast.error('Failed to load subjects');
@@ -330,14 +327,14 @@ export default function UnifiedLayout({
         {/* Header */}
         <div className="pro-header sticky top-0 z-30 shrink-0 lg:mb-3 lg:overflow-hidden lg:rounded-[24px] lg:border lg:border-white/45 lg:bg-white/78 dark:lg:border-white/10 dark:lg:bg-slate-950/60">
           <div className="p-3">
-            <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
+            <div className="dashboard-header-row relative flex items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
               {/* Mobile Menu Toggle */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-                className="header-action lg:hidden"
+                className="dashboard-header-leading header-action lg:hidden"
               >
                 <Menu className="w-4 h-4" />
               </Button>
@@ -348,14 +345,14 @@ export default function UnifiedLayout({
                   variant="ghost" 
                   size="icon-sm" 
                   onClick={() => navigate(-1)}
-                  className="header-action"
+                  className="dashboard-header-leading header-action"
                 >
                   <ArrowLeft className="w-4 h-4" />
                 </Button>
               )}
 
               {/* Page Title */}
-              <div>
+              <div className="dashboard-header-title min-w-0 lg:max-w-xs">
                 <h1 className="text-base font-semibold flex items-center gap-2"> {/* Reduced from text-lg */}
                   {title}
                   {isChatPage && <Sparkles className="w-3 h-3 text-primary animate-pulse" />} {/* Reduced icon size */}
@@ -371,10 +368,11 @@ export default function UnifiedLayout({
                   </p>
                 )}
               </div>
+              <GlobalPageSearch className="flex-1 max-w-none min-w-[2.75rem] sm:min-w-[12rem]" />
             </div>
 
             {/* Status Indicators */}
-            <div className="flex items-center gap-2">
+            <div className="dashboard-header-actions flex items-center gap-2">
               <Button variant="ghost" size="icon" className="header-action relative">
                 <Bell className="h-4 w-4" />
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-fuchsia-500" />

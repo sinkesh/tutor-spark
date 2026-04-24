@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import ThemeToggle from '@/components/theme-toggle';
+import GlobalPageSearch from '@/components/layout/GlobalPageSearch';
 import {
   GraduationCap,
   Home,
@@ -137,24 +138,25 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
         "flex min-w-0 min-h-0 flex-1 flex-col overflow-hidden transition-all duration-300 h-screen lg:mb-3 lg:mr-3 lg:h-[calc(100vh-0.75rem)]",
         collapsed ? "lg:ml-[5.75rem]" : "lg:ml-[16.75rem]"
       )}>
-        <header className="dashboard-header sticky top-0 z-30 shrink-0 flex h-20 items-center gap-2 px-3 sm:gap-3 sm:px-5 lg:mb-3 lg:rounded-[24px] lg:border lg:border-white/45 lg:bg-white/72 dark:lg:border-white/10 dark:lg:bg-slate-950/55">
+        <header className="dashboard-header dashboard-header-row sticky top-0 z-30 shrink-0 flex h-20 items-center gap-2 px-3 sm:gap-3 sm:px-5 lg:mb-3 lg:rounded-[24px] lg:border lg:border-white/45 lg:bg-white/72 dark:lg:border-white/10 dark:lg:bg-slate-950/55">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-            className="header-action lg:hidden"
+            className="dashboard-header-leading header-action lg:hidden"
           >
             <Menu className="w-5 h-5" />
           </Button>
 
-          <div className="min-w-0 flex-1">
+          <div className="dashboard-header-title min-w-0 lg:max-w-xs">
             <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Student Space</p>
             <h1 className="truncate text-lg font-semibold text-foreground">
               {currentNavItem?.label || "AI Teachers"}
             </h1>
           </div>
 
-          <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+          <GlobalPageSearch className="flex-1 max-w-none min-w-[2.75rem] sm:min-w-[12rem]" />
+          <div className="dashboard-header-actions flex min-w-0 items-center gap-1 sm:gap-2">
             <Button variant="ghost" size="icon" className="header-action relative">
               <Bell className="h-4 w-4" />
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-fuchsia-500" />
