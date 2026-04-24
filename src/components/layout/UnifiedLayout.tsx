@@ -89,10 +89,13 @@ export default function UnifiedLayout({
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [activeView, setActiveView] = useState<'subjects' | 'sessions'>('sessions');
   const [subjects, setSubjects] = useState<StudentSubject[]>([]);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
+  const isSidebarExpanded = !collapsed || isSidebarHovered;
+  const isSidebarCompressed = !isSidebarExpanded;
 
   // Get current subject from URL to filter subjects
   const getCurrentSubject = () => {
@@ -148,12 +151,14 @@ export default function UnifiedLayout({
       />
       
       {/* Enhanced Unified Sidebar */}
-      <aside 
+      <aside
+        onMouseEnter={() => setIsSidebarHovered(true)}
+        onMouseLeave={() => setIsSidebarHovered(false)}
         className={cn(
           "dashboard-sidebar fixed left-0 top-0 z-50 h-full border-r border-white/10 text-white transition-all duration-300 ease-in-out lg:overflow-hidden",
           "transform lg:translate-x-0",
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-          collapsed ? "w-20" : "w-72" // Reduced from w-80 to w-72
+          isSidebarExpanded ? "w-72" : "w-20" // Reduced from w-80 to w-72
         )}
       >
         <div className="flex flex-col h-full">
@@ -163,7 +168,7 @@ export default function UnifiedLayout({
               <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white/14 shadow-lg shadow-cyan-950/20 ring-1 ring-white/10">
                 <GraduationCap className="h-5 w-5 text-cyan-100" />
               </div>
-              {!collapsed && (
+              {isSidebarExpanded && (
                 <div>
                   <span className="sidebar-brand-title block text-white">
                     AI Student
@@ -188,11 +193,11 @@ export default function UnifiedLayout({
           {(isChatPage || isExplorePage) && (
             <div className={cn(
               "border-b border-white/10",
-              collapsed ? "p-2" : "p-3"
+              isSidebarCompressed ? "p-2" : "p-3"
             )}>
               <div className={cn(
                 "flex gap-1 rounded-[22px] border border-white/10 bg-slate-900/35 p-1 shadow-none backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/35",
-                collapsed ? "flex-col" : ""
+                isSidebarCompressed ? "flex-col" : ""
               )}>
                 <Button
                   variant={activeView === 'sessions' ? 'default' : 'ghost'}
@@ -201,12 +206,12 @@ export default function UnifiedLayout({
                   className={cn(
                     "relative rounded-[18px] text-xs transition-all duration-200 active:scale-95",
                     activeView !== 'sessions' && "text-white/70 hover:bg-white/10 hover:text-white dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white",
-                    collapsed ? "w-8 h-8 p-0" : "flex-1"
+                    isSidebarCompressed ? "w-8 h-8 p-0" : "flex-1"
                   )}
-                  title={collapsed ? "Chats" : ""}
+                  title={isSidebarCompressed ? "Chats" : ""}
                 >
-                  <MessageSquare className={cn("w-3 h-3", collapsed ? "" : "mr-1")} />
-                  {!collapsed && (
+                  <MessageSquare className={cn("w-3 h-3", isSidebarCompressed ? "" : "mr-1")} />
+                  {!isSidebarCompressed && (
                     <>
                       <span>Chats</span>
                     </>
@@ -222,12 +227,12 @@ export default function UnifiedLayout({
                   className={cn(
                     "rounded-[18px] text-xs transition-all duration-200 active:scale-95",
                     activeView !== 'subjects' && "text-white/70 hover:bg-white/10 hover:text-white dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white",
-                    collapsed ? "w-8 h-8 p-0" : "flex-1"
+                    isSidebarCompressed ? "w-8 h-8 p-0" : "flex-1"
                   )}
-                  title={collapsed ? "Subjects" : ""}
+                  title={isSidebarCompressed ? "Subjects" : ""}
                 >
-                  <BookOpen className={cn("w-3 h-3", collapsed ? "" : "mr-1")} />
-                  {!collapsed && (
+                  <BookOpen className={cn("w-3 h-3", isSidebarCompressed ? "" : "mr-1")} />
+                  {!isSidebarCompressed && (
                     <>
                       <span>Subjects</span>
                     </>
@@ -249,7 +254,7 @@ export default function UnifiedLayout({
                       onNewChat={onNewChat || (() => {})}
                       onRenameSession={onRenameSession}
                       activeView="sessions"
-                      collapsed={collapsed}
+                      collapsed={isSidebarCompressed}
                     />
                   </div>
                 ) : (
@@ -260,7 +265,7 @@ export default function UnifiedLayout({
                       onNewChat={onNewChat || (() => {})}
                       onRenameSession={onRenameSession}
                       activeView="subjects"
-                      collapsed={collapsed}
+                      collapsed={isSidebarCompressed}
                     />
                   </div>
                 )}
@@ -268,7 +273,7 @@ export default function UnifiedLayout({
             ) : (
               /* Regular Navigation for Other Pages */
               <>
-                <div className="sidebar-section-label pt-4 text-white/45">Navigation</div>
+                {isSidebarExpanded ? <div className="sidebar-section-label pt-4 text-white/45">Navigation</div> : null}
                 <nav className="p-4 space-y-1">
                 {navItems.map((item, index) => {
                   const isActive = location.pathname === item.path || 
@@ -289,12 +294,12 @@ export default function UnifiedLayout({
                       }}
                     >
                       <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-white" : "text-white/45")} />
-                      {!collapsed && (
+                      {isSidebarExpanded && (
                         <>
                           <span className="sidebar-nav-label text-sm text-white">{item.label}</span>
                         </>
                       )}
-                      {isActive && !collapsed && (
+                      {isActive && isSidebarExpanded && (
                         <div className="w-2 h-2 rounded-full bg-white/85 animate-pulse" />
                       )}
                     </Link>
@@ -306,8 +311,8 @@ export default function UnifiedLayout({
           </div>
 
           <div className="border-t border-white/10 p-4">
-            <div className={cn("flex items-center", collapsed ? "justify-center" : "justify-between gap-3")}>
-              {!collapsed ? (
+            <div className={cn("flex items-center", isSidebarExpanded ? "justify-between gap-3" : "justify-center")}>
+              {isSidebarExpanded ? (
                 <div className="sidebar-meta-copy text-xs text-white/45">
                   Chats and subjects
                 </div>

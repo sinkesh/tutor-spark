@@ -52,7 +52,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const isSidebarExpanded = !collapsed || isSidebarHovered;
   const currentNavItem = navItems.find((item) =>
     location.pathname === item.path ||
     (item.path !== '/admin' && location.pathname.startsWith(item.path))
@@ -69,12 +71,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       />
 
       {/* Sidebar */}
-      <aside 
+      <aside
+        onMouseEnter={() => setIsSidebarHovered(true)}
+        onMouseLeave={() => setIsSidebarHovered(false)}
         className={cn(
           "dashboard-sidebar fixed left-0 top-0 z-50 h-full border-r border-white/10 text-white transition-all duration-300 lg:overflow-hidden",
           "transform lg:translate-x-0",
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-          collapsed ? "w-20" : "w-64"
+          isSidebarExpanded ? "w-64" : "w-20"
         )}
       >
         <div className="flex flex-col h-full">
@@ -84,7 +88,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white/14 shadow-lg shadow-cyan-950/20 ring-1 ring-white/10">
                 <GraduationCap className="h-5 w-5 text-cyan-100" />
               </div>
-              {!collapsed && (
+              {isSidebarExpanded && (
                 <div>
                   <span className="sidebar-brand-title block text-white">AI Teachers</span>
                   <span className="sidebar-brand-kicker block text-[11px] uppercase text-cyan-100/55">control deck</span>
@@ -101,7 +105,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </Button>
           </div>
 
-          <div className="sidebar-section-label pt-4 text-white/45">Control</div>
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
@@ -121,15 +124,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   )}
                 >
                   <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-white" : "text-white/45")} />
-                  {!collapsed && <span className="sidebar-nav-label text-sm text-white">{item.label}</span>}
+                  {isSidebarExpanded && <span className="sidebar-nav-label text-sm text-white">{item.label}</span>}
                 </Link>
               );
             })}
           </nav>
 
           <div className="border-t border-white/10 p-4">
-            <div className={cn("flex items-center", collapsed ? "justify-center" : "justify-between gap-3")}>
-              {!collapsed ? (
+            <div className={cn("flex items-center", isSidebarExpanded ? "justify-between gap-3" : "justify-center")}>
+              {isSidebarExpanded ? (
                 <div className="sidebar-meta-copy text-xs text-white/45">
                   Operations and oversight
                 </div>
