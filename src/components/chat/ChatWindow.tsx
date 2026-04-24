@@ -302,7 +302,7 @@ export default function ChatWindow({
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Messages */}
-      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-4 sm:p-6">
+      <div className="dashboard-content-padding min-h-0 flex-1 space-y-6 overflow-y-auto">
         {/* Show TopicsCard when there's an active session */}
         {agentId && agentName && (
           <div className="mb-6">

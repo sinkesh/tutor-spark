@@ -176,7 +176,7 @@ export default function AgentsListPage() {
 
   return (
     <AdminLayout>
-      <div className="p-4 sm:p-6 lg:p-8">
+      <div className="dashboard-page-padding">
         {/* Header */}
         <div className="hero-card mb-8">
           <div className="relative flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7 learning-grid">

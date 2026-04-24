@@ -963,7 +963,7 @@ export default function AdaptiveContent({
   // Render different content based on viewType
   if (viewType === 'dashboard') {
     return (
-      <div className="flex-1 space-y-6 p-4 sm:p-6">
+      <div className="dashboard-page-padding flex-1 space-y-6">
         <div className="hero-card overflow-hidden">
           <div className="relative grid gap-8 px-6 py-7 sm:px-8 sm:py-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.8fr)] lg:items-center">
             <div className="absolute inset-y-8 right-8 hidden w-32 rounded-full bg-accent/15 blur-3xl lg:block" />
@@ -1089,7 +1089,7 @@ export default function AdaptiveContent({
 
   if (viewType === 'explore') {
     return (
-      <div className="flex-1 p-4 sm:p-6">
+      <div className="dashboard-page-padding flex-1">
         <div className="max-w-4xl mx-auto">
           <div className="hero-card mb-6 overflow-hidden">
             <div className="relative grid gap-6 px-6 py-7 sm:px-8 sm:py-8 lg:grid-cols-[minmax(0,1.15fr)_280px] lg:items-center">

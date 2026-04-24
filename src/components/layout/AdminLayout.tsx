@@ -94,14 +94,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <Button
               variant="ghost"
               size="icon-sm"
-              onClick={() => setCollapsed(!collapsed)}
-              className="hidden text-white/60 hover:bg-white/10 hover:text-white lg:flex"
-            >
-              {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
               onClick={() => setMobileSidebarOpen(false)}
               className="text-white/70 hover:bg-white/10 hover:text-white lg:hidden"
             >
@@ -135,8 +127,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             })}
           </nav>
 
-          <div className="sidebar-meta-copy border-t border-white/10 p-4 text-xs text-white/45">
-            {!collapsed ? "Operations and oversight" : ""}
+          <div className="border-t border-white/10 p-4">
+            <div className={cn("flex items-center", collapsed ? "justify-center" : "justify-between gap-3")}>
+              {!collapsed ? (
+                <div className="sidebar-meta-copy text-xs text-white/45">
+                  Operations and oversight
+                </div>
+              ) : null}
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setCollapsed(!collapsed)}
+                className="hidden text-white/60 hover:bg-white/10 hover:text-white lg:flex"
+              >
+                {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              </Button>
+            </div>
           </div>
         </div>
       </aside>
@@ -195,7 +201,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </DropdownMenu>
           </div>
         </header>
-        <main className="dashboard-main dashboard-panel min-h-0 flex-1 overflow-y-auto lg:rounded-[32px]">
+        <main className="min-h-0 flex-1 overflow-y-auto">
           <div className="min-h-full">
             {children}
           </div>

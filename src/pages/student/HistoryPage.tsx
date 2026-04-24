@@ -188,7 +188,7 @@ export default function HistoryPage() {
 
   return (
     <StudentLayout>
-      <div className="p-4 sm:p-6 lg:p-8">
+      <div className="dashboard-page-padding">
         {/* Header */}
         <div className="hero-card mb-8">
           <div className="flex items-center gap-4 p-6 sm:p-7 learning-grid">

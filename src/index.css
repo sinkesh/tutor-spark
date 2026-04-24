@@ -258,6 +258,14 @@
       linear-gradient(180deg, rgba(255,255,255,0.76) 0%, rgba(255,255,255,0.50) 100%);
   }
 
+  .dashboard-page-padding {
+    @apply p-3 sm:p-4 lg:p-5;
+  }
+
+  .dashboard-content-padding {
+    @apply p-3 sm:p-4;
+  }
+
   .dark .dashboard-main {
     background:
       linear-gradient(180deg, rgba(2,6,23,0.62) 0%, rgba(2,6,23,0.42) 100%);

@@ -121,7 +121,7 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout>
-      <div className="p-4 sm:p-6 lg:p-8">
+      <div className="dashboard-page-padding">
         {/* Header */}
         <div className="dashboard-hero mb-8">
           <div className="relative flex flex-col gap-5 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between">
