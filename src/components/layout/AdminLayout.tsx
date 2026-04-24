@@ -70,7 +70,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Sidebar */}
       <aside 
         className={cn(
-          "dashboard-sidebar fixed left-0 top-0 z-50 h-full border-r border-white/10 text-white transition-all duration-300 lg:overflow-hidden lg:rounded-[28px]",
+          "dashboard-sidebar fixed left-0 top-0 z-50 h-full border-r border-white/10 text-white transition-all duration-300 lg:overflow-hidden",
           "transform lg:translate-x-0",
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
           collapsed ? "w-20" : "w-64"
