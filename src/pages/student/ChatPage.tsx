@@ -25,6 +25,7 @@ import {
 } from "@/config/services";
 import { toast } from "sonner";
 import MarkdownMessage from "@/components/MarkdownMessage";
+import { appRoutes } from "@/config/routes";
 
 interface NotesData {
   topic?: string;
@@ -389,7 +390,7 @@ export default function ChatPage() {
         {/* ---------------- Header ---------------- */}
         <div className="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-10">
           <div className="flex items-center gap-4 p-4">
-            <Link to="/student">
+            <Link to={appRoutes.student.root}>
               <Button variant="ghost" size="icon-sm">
                 <ArrowLeft className="w-5 h-5" />
               </Button>

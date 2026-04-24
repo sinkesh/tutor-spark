@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { User, UserRole } from "@/types";
+import { User } from "@/types";
 
 interface AuthContextType {
   user: User | null;
@@ -15,6 +15,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const persistLastPortalRole = (role: User["role"]) => {
+    localStorage.setItem("last_portal_role", role);
+  };
+
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -22,7 +26,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const token = localStorage.getItem('access_token');
         
         if (userData && token) {
-          setUser(JSON.parse(userData));
+          const parsedUser = JSON.parse(userData) as User;
+          setUser(parsedUser);
+          persistLastPortalRole(parsedUser.role);
         }
       } catch (error) {
         console.error('Failed to initialize auth:', error);
@@ -40,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (userData: User) => {
     try {
       setUser(userData);
+      persistLastPortalRole(userData.role);
     } catch (error) {
       console.error('Login error:', error);
       throw new Error('Failed to login. Please try again.');

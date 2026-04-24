@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import UnifiedLayout from "@/components/layout/UnifiedLayout";
 import AdaptiveContent from "@/components/layout/AdaptiveContent";
 import { ChatSession } from "@/types/chat";
+import { appRoutes } from "@/config/routes";
 
 export default function ChatSessionPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -10,7 +11,7 @@ export default function ChatSessionPage() {
   const handleSessionSelect = (session: ChatSession) => {
     console.log('Session selected:', session);
     // Navigate to the selected session to load its history
-    navigate(`/student/chat/session/${session.id}`);
+    navigate(appRoutes.student.chatSession(session.id));
   };
 
   const handleRenameSession = (sessionId: string, currentTitle: string) => {

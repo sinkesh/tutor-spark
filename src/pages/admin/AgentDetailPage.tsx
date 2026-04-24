@@ -23,6 +23,7 @@ import {
   Send,
 } from "lucide-react";
 import type { AIAgent } from "@/types";
+import { appRoutes } from "@/config/routes";
 
 // Mock agent data
 const mockAgent: AIAgent = {
@@ -143,7 +144,7 @@ export default function AgentDetailPage() {
         {/* Header */}
         <div className="mb-8">
           <Link
-            to="/admin/agents"
+            to={appRoutes.admin.agents}
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"
           >
             <ArrowLeft className="w-4 h-4" />

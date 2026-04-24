@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import ThemeToggle from '@/components/theme-toggle';
 import GlobalPageSearch from '@/components/layout/GlobalPageSearch';
 import HeaderFullscreenToggle from '@/components/layout/HeaderFullscreenToggle';
+import { appRoutes } from '@/config/routes';
 import {
   GraduationCap,
   Home,
@@ -35,11 +36,11 @@ interface StudentLayoutProps {
 }
 
 const navItems = [
-  { path: '/student', icon: Home, label: 'Studio' },
-  { path: '/student/explore', icon: FolderTree, label: 'Discover' },
-  { path: '/student/history', icon: History, label: 'Timeline' },
-  { path: '/student/conversation-history', icon: Bookmark, label: 'Saved Chats' },
-  { path: '/student/profile', icon: User, label: 'Account' },
+  { path: appRoutes.student.root, icon: Home, label: 'Studio' },
+  { path: appRoutes.student.explore, icon: FolderTree, label: 'Discover' },
+  { path: appRoutes.student.history, icon: History, label: 'Timeline' },
+  { path: appRoutes.student.conversationHistory, icon: Bookmark, label: 'Saved Chats' },
+  { path: appRoutes.student.profile, icon: User, label: 'Account' },
 ];
 
 export default function StudentLayout({ children }: StudentLayoutProps) {
@@ -51,7 +52,7 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
   const isSidebarExpanded = !collapsed || isSidebarHovered;
   const currentNavItem = navItems.find((item) =>
     location.pathname === item.path ||
-    (item.path !== '/student' && location.pathname.startsWith(item.path))
+    (item.path !== appRoutes.student.root && location.pathname.startsWith(item.path))
   );
 
   return (
@@ -78,7 +79,7 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex h-20 items-center justify-between border-b border-white/10 px-4">
-            <Link to="/student" className="flex items-center gap-3">
+            <Link to={appRoutes.student.root} className="flex items-center gap-3">
               <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white/14 shadow-lg shadow-cyan-950/20 ring-1 ring-white/10">
                 <GraduationCap className="h-5 w-5 text-cyan-100" />
               </div>
@@ -103,7 +104,7 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path || 
-                (item.path !== '/student' && location.pathname.startsWith(item.path));
+                (item.path !== appRoutes.student.root && location.pathname.startsWith(item.path));
               
               return (
                 <Link
@@ -193,7 +194,7 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/student/profile">
+                  <Link to={appRoutes.student.profile}>
                     <User className="mr-2 h-4 w-4" />
                     Profile
                   </Link>

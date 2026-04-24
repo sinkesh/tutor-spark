@@ -25,6 +25,7 @@ import {
 import { AgentType } from "@/types";
 import { createAgents } from "@/config/services";
 import { cn } from "@/lib/utils";
+import { appRoutes } from "@/config/routes";
 
 import {
   ArrowLeft,
@@ -294,7 +295,7 @@ export default function CreateAgentPage() {
       }
 
       // Navigate back to agents list
-      navigate("/admin/agents");
+      navigate(appRoutes.admin.agents);
     } catch (error: any) {
       console.error("Error saving agent:", error);
       toast({
@@ -323,7 +324,7 @@ export default function CreateAgentPage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/admin/agents")}
+            onClick={() => navigate(appRoutes.admin.agents)}
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>

@@ -27,6 +27,7 @@ import {
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { appRoutes } from "@/config/routes";
 
 interface UnifiedSidebarProps {
   currentSessionId?: string;
@@ -244,7 +245,7 @@ export default function UnifiedSidebar({
               .slice(0, 5).map((subject) => (
               <Link
                 key={subject.subject_agent_id}
-                to={`/student/chat/new/subject/${subject.name}`}
+                to={appRoutes.student.newSubjectChat(subject.name)}
               >
                 <Button
                   variant="ghost"
@@ -434,7 +435,7 @@ export default function UnifiedSidebar({
                   .map((subject) => (
                   <Link
                     key={subject.subject_agent_id}
-                    to={`/student/chat/new/subject/${subject.name}`}
+                    to={appRoutes.student.newSubjectChat(subject.name)}
                     className="block"
                   >
                     <div className="group relative cursor-pointer rounded-[24px] border border-transparent bg-white/8 p-3 text-white transition-all duration-200 hover:-translate-y-0.5 hover:border-white/10 hover:bg-white/12 hover:shadow-md">

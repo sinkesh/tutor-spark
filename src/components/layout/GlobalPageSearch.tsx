@@ -23,6 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types";
 import { Button } from "@/components/ui/button";
+import { appRoutes } from "@/config/routes";
 import {
   Command,
   CommandEmpty,
@@ -47,7 +48,7 @@ type SearchPage = {
 const searchablePages: SearchPage[] = [
   {
     label: "Dashboard",
-    path: "/admin",
+    path: appRoutes.admin.root,
     role: "admin",
     description: "Overview of platform activity and key metrics",
     group: "Admin Pages",
@@ -56,7 +57,7 @@ const searchablePages: SearchPage[] = [
   },
   {
     label: "AI Agents",
-    path: "/admin/agents",
+    path: appRoutes.admin.agents,
     role: "admin",
     description: "View and manage all teaching agents",
     group: "Admin Pages",
@@ -65,7 +66,7 @@ const searchablePages: SearchPage[] = [
   },
   {
     label: "Create Agent",
-    path: "/admin/agents/create",
+    path: appRoutes.admin.createAgent,
     role: "admin",
     description: "Create and configure a new AI agent",
     group: "Admin Pages",
@@ -74,7 +75,7 @@ const searchablePages: SearchPage[] = [
   },
   {
     label: "Global Knowledge",
-    path: "/admin/global-knowledge",
+    path: appRoutes.admin.globalKnowledge,
     role: "admin",
     description: "Upload and manage shared knowledge",
     group: "Admin Pages",
@@ -83,7 +84,7 @@ const searchablePages: SearchPage[] = [
   },
   {
     label: "Feedback & Learning",
-    path: "/admin/feedback",
+    path: appRoutes.admin.feedback,
     role: "admin",
     description: "Review feedback queues and learning signals",
     group: "Admin Pages",
@@ -92,7 +93,7 @@ const searchablePages: SearchPage[] = [
   },
   {
     label: "Analytics",
-    path: "/admin/analytics",
+    path: appRoutes.admin.analytics,
     role: "admin",
     description: "Inspect usage trends and performance analytics",
     group: "Admin Pages",
@@ -101,7 +102,7 @@ const searchablePages: SearchPage[] = [
   },
   {
     label: "Testing Sandbox",
-    path: "/admin/sandbox",
+    path: appRoutes.admin.sandbox,
     role: "admin",
     description: "Test flows and experiment safely",
     group: "Admin Pages",
@@ -110,7 +111,7 @@ const searchablePages: SearchPage[] = [
   },
   {
     label: "Students",
-    path: "/admin/students",
+    path: appRoutes.admin.students,
     role: "admin",
     description: "Manage student accounts and assignments",
     group: "Admin Pages",
@@ -119,7 +120,7 @@ const searchablePages: SearchPage[] = [
   },
   {
     label: "Settings",
-    path: "/admin/settings",
+    path: appRoutes.admin.settings,
     role: "admin",
     description: "Control security, workspace, and preferences",
     group: "Admin Pages",
@@ -128,7 +129,7 @@ const searchablePages: SearchPage[] = [
   },
   {
     label: "Dashboard",
-    path: "/student",
+    path: appRoutes.student.root,
     role: "student",
     description: "Student home and learning overview",
     group: "Student Pages",
@@ -137,7 +138,7 @@ const searchablePages: SearchPage[] = [
   },
   {
     label: "Explore",
-    path: "/student/explore",
+    path: appRoutes.student.explore,
     role: "student",
     description: "Browse available subjects and learning paths",
     group: "Student Pages",
@@ -146,17 +147,17 @@ const searchablePages: SearchPage[] = [
   },
   {
     label: "New Chat",
-    path: "/student/chat",
+    path: appRoutes.student.chat,
     role: "student",
     description: "Start a new study chat or continue one",
     group: "Student Pages",
     icon: MessageSquare,
     keywords: ["chat", "conversation", "ask", "study"],
-    matches: (pathname) => pathname.startsWith("/student/chat"),
+    matches: (pathname) => pathname.startsWith(appRoutes.student.chat),
   },
   {
     label: "History",
-    path: "/student/history",
+    path: appRoutes.student.history,
     role: "student",
     description: "See your recent activity and session history",
     group: "Student Pages",
@@ -165,7 +166,7 @@ const searchablePages: SearchPage[] = [
   },
   {
     label: "Saved Chats",
-    path: "/student/conversation-history",
+    path: appRoutes.student.conversationHistory,
     role: "student",
     description: "Open previously saved chat conversations",
     group: "Student Pages",
@@ -174,7 +175,7 @@ const searchablePages: SearchPage[] = [
   },
   {
     label: "Profile",
-    path: "/student/profile",
+    path: appRoutes.student.profile,
     role: "student",
     description: "Manage your student profile and preferences",
     group: "Student Pages",

@@ -30,6 +30,7 @@ import {
 import { toast } from 'sonner';
 import ChatSidebar from '@/components/chat/ChatSidebar';
 import { ChatSession } from '@/types/chat';
+import { appRoutes } from '@/config/routes';
 
 interface ChatPageLayoutProps {
   children: ReactNode;
@@ -42,10 +43,10 @@ interface ChatPageLayoutProps {
 }
 
 const navItems = [
-  { path: '/student', icon: Home, label: 'Home' },
-  { path: '/student/explore', icon: FolderTree, label: 'Explore' },
-  { path: '/student/history', icon: History, label: 'History' },
-  { path: '/student/profile', icon: User, label: 'Profile' },
+  { path: appRoutes.student.root, icon: Home, label: 'Home' },
+  { path: appRoutes.student.explore, icon: FolderTree, label: 'Explore' },
+  { path: appRoutes.student.history, icon: History, label: 'History' },
+  { path: appRoutes.student.profile, icon: User, label: 'Profile' },
 ];
 
 export default function ChatPageLayout({
@@ -64,7 +65,7 @@ export default function ChatPageLayout({
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [activeView, setActiveView] = useState<'navigation' | 'chat'>('chat');
 
-  const isChatPage = location.pathname.startsWith('/student/chat');
+  const isChatPage = location.pathname.startsWith(appRoutes.student.chat);
 
   // Auto-switch to chat view when there's an active session
   useEffect(() => {
@@ -96,7 +97,7 @@ export default function ChatPageLayout({
         <div className="flex flex-col h-full">
           {/* Enhanced Header with gradient */}
           <div className="h-16 flex items-center justify-between px-4 border-b border-border/70 bg-white/50">
-            <Link to="/student" className="flex items-center gap-3 group">
+            <Link to={appRoutes.student.root} className="flex items-center gap-3 group">
               <div className="w-10 h-10 rounded-lg gradient-accent flex items-center justify-center flex-shrink-0 shadow-lg shadow-accent/25 transition-transform duration-200 group-hover:scale-105">
                 <GraduationCap className="w-5 h-5 text-accent-foreground" />
               </div>
@@ -190,7 +191,7 @@ export default function ChatPageLayout({
                     <nav className="p-4 space-y-1">
                       {navItems.map((item, index) => {
                         const isActive = location.pathname === item.path || 
-                          (item.path !== '/student' && location.pathname.startsWith(item.path));
+                          (item.path !== appRoutes.student.root && location.pathname.startsWith(item.path));
                         
                         return (
                           <Link
@@ -223,7 +224,7 @@ export default function ChatPageLayout({
               <nav className="p-4 space-y-1">
                 {navItems.map((item, index) => {
                   const isActive = location.pathname === item.path || 
-                    (item.path !== '/student' && location.pathname.startsWith(item.path));
+                    (item.path !== appRoutes.student.root && location.pathname.startsWith(item.path));
                   
                   return (
                     <Link

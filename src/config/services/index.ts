@@ -3,6 +3,13 @@ import axios from "axios";
 import { API_URL } from "../api_urls";
 import { BASE_URL, VERSION } from "../api_urls";
 import { CreateStudent, StudentQuery } from "@/types";
+import type { UserRole } from "@/types";
+import {
+  buildAppHref,
+  getLoginRouteForRole,
+  getRoleFromPathname,
+  isLoginRoute,
+} from "@/config/routes";
 
 // Create a function to get the auth token
 const getAuthToken = () => {
@@ -18,16 +25,24 @@ const addAuthToken = (config: any) => {
   return config;
 };
 
+const getStoredPortalRole = (): UserRole | null => {
+  const storedRole = localStorage.getItem("last_portal_role");
+  return storedRole === "admin" || storedRole === "student" ? storedRole : null;
+};
+
 // Response interceptor to handle 401 errors
 const handleUnauthorized = (error: any) => {
   if (error.response?.status === 401) {
     // Only redirect if not already on login page to prevent redirect loops
-    if (!window.location.pathname.includes("/login")) {
+    if (!isLoginRoute(window.location.pathname)) {
+      const roleFromPath = getRoleFromPathname(window.location.pathname);
+      const loginRoute = getLoginRouteForRole(roleFromPath ?? getStoredPortalRole());
+
       // Clear auth data and redirect to login
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("user");
-      window.location.href = "/login";
+      window.location.href = buildAppHref(loginRoute);
     }
   }
   return Promise.reject(error);

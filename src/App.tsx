@@ -2,9 +2,25 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
+import { Loader2 } from "lucide-react";
+
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme-provider";
+import type { UserRole } from "@/types";
+import {
+  APP_BASENAME,
+  appRoutes,
+  getHomeRouteForRole,
+  getLoginRouteForRole,
+} from "@/config/routes";
 
 // Pages
 import LoginPage from "@/pages/LoginPage";
@@ -31,228 +47,162 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({
-  children,
-  allowedRole,
-}: {
-  children: React.ReactNode;
-  allowedRole: "admin" | "student";
-}) {
-  const { user, isAuthenticated } = useAuth();
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+function readLastPortalRole(): UserRole | null {
+  if (typeof window === "undefined") {
+    return null;
   }
 
-  if (user?.role !== allowedRole) {
-    return (
-      <Navigate to={user?.role === "admin" ? "/admin" : "/student"} replace />
-    );
-  }
-
-  return <>{children}</>;
+  const storedRole = window.localStorage.getItem("last_portal_role");
+  return storedRole === "admin" || storedRole === "student" ? storedRole : null;
 }
 
-function AuthRedirect() {
-  const { user, isAuthenticated } = useAuth();
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
+function RouteLoadingScreen() {
   return (
-    <Navigate to={user?.role === "admin" ? "/admin" : "/student"} replace />
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span>Preparing workspace...</span>
+      </div>
+    </div>
   );
 }
 
-function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+function ProtectedRoleOutlet({ allowedRole }: { allowedRole: UserRole }) {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
+  if (isLoading) {
+    return <RouteLoadingScreen />;
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Navigate
+        to={getLoginRouteForRole(allowedRole)}
+        replace
+        state={{ from: location }}
+      />
+    );
+  }
+
+  if (user?.role !== allowedRole) {
+    return <Navigate to={getHomeRouteForRole(user?.role)} replace />;
+  }
+
+  return <Outlet />;
+}
+
+function RoleLoginRoute({ portalRole }: { portalRole: UserRole }) {
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <RouteLoadingScreen />;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to={getHomeRouteForRole(user?.role)} replace />;
+  }
+
+  return <LoginPage portalRole={portalRole} />;
+}
+
+function LegacyLoginRedirect() {
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <RouteLoadingScreen />;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to={getHomeRouteForRole(user?.role)} replace />;
+  }
+
+  return <Navigate to={getLoginRouteForRole(readLastPortalRole())} replace />;
+}
+
+function RootRedirect() {
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <RouteLoadingScreen />;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to={getHomeRouteForRole(user?.role)} replace />;
+  }
+
+  return <Navigate to={getLoginRouteForRole(readLastPortalRole())} replace />;
+}
+
+function AppRoutes() {
   return (
     <Routes>
-      {/* Public routes */}
+      <Route path={appRoutes.root} element={<RootRedirect />} />
+      <Route path={appRoutes.login} element={<LegacyLoginRedirect />} />
       <Route
-        path="/login"
-        element={isAuthenticated ? <AuthRedirect /> : <LoginPage />}
+        path={appRoutes.admin.login}
+        element={<RoleLoginRoute portalRole="admin" />}
+      />
+      <Route
+        path={appRoutes.student.login}
+        element={<RoleLoginRoute portalRole="student" />}
       />
 
-      {/* Root redirect */}
-      <Route path="/" element={<AuthRedirect />} />
+      <Route
+        path={appRoutes.admin.root}
+        element={<ProtectedRoleOutlet allowedRole="admin" />}
+      >
+        <Route index element={<AdminDashboard />} />
+        <Route path="agents" element={<AgentsListPage />} />
+        <Route path="agents/create" element={<CreateAgentPage />} />
+        <Route path="agents/:agentId" element={<AgentDetailPage />} />
+        <Route path="global-knowledge" element={<GlobalKnowledgePage />} />
+        <Route path="feedback" element={<FeedbackPage />} />
+        <Route path="analytics" element={<AnalyticsPage />} />
+        <Route path="sandbox" element={<SandboxPage />} />
+        <Route path="students" element={<StudentsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+      </Route>
 
-      {/* Admin routes */}
       <Route
-        path="/admin"
-        element={
-          <ProtectedRoute allowedRole="admin">
-            <AdminDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/agents"
-        element={
-          <ProtectedRoute allowedRole="admin">
-            <AgentsListPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/agents/create"
-        element={
-          <ProtectedRoute allowedRole="admin">
-            <CreateAgentPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/agents/:agentId"
-        element={
-          <ProtectedRoute allowedRole="admin">
-            <AgentDetailPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/global-knowledge"
-        element={
-          <ProtectedRoute allowedRole="admin">
-            <GlobalKnowledgePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/feedback"
-        element={
-          <ProtectedRoute allowedRole="admin">
-            <FeedbackPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/analytics"
-        element={
-          <ProtectedRoute allowedRole="admin">
-            <AnalyticsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/sandbox"
-        element={
-          <ProtectedRoute allowedRole="admin">
-            <SandboxPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/students"
-        element={
-          <ProtectedRoute allowedRole="admin">
-            <StudentsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/settings"
-        element={
-          <ProtectedRoute allowedRole="admin">
-            <SettingsPage />
-          </ProtectedRoute>
-        }
-      />
+        path={appRoutes.student.root}
+        element={<ProtectedRoleOutlet allowedRole="student" />}
+      >
+        <Route index element={<StudentDashboard />} />
+        <Route path="explore" element={<ExplorePage />} />
+        <Route path="chat" element={<NewChatPage />} />
+        <Route path="chat/session/:sessionId" element={<ChatSessionPage />} />
+        <Route
+          path="chat/new/subject/:subjectName"
+          element={<NewAgentChatPage />}
+        />
+        <Route path="chat/:subjectName" element={<ChatPage />} />
+        <Route path="history" element={<HistoryPage />} />
+        <Route
+          path="conversation-history"
+          element={<ConversationHistoryPage />}
+        />
+        <Route path="profile" element={<ProfilePage />} />
+      </Route>
 
-      {/* Student routes */}
-      <Route
-        path="/student"
-        element={
-          <ProtectedRoute allowedRole="student">
-            <StudentDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/student/explore"
-        element={
-          <ProtectedRoute allowedRole="student">
-            <ExplorePage />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* New Chat Interface Routes */}
-      <Route
-        path="/student/chat"
-        element={
-          <ProtectedRoute allowedRole="student">
-            <NewChatPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/student/chat/session/:sessionId"
-        element={
-          <ProtectedRoute allowedRole="student">
-            <ChatSessionPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/student/chat/new/subject/:subjectName"
-        element={
-          <ProtectedRoute allowedRole="student">
-            <NewAgentChatPage />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Legacy Chat Route (for backward compatibility) */}
-      <Route
-        path="/student/chat/:subjectName"
-        element={
-          <ProtectedRoute allowedRole="student">
-            <ChatPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/student/history"
-        element={
-          <ProtectedRoute allowedRole="student">
-            <HistoryPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/student/conversation-history"
-        element={
-          <ProtectedRoute allowedRole="student">
-            <ConversationHistoryPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/student/profile"
-        element={
-          <ProtectedRoute allowedRole="student">
-            <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
 
 const App = () => (
-  <ThemeProvider attribute="class" defaultTheme="light" enableSystem storageKey="ai-teachers-theme">
+  <ThemeProvider
+    attribute="class"
+    defaultTheme="light"
+    enableSystem
+    storageKey="ai-teachers-theme"
+  >
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter basename="/Teacher_AI_Agent">
+          <BrowserRouter basename={APP_BASENAME}>
             <AppRoutes />
           </BrowserRouter>
         </TooltipProvider>

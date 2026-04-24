@@ -39,6 +39,7 @@ import {
 } from "@/config/services";
 import { toast } from "sonner";
 import AgentCardSkeleton from "@/components/loader/AgentCardSkeleton";
+import { appRoutes } from "@/config/routes";
 
 const typeFilters: { value: AgentType | "all"; label: string }[] = [
   { value: "all", label: "All Types" },
@@ -141,7 +142,7 @@ export default function AgentsListPage() {
   };
 
   const handleEditAgent = (agent: AIAgent) => {
-    navigate(`/admin/agents/create`, {
+    navigate(appRoutes.admin.createAgent, {
       state: {
         isEditMode: true,
         agentData: {
@@ -189,7 +190,7 @@ export default function AgentsListPage() {
                 Design, review, and operate the AI teaching assistants powering every subject.
               </p>
             </div>
-            <Link to="/admin/agents/create">
+            <Link to={appRoutes.admin.createAgent}>
               <Button variant="gradient" size="lg" className="w-full sm:w-auto">
                 <Plus className="w-5 h-5" />
                 Create Agent

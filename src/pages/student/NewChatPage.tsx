@@ -3,6 +3,7 @@ import UnifiedLayout from "@/components/layout/UnifiedLayout";
 import AdaptiveContent from "@/components/layout/AdaptiveContent";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { appRoutes } from "@/config/routes";
 
 export default function NewChatPage() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function NewChatPage() {
       <AdaptiveContent
         viewType="chat"
         onNewChat={handleNewChat}
-        onBack={() => navigate('/student')}
+        onBack={() => navigate(appRoutes.student.root)}
       />
     </UnifiedLayout>
   );

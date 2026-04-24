@@ -27,6 +27,7 @@ import {
 } from "@/config/services";
 import { toast } from "sonner";
 import AgentCardSkeleton from "@/components/loader/AgentCardSkeleton";
+import { appRoutes } from "@/config/routes";
 
 export default function AdminDashboard() {
   const [agentsData, setAgentsData] = useState<any[]>([]);
@@ -155,7 +156,7 @@ export default function AdminDashboard() {
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">Live services connected</p>
               </div>
-              <Link to="/admin/agents/create">
+              <Link to={appRoutes.admin.createAgent}>
                 <Button variant="gradient" size="lg" className="w-full sm:w-auto">
                   <Plus className="w-5 h-5" />
                   Create Agent
@@ -172,7 +173,7 @@ export default function AdminDashboard() {
               Overview of your AI teaching platform
             </p>
           </div>
-          <Link to="/admin/agents/create">
+          <Link to={appRoutes.admin.createAgent}>
             <Button variant="gradient" size="lg">
               <Plus className="w-5 h-5" />
               Create Agent
@@ -226,7 +227,7 @@ export default function AdminDashboard() {
             <Card variant="elevated" className="insight-card border-0">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Top Performing Agents</CardTitle>
-                <Link to="/admin/agents">
+                <Link to={appRoutes.admin.agents}>
                   <Button variant="ghost" size="sm">
                     View all
                     <ArrowRight className="w-4 h-4 ml-1" />
@@ -259,7 +260,7 @@ export default function AdminDashboard() {
                       one to manage your classroom interactions.
                     </p>
 
-                    <Button onClick={() => navigate("/admin/agents/create")}>
+                    <Button onClick={() => navigate(appRoutes.admin.createAgent)}>
                       Create Agent
                     </Button>
                   </div>
@@ -352,19 +353,19 @@ export default function AdminDashboard() {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Link to="/admin/agents/create" className="block">
+                <Link to={appRoutes.admin.createAgent} className="block">
                   <Button variant="outline" className="w-full justify-start">
                     <Plus className="w-4 h-4 mr-2" />
                     Create New Agent
                   </Button>
                 </Link>
-                <Link to="/admin/students" className="block">
+                <Link to={appRoutes.admin.students} className="block">
                   <Button variant="outline" className="w-full justify-start">
                     <Users className="w-4 h-4 mr-2" />
                     Add Students
                   </Button>
                 </Link>
-                <Link to="/admin/feedback" className="block">
+                <Link to={appRoutes.admin.feedback} className="block">
                   <Button variant="outline" className="w-full justify-start">
                     <MessageCircle className="w-4 h-4 mr-2" />
                     Review Feedback

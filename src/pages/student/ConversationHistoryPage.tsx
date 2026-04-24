@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { ConversationHistoryData, Agent, Session, Conversation } from "@/types/conversation";
 import { cn } from "@/lib/utils";
+import { appRoutes } from "@/config/routes";
 
 export default function ConversationHistoryPage() {
   const [conversationData, setConversationData] = useState<ConversationHistoryData | null>(null);
@@ -320,7 +321,9 @@ export default function ConversationHistoryPage() {
                   </p>
                   <Button 
                     className="mt-4"
-                    onClick={() => navigate(`/student/chat/new/subject/${selectedAgent.subject}`)}
+                    onClick={() =>
+                      navigate(appRoutes.student.newSubjectChat(selectedAgent.subject))
+                    }
                   >
                     Start {selectedAgent.subject} Chat
                   </Button>

@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import ThemeToggle from '@/components/theme-toggle';
 import GlobalPageSearch from '@/components/layout/GlobalPageSearch';
 import HeaderFullscreenToggle from '@/components/layout/HeaderFullscreenToggle';
+import { appRoutes } from '@/config/routes';
 import {
   GraduationCap,
   LayoutDashboard,
@@ -39,14 +40,14 @@ interface AdminLayoutProps {
 }
 
 const navItems = [
-  { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/admin/agents', icon: Bot, label: 'AI Agents' },
-  { path: '/admin/global-knowledge', icon: Globe, label: 'Global Knowledge' },
-  { path: '/admin/feedback', icon: MessageSquare, label: 'Feedback & Learning' },
-  { path: '/admin/analytics', icon: TrendingUp, label: 'Analytics' },
-  { path: '/admin/sandbox', icon: Beaker, label: 'Testing Sandbox' },
-  { path: '/admin/students', icon: Users, label: 'Students' },
-  { path: '/admin/settings', icon: Settings, label: 'Settings' },
+  { path: appRoutes.admin.root, icon: LayoutDashboard, label: 'Dashboard' },
+  { path: appRoutes.admin.agents, icon: Bot, label: 'AI Agents' },
+  { path: appRoutes.admin.globalKnowledge, icon: Globe, label: 'Global Knowledge' },
+  { path: appRoutes.admin.feedback, icon: MessageSquare, label: 'Feedback & Learning' },
+  { path: appRoutes.admin.analytics, icon: TrendingUp, label: 'Analytics' },
+  { path: appRoutes.admin.sandbox, icon: Beaker, label: 'Testing Sandbox' },
+  { path: appRoutes.admin.students, icon: Users, label: 'Students' },
+  { path: appRoutes.admin.settings, icon: Settings, label: 'Settings' },
 ];
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
@@ -58,7 +59,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const isSidebarExpanded = !collapsed || isSidebarHovered;
   const currentNavItem = navItems.find((item) =>
     location.pathname === item.path ||
-    (item.path !== '/admin' && location.pathname.startsWith(item.path))
+    (item.path !== appRoutes.admin.root && location.pathname.startsWith(item.path))
   );
 
   return (
@@ -85,7 +86,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex h-20 items-center justify-between border-b border-white/10 px-4">
-            <Link to="/admin" className="flex items-center gap-3">
+            <Link to={appRoutes.admin.root} className="flex items-center gap-3">
               <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white/14 shadow-lg shadow-cyan-950/20 ring-1 ring-white/10">
                 <GraduationCap className="h-5 w-5 text-cyan-100" />
               </div>
@@ -110,7 +111,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path || 
-                (item.path !== '/admin' && location.pathname.startsWith(item.path));
+                (item.path !== appRoutes.admin.root && location.pathname.startsWith(item.path));
               
               return (
                 <Link
@@ -193,7 +194,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/admin/settings">
+                  <Link to={appRoutes.admin.settings}>
                     <User className="mr-2 h-4 w-4" />
                     Profile
                   </Link>

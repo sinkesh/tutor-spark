@@ -14,6 +14,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { appRoutes } from "@/config/routes";
 import {
   Brain,
   Search,
@@ -845,7 +846,7 @@ export default function FeedbackPage() {
                             Refresh
                           </Button>
 
-                          <Button onClick={() => navigate("/admin/agents")}>
+                          <Button onClick={() => navigate(appRoutes.admin.agents)}>
                             View Agents
                           </Button>
                         </div>

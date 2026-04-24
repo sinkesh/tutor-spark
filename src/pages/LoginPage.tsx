@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,8 +25,14 @@ import {
 } from "lucide-react";
 import { login as apiLogin } from "@/config/services";
 import { useToast } from "@/components/ui/use-toast";
-import { User } from "@/types";
+import { User, UserRole } from "@/types";
 import ThemeToggle from "@/components/theme-toggle";
+import {
+  appRoutes,
+  getHomeRouteForRole,
+  getLoginRouteForRole,
+  isRoleWorkspaceRoute,
+} from "@/config/routes";
 
 const platformSignals = [
   {
@@ -52,7 +58,50 @@ const loginHighlights = [
   "Fast, secure sign in",
 ];
 
-export default function LoginPage() {
+type LoginLocationState = {
+  from?: {
+    pathname?: string;
+  };
+};
+
+type LoginPageProps = {
+  portalRole?: UserRole;
+};
+
+const portalContent: Record<
+  UserRole,
+  {
+    badge: string;
+    title: string;
+    description: string;
+    accessMode: string;
+    helperText: string;
+    submitLabel: string;
+  }
+> = {
+  admin: {
+    badge: "Admin portal",
+    title: "Welcome back, admin",
+    description:
+      "Sign in to manage agents, students, analytics, and protected platform operations from the admin workspace.",
+    accessMode: "Admin control workspace",
+    helperText:
+      "You are entering the admin URL space with management tools and protected controls.",
+    submitLabel: "Sign in to Admin",
+  },
+  student: {
+    badge: "Student portal",
+    title: "Welcome back, student",
+    description:
+      "Sign in to continue your subjects, chat sessions, saved history, and personal learning workspace.",
+    accessMode: "Student learning workspace",
+    helperText:
+      "You are entering the student URL space with classes, chats, and your learning dashboard.",
+    submitLabel: "Sign in to Student",
+  },
+};
+
+export default function LoginPage({ portalRole }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -61,6 +110,17 @@ export default function LoginPage() {
   const { login: authLogin } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const requestedPath = (location.state as LoginLocationState | null)?.from
+    ?.pathname;
+  const portalCopy = portalRole ? portalContent[portalRole] : null;
+  const alternatePortalRole =
+    portalRole === "admin"
+      ? "student"
+      : portalRole === "student"
+        ? "admin"
+        : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,19 +160,19 @@ export default function LoginPage() {
       // Update auth context
       await authLogin(user);
 
-      // Navigate based on role
       const navigateTo =
-        user.role === "admin"
-          ? "/admin"
-          : user.role === "student"
-            ? "/student"
-            : "/";
+        requestedPath && isRoleWorkspaceRoute(requestedPath, user.role)
+          ? requestedPath
+          : getHomeRouteForRole(user.role);
 
-      navigate(navigateTo);
+      navigate(navigateTo, { replace: true });
 
       toast({
         title: "Login successful",
-        description: `Welcome back, ${user.name}!`,
+        description:
+          portalRole && portalRole !== user.role
+            ? `Signed in successfully and redirected to the ${user.role} workspace.`
+            : `Welcome back, ${user.name}!`,
       });
     } catch (err: any) {
       console.error("Login error:", err);
@@ -257,13 +317,14 @@ export default function LoginPage() {
                 <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-primary/10 via-transparent to-accent/10 dark:from-teal-300/12 dark:via-transparent dark:to-amber-200/10" />
                 <div className="relative mx-auto inline-flex items-center gap-2 rounded-full border border-primary/10 bg-primary/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary dark:border-teal-300/15 dark:bg-teal-300/10 dark:text-teal-100">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Secure access portal
+                  {portalCopy?.badge || "Secure access portal"}
                 </div>
                 <CardTitle className="relative text-center text-3xl font-black tracking-[-0.04em] text-slate-950 dark:text-slate-50">
-                  Welcome back
+                  {portalCopy?.title || "Welcome back"}
                 </CardTitle>
                 <CardDescription className="relative mx-auto max-w-md text-center text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  Sign in to continue into your high-focus AI teaching workspace with sessions, analytics, and tutor tools ready to go.
+                  {portalCopy?.description ||
+                    "Sign in to continue into your high-focus AI teaching workspace with sessions, analytics, and tutor tools ready to go."}
                 </CardDescription>
                 <div className="relative mt-2 grid gap-3 sm:grid-cols-3">
                   {loginHighlights.map((item) => (
@@ -282,14 +343,17 @@ export default function LoginPage() {
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-xs uppercase tracking-[0.26em] text-slate-500 dark:text-white/45">Access mode</p>
-                      <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">Professional tutor console</p>
+                      <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">
+                        {portalCopy?.accessMode || "Professional tutor console"}
+                      </p>
                     </div>
                     <div className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs text-slate-700 dark:border-teal-200/10 dark:bg-teal-300/10 dark:text-teal-50">
                       Protected
                     </div>
                   </div>
                   <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-white/70">
-                    Sign in to manage learning flows, open ongoing sessions, and continue from exactly where you left off.
+                    {portalCopy?.helperText ||
+                      "Sign in to manage learning flows, open ongoing sessions, and continue from exactly where you left off."}
                   </p>
                 </div>
 
@@ -357,7 +421,9 @@ export default function LoginPage() {
                     className="h-12 w-full rounded-2xl text-base font-semibold shadow-glow"
                     disabled={isLoading}
                   >
-                    {isLoading ? "Signing in..." : "Sign in to Dashboard"}
+                    {isLoading
+                      ? "Signing in..."
+                      : portalCopy?.submitLabel || "Sign in to Dashboard"}
                     {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
                   </Button>
                 </form>
@@ -379,9 +445,37 @@ export default function LoginPage() {
               </CardContent>
             </Card>
 
-            <p className="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
-              Protected login for admin and student workspaces.
-            </p>
+            <div className="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
+              <p>
+                {portalRole
+                  ? `This ${portalRole} portal has its own dedicated URL and access flow.`
+                  : "Protected login for admin and student workspaces."}
+              </p>
+              {alternatePortalRole ? (
+                <Link
+                  to={getLoginRouteForRole(alternatePortalRole)}
+                  className="mt-2 inline-block text-primary underline-offset-4 hover:underline"
+                >
+                  Switch to{" "}
+                  {alternatePortalRole === "admin" ? "Admin" : "Student"} portal
+                </Link>
+              ) : (
+                <div className="mt-2 flex justify-center gap-4">
+                  <Link
+                    to={appRoutes.admin.login}
+                    className="text-primary underline-offset-4 hover:underline"
+                  >
+                    Admin portal
+                  </Link>
+                  <Link
+                    to={appRoutes.student.login}
+                    className="text-primary underline-offset-4 hover:underline"
+                  >
+                    Student portal
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

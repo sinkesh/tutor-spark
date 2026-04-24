@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { appRoutes } from "@/config/routes";
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
@@ -89,7 +90,7 @@ export default function ChatContent({
         switchSession(session.id);
       } else {
         // Session not found, navigate to chat home
-        navigate("/student/chat");
+        navigate(appRoutes.student.chat);
       }
     }
   }, [sessionId, sessions.length]);
@@ -290,7 +291,7 @@ export default function ChatContent({
       setMessages([]);
       
       // Navigate to the new session
-      navigate(`/student/chat/session/${newSession.id}`, { replace: true });
+      navigate(appRoutes.student.chatSession(newSession.id), { replace: true });
       
       toast.success("New chat session created");
     } catch (error) {
@@ -315,7 +316,7 @@ export default function ChatContent({
       await loadMessages(sessionId);
       
       // Update URL
-      navigate(`/student/chat/session/${sessionId}`);
+      navigate(appRoutes.student.chatSession(sessionId));
       
       // Notify parent component
       if (onSessionSelect) {
@@ -406,7 +407,7 @@ export default function ChatContent({
       if (currentSession?.id === sessionId) {
         setCurrentSession(null);
         setMessages([]);
-        navigate("/student/chat");
+        navigate(appRoutes.student.chat);
       }
       
       toast.success("Chat session deleted");
@@ -467,7 +468,7 @@ export default function ChatContent({
       createSession(agentType, agentName, agentId);
     } else {
       // Navigate to agent selection or show modal
-      navigate("/student/explore");
+      navigate(appRoutes.student.explore);
     }
     
     if (onNewChat) {

@@ -20,6 +20,7 @@ import { useAgentCache } from "@/hooks/useAgentCache";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import SubjectSkeletonItem from "@/components/loader/SubjectSkeletonItem";
+import { appRoutes } from "@/config/routes";
 
 // const assignedClasses = [
 //   {
@@ -227,7 +228,7 @@ export default function StudentDashboard() {
                 </p>
               </div>
               <div className="flex gap-3 w-full sm:w-auto">
-                <Link to="/student/chat" className="flex-1 sm:flex-initial">
+                <Link to={appRoutes.student.chat} className="flex-1 sm:flex-initial">
                   <Button
                     variant="gradient-accent"
                     size="lg"
@@ -237,7 +238,7 @@ export default function StudentDashboard() {
                     <ArrowRight className="w-5 h-5" />
                   </Button>
                 </Link>
-                <Link to="/student/explore" className="flex-1 sm:flex-initial">
+                <Link to={appRoutes.student.explore} className="flex-1 sm:flex-initial">
                   <Button
                     variant="outline"
                     size="lg"
@@ -259,7 +260,7 @@ export default function StudentDashboard() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Your Classes</CardTitle>
                 {isSubject?.length > 0 && (
-                  <Link to="/student/explore">
+                  <Link to={appRoutes.student.explore}>
                     <Button variant="ghost" size="sm">
                       View all
                       <ArrowRight className="w-4 h-4 ml-1" />
@@ -280,7 +281,7 @@ export default function StudentDashboard() {
                   ).map((cls) => (
                     <Link
                       key={cls?.subject_agent_id || cls?.id}
-                      to={`/student/chat/new/subject/${cls.displayName}`}
+                      to={appRoutes.student.newSubjectChat(cls.displayName)}
                     className="group hover-lift flex items-center gap-4 rounded-[24px] border border-white/70 bg-white/70 p-4 hover:border-fuchsia-200 hover:bg-white dark:border-white/10 dark:bg-white/5"
                   >
                       <div className="dashboard-orb flex h-12 w-12 items-center justify-center rounded-[18px] bg-gradient-to-br from-fuchsia-500/15 to-sky-500/20 ring-1 ring-white/50">
@@ -325,7 +326,7 @@ export default function StudentDashboard() {
                       You haven't been assigned any subjects yet. Please contact your administrator to get your subjects added.
                     </p>
                     <div className="flex gap-3 justify-center">
-                      <Link to="/student/explore">
+                      <Link to={appRoutes.student.explore}>
                         <Button variant="default">
                           <BookOpen className="w-4 h-4 mr-2" />
                           Explore Subjects
@@ -354,7 +355,7 @@ export default function StudentDashboard() {
                 {recentActivity?.recent_activity?.slice(0, 3).map((cls) => (
                   <Link
                     key={cls?.agent_id}
-                    to={`/student/explore?class=${cls?.agent_id}`}
+                    to={`${appRoutes.student.explore}?class=${cls?.agent_id}`}
                     className="group hover-lift flex items-center gap-3 rounded-[22px] border border-transparent p-3 hover:border-white/70 hover:bg-white/70 dark:hover:border-white/10 dark:hover:bg-white/5"
                   >
                     <div className="dashboard-orb flex h-10 w-10 items-center justify-center rounded-[16px] bg-gradient-to-br from-cyan-500/15 to-emerald-500/20">
@@ -374,7 +375,7 @@ export default function StudentDashboard() {
                 {/* {recentAgents.map((cls) => (
                   <Link
                     key={cls.id}
-                    to={`/student/explore?class=${cls.id}`}
+                    to={`${appRoutes.student.explore}?class=${cls.id}`}
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors group"
                   >
                     <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
@@ -405,7 +406,7 @@ export default function StudentDashboard() {
                 {suggestedAgents.map((agent) => (
                   <Link
                     key={agent.id}
-                    to={`/student/chat/${agent.id}`}
+                    to={appRoutes.student.legacyChat(agent.id)}
                     className="group hover-lift flex items-center gap-3 rounded-[22px] border border-white/70 bg-white/70 p-3 hover:border-sky-200 hover:bg-white dark:border-white/10 dark:bg-white/5"
                   >
                     <div className="dashboard-orb flex h-10 w-10 items-center justify-center rounded-[16px] bg-gradient-to-br from-fuchsia-500 to-sky-500">

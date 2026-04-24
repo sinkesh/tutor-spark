@@ -44,6 +44,7 @@ import {
 import { toast } from 'sonner';
 import { ChatSession } from '@/types/chat';
 import { getStudentAgent } from '@/config/services';
+import { appRoutes } from '@/config/routes';
 
 // Re-import existing components
 import UnifiedSidebar from '@/components/chat/UnifiedSidebar';
@@ -71,9 +72,9 @@ interface StudentSubject {
 }
 
 const navItems = [
-  { path: '/student', icon: Home, label: 'Home' },
-  { path: '/student/history', icon: History, label: 'History' },
-  { path: '/student/profile', icon: User, label: 'Profile' },
+  { path: appRoutes.student.root, icon: Home, label: 'Home' },
+  { path: appRoutes.student.history, icon: History, label: 'History' },
+  { path: appRoutes.student.profile, icon: User, label: 'Profile' },
 ];
 
 export default function UnifiedLayout({
@@ -137,8 +138,8 @@ export default function UnifiedLayout({
     }
   };
 
-  const isChatPage = location.pathname.startsWith('/student/chat');
-  const isExplorePage = location.pathname.startsWith('/student/explore');
+  const isChatPage = location.pathname.startsWith(appRoutes.student.chat);
+  const isExplorePage = location.pathname.startsWith(appRoutes.student.explore);
 
   return (
     <div className="dashboard-shell min-h-screen flex">
@@ -165,7 +166,7 @@ export default function UnifiedLayout({
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex h-20 items-center justify-between border-b border-white/10 px-4">
-            <Link to="/student" className="flex items-center gap-3">
+            <Link to={appRoutes.student.root} className="flex items-center gap-3">
               <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white/14 shadow-lg shadow-cyan-950/20 ring-1 ring-white/10">
                 <GraduationCap className="h-5 w-5 text-cyan-100" />
               </div>
@@ -278,7 +279,7 @@ export default function UnifiedLayout({
                 <nav className="p-4 space-y-1">
                 {navItems.map((item, index) => {
                   const isActive = location.pathname === item.path || 
-                    (item.path !== '/student' && location.pathname.startsWith(item.path));
+                    (item.path !== appRoutes.student.root && location.pathname.startsWith(item.path));
                   
                   return (
                     <Link
@@ -410,7 +411,7 @@ export default function UnifiedLayout({
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to="/student/profile">
+                    <Link to={appRoutes.student.profile}>
                       <User className="mr-2 h-4 w-4" />
                       Profile
                     </Link>

@@ -7,6 +7,7 @@ import { createChatSession, getChatSessions } from "@/config/services";
 import { useAgentCache } from "@/hooks/useAgentCache";
 import { AgentResolutionError, handleAgentResolutionError, createFallbackAgent, validateAgentInfo, logAgentResolution } from "@/utils/agentUtils";
 import { toast } from "sonner";
+import { appRoutes } from "@/config/routes";
 
 export default function NewAgentChatPage() {
   const { subjectName } = useParams<{ subjectName: string }>();
@@ -128,7 +129,7 @@ export default function NewAgentChatPage() {
           console.log("Navigating to most recent session:", sessionId, "Updated at:", mostRecentSession.updated_at);
           
           // Navigate to most recent session
-          navigate(`/student/chat/session/${sessionId}`, { replace: true });
+          navigate(appRoutes.student.chatSession(sessionId), { replace: true });
           toast.success(`Opened ${agentInfo.agentName} chat session`);
         } else {
           // No existing sessions for this agent, create a new one
@@ -146,20 +147,20 @@ export default function NewAgentChatPage() {
 
           if (response?.chat_session_id) {
             // Navigate to the newly created session
-            navigate(`/student/chat/session/${response.chat_session_id}`, { replace: true });
+            navigate(appRoutes.student.chatSession(response.chat_session_id), { replace: true });
             toast.success(`${agentInfo.agentName} chat session created`);
           } else {
             console.error("Invalid session response:", response);
             toast.error("Failed to create chat session");
             // Fallback to chat list
-            navigate("/student/chat", { replace: true });
+            navigate(appRoutes.student.chat, { replace: true });
           }
         }
       } catch (error) {
         console.error("Failed to handle session navigation:", error);
         toast.error("Failed to load chat sessions");
         // Fallback to chat list
-        navigate("/student/chat", { replace: true });
+        navigate(appRoutes.student.chat, { replace: true });
       }
     };
 
@@ -168,7 +169,7 @@ export default function NewAgentChatPage() {
 
   const handleNewChat = () => {
     console.log('New chat requested');
-    navigate("/student/chat");
+    navigate(appRoutes.student.chat);
   };
 
   if (isLoading || cacheLoading || !agentInfo) {

@@ -36,6 +36,7 @@ import { getChatSessions, deleteChatSession, getRecentActivityStudent } from "@/
 import { ChatSession } from "@/types/chat";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { appRoutes } from "@/config/routes";
 
 export default function HistoryPage() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -157,7 +158,7 @@ export default function HistoryPage() {
   };
 
   const handleSessionClick = (session: ChatSession) => {
-    navigate(`/student/chat/session/${session.id}`);
+    navigate(appRoutes.student.chatSession(session.id));
   };
 
   const formatLastMessageTime = (timestamp: string) => {
@@ -209,7 +210,7 @@ export default function HistoryPage() {
             <Button
               variant="gradient-accent"
               className="ml-auto hidden sm:inline-flex"
-              onClick={() => navigate("/student/conversation-history")}
+              onClick={() => navigate(appRoutes.student.conversationHistory)}
             >
               <Bookmark className="h-4 w-4" />
               Saved Chats

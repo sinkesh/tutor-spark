@@ -25,6 +25,7 @@ import { ArrowLeft, Plus, Bot, Sparkles, MessageSquare, BookOpen } from "lucide-
 import { cn } from "@/lib/utils";
 import { useDocumentClick } from "@/hooks/useDocumentClick";
 import { BASE_URL, VERSION } from "@/config/api_urls";
+import { appRoutes } from "@/config/routes";
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
@@ -131,7 +132,7 @@ export default function AdaptiveContent({
       if (session) {
         switchSession(session.id);
       } else {
-        navigate("/student/chat");
+        navigate(appRoutes.student.chat);
       }
     }
   }, [sessionId, sessions.length, viewType]);
@@ -411,7 +412,7 @@ export default function AdaptiveContent({
         setSessions(prev => prev.map(s => s.id === updatedSession.id ? updatedSession : s));
       }
       
-      navigate(`/student/chat/session/${newSession.id}`, { replace: true });
+      navigate(appRoutes.student.chatSession(newSession.id), { replace: true });
       toast.success("New chat session created");
     } catch (error) {
       console.error("Failed to create session:", error);
@@ -438,7 +439,7 @@ export default function AdaptiveContent({
       await loadMessages(sessionId);
       
       // Navigate to the session URL
-      navigate(`/student/chat/session/${sessionId}`);
+      navigate(appRoutes.student.chatSession(sessionId));
       
       if (onSessionSelect) {
         onSessionSelect(session);
@@ -601,12 +602,12 @@ export default function AdaptiveContent({
         createSession(sessionFromList.agent_type, sessionFromList.agent_name, sessionFromList.agent_id);
       } else {
         console.log('No current subject, navigating to explore');
-        navigate("/student/explore");
+        navigate(appRoutes.student.explore);
       }
     } else {
       // If no current subject, go to explore to choose one
       console.log('No current subject, navigating to explore');
-      navigate("/student/explore");
+      navigate(appRoutes.student.explore);
     }
   };
 
