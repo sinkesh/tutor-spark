@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import ThemeToggle from '@/components/theme-toggle';
 import GlobalPageSearch from '@/components/layout/GlobalPageSearch';
+import HeaderFullscreenToggle from '@/components/layout/HeaderFullscreenToggle';
 import {
   GraduationCap,
   LayoutDashboard,
@@ -171,6 +172,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <Bell className="h-4 w-4" />
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-fuchsia-500" />
             </Button>
+            <HeaderFullscreenToggle />
             <ThemeToggle collapsed />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
