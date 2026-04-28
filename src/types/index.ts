@@ -96,12 +96,10 @@ export interface StudentQuery {
 }
 
 export interface CreateStudent {
-  name: string;
   email: string;
+  password: string;
+  name: string;
   class_name: string;
-  subject_agent: [
-    {
-      name: string;
-    },
-  ];
+  age?: number;
+  subjects: string[];
 }

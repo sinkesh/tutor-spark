@@ -3,14 +3,14 @@ export const BASE_URL = "http://localhost:8000";
 export const VERSION = "/api/v1";
 
 export const API_URL = {
-  CREATE_VECTORS: "/vectors/create_vectors",
-  ALL_COLLECTIONS: "admin/vectors/all_collections",
-  AGENT_OF_CLASS: "/vectors/agent_of_class",
+  CREATE_VECTORS: "/admin/vectors/create",
+  ALL_COLLECTIONS: "/admin/vectors/collections",
+  AGENT_OF_CLASS: "/admin/vectors/agents/by-class",
   AGENT_QUERY: "/student/agent-query",
-  CREATE_STUDENT: "/auth/create-student-with-auth",
-  LIST_STUDENT: "/student/student-list",
-  STUDENT: "/student",
-  VECTORS: "/vectors",
+  CREATE_STUDENT: "/admin/users/students",
+  LIST_STUDENT: "/admin/users/students",
+  STUDENT: "/admin/users/students",
+  VECTORS: "admin/vectors",
   STUDENT_FEEDBACK: "/student/feedback",
   // Auth endpoints
   LOGIN: "/login",

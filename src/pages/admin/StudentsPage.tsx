@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useCallback, useEffect } from "react";
+import { CreateStudent } from "@/types";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -248,7 +249,12 @@ export default function StudentsPage() {
     try {
       setIsLoading(true);
       const res = await agentOfClass({ class_name: className });
-      setIsSubject(res.agents);
+      // Map API response to frontend expected format
+      const mappedAgents = (res.agents || []).map((agent: any) => ({
+        id: agent.agent_id,
+        subject: agent.subject,
+      }));
+      setIsSubject(mappedAgents);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch subjects");
@@ -322,20 +328,29 @@ export default function StudentsPage() {
         }
       }
 
-      // Ensure subject_agent array has proper structure with agent IDs
-      const formattedStudentData = {
-        ...studentData,
-        subject_agent: studentData.subject_agent?.map((agent: any) => ({
-          name: agent.name || agent.subject,
-          subject_agent_id: agent.subject_agent_id || agent.id
-        })) || []
+      // Format data for new API
+      const formattedStudentData: CreateStudent = {
+        email: studentData.email,
+        password: studentData.password,
+        name: studentData.name,
+        class_name: studentData.class_name,
+        subjects: studentData.subject_agent?.map((agent: any) =>
+          agent.name || agent.subject || agent
+        ) || []
       };
 
       console.log('Submitting student data:', formattedStudentData);
 
       if (isEditMode && currentStudentId) {
-        // Update existing student
-        const res = await editStudentDetails(currentStudentId, formattedStudentData);
+        // Update existing student - use old format for edit
+        const updateData = {
+          ...studentData,
+          subject_agent: studentData.subject_agent?.map((agent: any) => ({
+            name: agent.name || agent.subject,
+            subject_agent_id: agent.subject_agent_id || agent.id
+          })) || []
+        };
+        const res = await editStudentDetails(currentStudentId, updateData);
         console.log('Student update response:', res);
         if (res) {
           toast.success("Student updated successfully");
@@ -344,7 +359,7 @@ export default function StudentsPage() {
           fetchStudentsList();
         }
       } else {
-        // Create new student
+        // Create new student - use new API format
         const res = await createStudent(formattedStudentData);
         console.log('Student creation response:', res);
         if (res) {
@@ -369,10 +384,27 @@ export default function StudentsPage() {
     setIsLoading(true);
     try {
       const res = await listStudent();
+      console.log("Students API response:", res);
       if (res && res.students) {
-        setStudents(res.students);
+        // Map new API response format to frontend expected format
+        const mappedStudents = res.students.map((student: any) => ({
+          student_id: student.id,
+          name: student.student_details?.name || "N/A",
+          email: student.student_details?.email || "N/A",
+          class: student.student_details?.class_name || "N/A",
+          subject_agent: (student.student_details?.subjects || []).map((subj: string) => ({
+            subject: subj,
+          })),
+          status: (student.metadata?.is_active ? "active" : "inactive") as "active" | "inactive",
+          lastActive: student.metadata?.last_login
+            ? new Date(student.metadata.last_login).toLocaleDateString()
+            : "N/A",
+          password: student.student_details?.password_hash || "",
+        }));
+        console.log("Mapped students:", mappedStudents);
+        setStudents(mappedStudents);
         setTotalStudents(res.total || 0);
-        toast.success(`Fetched ${res.students.length} students`);
+        toast.success(`Fetched ${mappedStudents.length} students`);
       }
     } catch (error) {
       console.error("Error fetching students:", error);
@@ -465,7 +497,17 @@ export default function StudentsPage() {
           fetchStudentsList();
         }
       } else {
-        const res = await createStudent(newStudent);
+        // Format for new API
+        const formattedData: CreateStudent = {
+          email: newStudent.email,
+          password: newStudent.password,
+          name: newStudent.name,
+          class_name: newStudent.class_name,
+          subjects: newStudent.subject_agent?.map((agent: any) =>
+            agent.name || agent.subject || agent
+          ) || []
+        };
+        const res = await createStudent(formattedData);
         if (res) {
           toast.success("Student created successfully");
           setIsAddDialogOpen(false);
@@ -490,7 +532,7 @@ export default function StudentsPage() {
       const res = await deleteStudentDetails(studentId);
       if (res) {
         toast.success("Student deleted successfully");
-        fetchStudentsList();
+        await fetchStudentsList();
       }
     } catch (err) {
       console.error("Error deleting student:", err);

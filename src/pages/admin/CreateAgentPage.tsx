@@ -241,7 +241,7 @@ export default function CreateAgentPage() {
 
     try {
       const payload = new FormData();
-      payload.append("class_", formData.class);
+      payload.append("class", formData.class === "none" ? "" : formData.class);
       payload.append("subject", formData.subject);
       payload.append("agent_type", formData.type);
       payload.append("agent_name", formData.name);

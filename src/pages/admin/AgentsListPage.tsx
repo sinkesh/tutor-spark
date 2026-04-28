@@ -115,7 +115,25 @@ export default function AgentsListPage() {
     try {
       setIsLoading(true);
       const response = await getAgents();
-      setAgentsData(response?.agents || []);
+      console.log("API Response:", response);
+
+      // Map API response fields to frontend expected fields
+      const mappedAgents = (response?.agents || []).map((agent: any) => ({
+        subject_agent_id: agent.agent_id,
+        agent_name: agent.subject,
+        agent_type: "subject", // Default type since API doesn't provide it
+        description: `${agent.subject} agent for ${agent.class_name || 'all classes'}`,
+        class: agent.class_name || "none",
+        subject: agent.subject,
+        status: agent.status || "active",
+        unique_students: 0, // Not provided by API
+        total_conversations: 0, // Not provided by API
+        overall_score: 0, // Not provided by API
+        ...agent, // Keep original fields too
+      }));
+
+      console.log("Mapped agents:", mappedAgents);
+      setAgentsData(mappedAgents);
     } catch (err) {
       console.error("Error fetching agents:", err);
       toast.error("Failed to fetch agents");
