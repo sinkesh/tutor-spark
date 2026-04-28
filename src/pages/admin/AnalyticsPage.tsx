@@ -41,7 +41,7 @@ import {
 import {
   getAgents,
   getAllAgentPerformance,
-  getDashboardCounts,
+  getAdminDashboardStats,
 } from "@/config/services";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
@@ -94,23 +94,27 @@ const peakHoursData = [
 ];
 
 export default function AnalyticsPage() {
-  const [dashboardCounts, setDashboardCounts] = useState<any>([]);
+  const [dashboardStats, setDashboardStats] = useState<{
+    students: { total: number; total_sessions: number; total_messages: number };
+    agents: { total: number };
+    timestamp: string;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [avgAccuracyScore, setAvgAccuracyScore] = useState("");
   const [agentPerformance, setAgentPerformance] = useState<any>([]);
 
   useEffect(() => {
-    fetchDashboardCounts();
+    fetchDashboardStats();
     fetchAgentPerformance();
   }, []);
 
-  const fetchDashboardCounts = async () => {
+  const fetchDashboardStats = async () => {
     try {
-      const response = await getDashboardCounts();
-      setDashboardCounts(response);
+      const response = await getAdminDashboardStats();
+      setDashboardStats(response);
     } catch (err) {
-      console.error("Error fetching dashboard counts:", err);
-      toast.error("Failed to fetch dashboard counts");
+      console.error("Error fetching dashboard stats:", err);
+      toast.error("Failed to fetch dashboard stats");
     } finally {
       setIsLoading(false);
     }
@@ -207,7 +211,7 @@ export default function AnalyticsPage() {
                     <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
                   ) : (
                     <p className="text-2xl font-bold">
-                      {dashboardCounts?.agents?.total_conversations}
+                      {dashboardStats?.students?.total_messages}
                     </p>
                   )}
                   <div className="flex items-center gap-1 text-sm text-green-500">
@@ -232,7 +236,7 @@ export default function AnalyticsPage() {
                     <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
                   ) : (
                     <p className="text-2xl font-bold">
-                      {dashboardCounts?.students?.total}
+                      {dashboardStats?.students?.total}
                     </p>
                   )}
                   <div className="flex items-center gap-1 text-sm text-green-500">

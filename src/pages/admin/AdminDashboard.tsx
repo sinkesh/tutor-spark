@@ -22,8 +22,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import {
   getAgents,
-  getDashboardCounts,
   getRecentActivity,
+  getAdminDashboardStats,
 } from "@/config/services";
 import { toast } from "sonner";
 import AgentCardSkeleton from "@/components/loader/AgentCardSkeleton";
@@ -34,14 +34,18 @@ export default function AdminDashboard() {
   const [avgAccuracyScore, setAvgAccuracyScore] = useState("");
   const [recentActData, setRecentActData] = useState<any>([]);
   const [isActivityLoading, setIsActivityLoading] = useState(false);
-  const [dashboardCounts, setDashboardCounts] = useState<any>([]);
+  const [dashboardStats, setDashboardStats] = useState<{
+    students: { total: number; total_sessions: number; total_messages: number };
+    agents: { total: number };
+    timestamp: string;
+  } | null>(null);
 
   const navigate = useNavigate();
 
   useEffect(() => {
     getAllAgents();
     fetchRecentActivity();
-    fetchDashboardCounts();
+    fetchDashboardStats();
   }, []);
 
   const getAllAgents = async () => {
@@ -106,16 +110,13 @@ export default function AdminDashboard() {
     }
   };
 
-  const fetchDashboardCounts = async () => {
+  const fetchDashboardStats = async () => {
     try {
-      setIsLoading(true);
-      const response = await getDashboardCounts();
-      setDashboardCounts(response);
+      const response = await getAdminDashboardStats();
+      setDashboardStats(response);
     } catch (err) {
-      console.error("Error fetching dashboard counts:", err);
-      toast.error("Failed to fetch dashboard counts");
-    } finally {
-      setIsLoading(false);
+      console.error("Error fetching dashboard stats:", err);
+      toast.error("Failed to fetch dashboard stats");
     }
   };
 
@@ -184,7 +185,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
           <KPICard
             title="Total AI Agents"
-            value={dashboardCounts?.agents?.total}
+            value={dashboardStats?.agents?.total}
             change="+3 this week"
             changeType="positive"
             icon={Bot}
@@ -193,7 +194,7 @@ export default function AdminDashboard() {
           />
           <KPICard
             title="Active Students"
-            value={dashboardCounts?.students?.total}
+            value={dashboardStats?.students?.total}
             change="+2 this week"
             changeType="positive"
             icon={Users}
@@ -202,7 +203,7 @@ export default function AdminDashboard() {
           />
           <KPICard
             title="Total Conversations"
-            value={dashboardCounts?.agents?.total_conversations}
+            value={dashboardStats?.students?.total_messages}
             change="+23 today"
             changeType="positive"
             icon={MessageCircle}

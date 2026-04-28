@@ -28,6 +28,24 @@ import { useToast } from "@/components/ui/use-toast";
 import { User } from "@/types";
 import ThemeToggle from "@/components/theme-toggle";
 
+// Helper function to decode JWT payload
+function decodeJWT(token: string): any {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Failed to decode JWT:', error);
+    return null;
+  }
+}
+
 const platformSignals = [
   {
     title: "Adaptive tutoring",
@@ -69,27 +87,25 @@ export default function LoginPage() {
 
     try {
       const response = await apiLogin({ email, password });
-      const { access_token, refresh_token, user: userData } = response.data;
+      const { access_token, refresh_token, user_id, role, email: userEmail } = response.data;
 
       // Validate response data structure
-      if (
-        !userData ||
-        !userData.user_id ||
-        !userData.email ||
-        !userData.name ||
-        !userData.role
-      ) {
+      if (!access_token || !user_id || !role) {
         throw new Error("Invalid response data from server");
       }
 
+      // Decode JWT to get user name (stored in token payload)
+      const jwtPayload = decodeJWT(access_token);
+      const userName = jwtPayload?.name || jwtPayload?.email?.split('@')[0] || 'User';
+
       const user: User = {
-        id: userData.user_id,
-        email: userData.email,
-        name: userData.name,
-        role: userData.role,
-        class: userData.class || "",
-        is_active: userData.is_active ?? true,
-        permissions: userData.permissions || [],
+        id: user_id,
+        email: userEmail || email,
+        name: userName,
+        role: role,
+        class: jwtPayload?.class || "",
+        is_active: true,
+        permissions: jwtPayload?.permissions || [],
       };
 
       // Store tokens and user data

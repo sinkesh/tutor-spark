@@ -60,7 +60,7 @@ import {
   editStudentDetails,
   deleteStudentDetails,
   changePassword,
-  getDashboardCounts,
+  getAdminDashboardStats,
   getAgents,
 } from "@/config/services";
 import PaginationComponent from "@/components/common/PaginationComponent";
@@ -139,7 +139,11 @@ export default function StudentsPage() {
   });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [dashboardCounts, setDashboardCounts] = useState<any>([]);
+  const [dashboardStats, setDashboardStats] = useState<{
+    students: { total: number; total_sessions: number; total_messages: number };
+    agents: { total: number };
+    timestamp: string;
+  } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
@@ -147,7 +151,7 @@ export default function StudentsPage() {
 
   useEffect(() => {
     fetchStudentsList();
-    fetchDashboardCounts();
+    fetchDashboardStats();
   }, []);
 
   const handleChangePassword = (studentId: string) => {
@@ -156,14 +160,14 @@ export default function StudentsPage() {
     setIsChangePasswordDialogOpen(true);
   };
 
-  const fetchDashboardCounts = async () => {
+  const fetchDashboardStats = async () => {
     try {
       setIsLoading(true);
-      const response = await getDashboardCounts();
-      setDashboardCounts(response);
+      const response = await getAdminDashboardStats();
+      setDashboardStats(response);
     } catch (err) {
-      console.error("Error fetching dashboard counts:", err);
-      toast.error("Failed to fetch dashboard counts");
+      console.error("Error fetching dashboard stats:", err);
+      toast.error("Failed to fetch dashboard stats");
     } finally {
       setIsLoading(false);
     }
@@ -813,7 +817,7 @@ export default function StudentsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {dashboardCounts?.students?.total}
+                    {dashboardStats?.students?.total}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Total Students
@@ -830,10 +834,10 @@ export default function StudentsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {dashboardCounts?.students?.total}
+                    {dashboardStats?.students?.total_sessions}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Active Students
+                    Total Sessions
                   </p>
                 </div>
               </div>
@@ -847,7 +851,7 @@ export default function StudentsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {dashboardCounts?.agents?.total_conversations}
+                    {dashboardStats?.students?.total_messages}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Total Conversations

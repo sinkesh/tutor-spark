@@ -161,6 +161,14 @@ export const login = (data: any) => {
   return apiDataJson.post(API_URL.LOGIN, data);
 };
 
+export const studentSignup = (data: { email: string; password: string; name: string }) => {
+  return apiDataJson.post(API_URL.STUDENT_SIGNUP, data);
+};
+
+export const adminSignup = (data: { email: string; password: string; name: string }) => {
+  return apiDataJson.post(API_URL.ADMIN_SIGNUP, data);
+};
+
 export const changePassword = (data: any, id: string) => {
   return apiDataJson.post(API_URL.CHANGE_PASSWORD + "/" + id, data);
 };
@@ -204,8 +212,45 @@ export const getRecentActivity = async (): Promise<any> => {
   return response.data;
 };
 
-export const getDashboardCounts = async (): Promise<any> => {
-  const response = await apiDataJson.get(`${API_URL.DASHBOARD_COUNTS}`);
+export const getAdminDashboardStats = async (): Promise<{
+  students: {
+    total: number;
+    total_sessions: number;
+    total_messages: number;
+  };
+  agents: {
+    total: number;
+  };
+  timestamp: string;
+}> => {
+  const response = await apiDataJson.get(`${API_URL.ADMIN_DASHBOARD_STATS}`);
+  return response.data;
+};
+
+export const getAdminVectorsCollections = async (): Promise<{
+  classes: Array<{
+    class_name: string;
+    subjects: Array<{
+      subject: string;
+      agent_id: string;
+      chunk_count: number;
+      document_count: number;
+    }>;
+  }>;
+  total_classes: number;
+  total_subjects: number;
+  agents: Array<{
+    agent_id: string;
+    subject: string;
+    class_name: string;
+    chunk_count: number;
+    document_count: number;
+    status: string;
+    created_at: string;
+  }>;
+  total_agents: number;
+}> => {
+  const response = await apiDataJson.get(`${API_URL.ADMIN_VECTORS_COLLECTIONS}`);
   return response.data;
 };
 
