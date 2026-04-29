@@ -18,7 +18,7 @@ export const API_URL = {
   ADMIN_SIGNUP: "/admin/signup",
   CHANGE_PASSWORD: "/auth/admin/admin-reset-student-password",
   STUDENT_HISTORY: "/student/std_VIWG3/history/English",
-  STUDENT_AGENT: "/vectors/student",
+  STUDENT_AGENT: "/admin/vectors/student",
   AGENT_PERFORMANCE: "/performance/all-agents-performance",
   SINGAL_AGENT_PERFORMANCE: "/performance/agent-performance",
   RECENT_ACTIVITY: "admin/activity/recent",
@@ -32,6 +32,12 @@ export const API_URL = {
   STUDENT_AGENT_DOCUMENTS: "/student/documents/agent-documents",
   STUDENT_DOCUMENT_METADATA: "/student/{student_id}/agents/{agent_id}/documents/{document_id}",
   STUDENT_DOCUMENT_PREVIEW: "/student/{student_id}/agents/{agent_id}/documents/{document_id}/preview",
-  TOPICS_EXTRACT: "/topics/extract",
-  TOPICS_PREVIEW: "/topics/extract/preview",
+  TOPICS_EXTRACT: "agent/topics/extract",
+  TOPICS_PREVIEW: "agent/topics/extract/preview",
+  STUDENT_CHAT_SESSIONS: "/student/sessions/chat-sessions",
+  STUDENT_CHAT_SESSIONS_BASE: "/student/chat-sessions",
+  STUDENT_CHAT_SESSIONS_GET: "/student/chat",  // GET /student/chat/{student_id}/sessions
+  // Student agent endpoints
+  STUDENT_AGENT_TOPICS: "/student/agents",
+  STUDENT_AGENT_KNOWLEDGE: "/student/agents",
 };

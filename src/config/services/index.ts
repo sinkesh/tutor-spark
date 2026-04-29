@@ -352,31 +352,49 @@ export const resolveAgentId = async (subjectName: string, studentId?: string): P
 
 export const getAgentDocuments = async (agentId: string) => {
   try {
-    const response = await api.get(`${API_URL.VECTORS}/${agentId}/documents`);
+    // Use student endpoint instead of admin endpoint
+    const response = await apiDataJson.post(API_URL.STUDENT_AGENT_DOCUMENTS, {
+      agent_id: agentId
+    });
     return response.data;
   } catch (error) {
     console.error(`Failed to fetch documents for agent ${agentId}:`, error);
-    throw error;
+    // Return empty data instead of throwing to prevent UI breakage
+    return { documents: [], document_ids: [], doc_unique_ids: [] };
   }
 };
 
 export const getAgentTopics = async (agentId: string) => {
   try {
-    const response = await apiDataJson.get(`${API_URL.VECTORS}/${agentId}/topics`);
+    // Try the extract topics endpoint which is available for students
+    const response = await apiDataJson.get(`${API_URL.TOPICS_EXTRACT}/${agentId}`);
     return response.data;
-  } catch (error) {
-    console.error(`Failed to fetch topics for agent ${agentId}:`, error);
-    throw error;
+  } catch (error: any) {
+    // Silently handle 404 - topics endpoint may not exist for this agent
+    if (error.response?.status === 404 || error.response?.status === 403) {
+      console.warn(`Topics not available for agent ${agentId}:`, error.response?.status);
+    } else {
+      console.warn(`Failed to fetch topics for agent ${agentId}:`, error);
+    }
+    // Return empty data instead of throwing to prevent UI breakage
+    return { topics: [], extracted_topics: [] };
   }
 };
 
 export const getAgentKnowledgeBase = async (agentId: string) => {
   try {
-    const response = await apiDataJson.get(`${API_URL.VECTORS}/${agentId}/knowledge-base`);
+    // GET /admin/vectors/{subject_agent_id} - Returns agent details including chunks/knowledge
+    const response = await apiDataJson.get(`${API_URL.VECTORS}/${agentId}`);
     return response.data;
-  } catch (error) {
-    console.error(`Failed to fetch knowledge base for agent ${agentId}:`, error);
-    throw error;
+  } catch (error: any) {
+    // Silently handle 403/404 - admin endpoint may not be accessible to students
+    if (error.response?.status === 403 || error.response?.status === 404) {
+      console.warn(`Knowledge base not accessible for agent ${agentId}:`, error.response?.status);
+    } else {
+      console.warn(`Failed to fetch knowledge base for agent ${agentId}:`, error);
+    }
+    // Return empty data instead of throwing to prevent UI breakage
+    return { knowledge: [], documents: [], subject_agent: [] };
   }
 };
 
@@ -387,10 +405,11 @@ export const getRecentActivityStudent = async (studentId: string) => {
   return response.data;
 };
 
-// Chat Sessions API - Updated to match existing backend
+// Chat Sessions API - Uses student-specific endpoints
 export const getChatSessions = async (userId: string) => {
   console.log("Getting chat sessions for user:", userId);
-  const response = await apiDataJson.get(`${API_URL.STUDENT}/${userId}/chat-sessions`);
+  // GET /student/chat/{student_id}/sessions
+  const response = await apiDataJson.get(`${API_URL.STUDENT_CHAT_SESSIONS_GET}/${userId}/sessions`);
   console.log("Get sessions response:", response);
   console.log("Response data:", response.data);
   return response.data;
@@ -398,15 +417,21 @@ export const getChatSessions = async (userId: string) => {
 
 export const createChatSession = async (data: {
   student_id: string;
+  subject: string;
+  class_name: string;
   title: string;
-  agent_type?: string;
-  agent_name?: string;
-  agent_id?: string;
+  session_name: string;
+  agent_type: string;
+  agent_name: string;
+  agent_id: string;
 }) => {
-  console.log("API call: POST /student/chat-sessions", data);
-  const response = await apiDataJson.post(`${API_URL.STUDENT}/chat-sessions`, {
+  console.log("API call: POST /student/sessions/chat-sessions", data);
+  const response = await apiDataJson.post(API_URL.STUDENT_CHAT_SESSIONS, {
     student_id: data.student_id,
+    subject: data.subject,
+    class_name: data.class_name,
     title: data.title,
+    session_name: data.session_name,
     agent_type: data.agent_type,
     agent_name: data.agent_name,
     agent_id: data.agent_id,
@@ -417,22 +442,25 @@ export const createChatSession = async (data: {
 };
 
 export const getChatSession = async (userId: string, sessionId: string) => {
-  const response = await apiDataJson.get(`${API_URL.STUDENT}/${userId}/chat-sessions/${sessionId}`);
+  // GET /student/chat/{student_id}/sessions/{session_id}
+  const response = await apiDataJson.get(`${API_URL.STUDENT_CHAT_SESSIONS_GET}/${userId}/sessions/${sessionId}`);
   return response.data;
 };
 
 export const updateChatSession = async (userId: string, sessionId: string, data: {
   title?: string;
 }) => {
-  const response = await apiDataJson.put(`${API_URL.STUDENT}/${userId}/chat-sessions/${sessionId}`, data);
+  // PUT /student/chat/{student_id}/sessions/{session_id}
+  const response = await apiDataJson.put(`${API_URL.STUDENT_CHAT_SESSIONS_GET}/${userId}/sessions/${sessionId}`, data);
   return response.data;
 };
 
 export const deleteChatSession = async (userId: string, sessionId: string) => {
   console.log("Deleting chat session:", sessionId, "for user:", userId);
-  const url = `${API_URL.STUDENT}/${userId}/chat-sessions/${sessionId}`;
+  // DELETE /student/chat/{student_id}/sessions/{session_id}
+  const url = `${API_URL.STUDENT_CHAT_SESSIONS_GET}/${userId}/sessions/${sessionId}`;
   console.log("DELETE URL:", url);
-  
+
   try {
     const response = await apiDataJson.delete(url);
     console.log("Delete session response:", response);
@@ -448,8 +476,9 @@ export const deleteChatSession = async (userId: string, sessionId: string) => {
 };
 
 export const getChatMessages = async (userId: string, sessionId: string, limit = 50) => {
+  // GET /student/chat/{student_id}/sessions/{session_id}/history
   const response = await apiDataJson.get(
-    `${API_URL.STUDENT}/${userId}/chat-sessions/${sessionId}/history?limit=${limit}`
+    `${API_URL.STUDENT_CHAT_SESSIONS_GET}/${userId}/sessions/${sessionId}/history?limit=${limit}`
   );
   return response.data;
 };

@@ -124,17 +124,89 @@ export default function AdaptiveContent({
     }
   }, [viewType]);
 
-  // Handle session selection from URL
+  // Reset currentSession when URL sessionId changes to a different session
   useEffect(() => {
-    if (sessionId && sessions.length > 0 && viewType === 'chat') {
-      const session = sessions.find(s => s.id === sessionId);
+    const targetSessionId = sessionId || currentSessionId;
+    if (targetSessionId && currentSession && currentSession.id !== targetSessionId) {
+      console.log('URL session changed, resetting currentSession from', currentSession.id, 'to', targetSessionId);
+      setCurrentSession(null);
+      setMessages([]);
+    }
+  }, [sessionId, currentSessionId, currentSession?.id]);
+
+  // Also trigger session selection when sessions are loaded
+  useEffect(() => {
+    const targetSessionId = sessionId || currentSessionId;
+    if (targetSessionId && sessions.length > 0 && viewType === 'chat' && !currentSession) {
+      // We have sessions loaded but no current session selected
+      const session = sessions.find(s => s.id === targetSessionId);
       if (session) {
-        switchSession(session.id);
-      } else {
-        navigate("/student/chat");
+        console.log('Auto-selecting session after sessions loaded:', session.title);
+        // Skip navigation since we're already at the correct URL
+        switchSession(session.id, true);
       }
     }
-  }, [sessionId, sessions.length, viewType]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessions, sessionId, currentSessionId, viewType, currentSession]);
+
+  // Handle session selection from URL or props
+  useEffect(() => {
+    const targetSessionId = sessionId || currentSessionId;
+    if (targetSessionId && sessions.length > 0 && viewType === 'chat') {
+      const session = sessions.find(s => s.id === targetSessionId);
+      if (session) {
+        // Skip navigation if we're already at this URL
+        const currentPath = window.location.pathname;
+        const targetPath = `/student/chat/session/${targetSessionId}`;
+        switchSession(session.id, currentPath === targetPath);
+      } else {
+        // Session not found in loaded sessions - it might be newly created
+        // Try to reload sessions to get the latest data
+        console.log('Session not found in current list, reloading sessions...');
+        loadSessions().then((freshSessions) => {
+          // Use the returned fresh sessions data (formatted array), not the stale closure variable
+          const freshSessionsArray = Array.isArray(freshSessions) ? freshSessions : sessions;
+          const reloadedSession = freshSessionsArray.find((s: any) => s.id === targetSessionId || s.chat_session_id === targetSessionId);
+          if (reloadedSession) {
+            const currentPath = window.location.pathname;
+            const targetPath = `/student/chat/session/${targetSessionId}`;
+            const sessionId = reloadedSession.chat_session_id || reloadedSession.id || reloadedSession._id;
+
+            if (!sessionId) {
+              console.error('Reloaded session has no ID:', reloadedSession);
+              return;
+            }
+
+            const formattedSession: ChatSession = {
+              id: sessionId,
+              user_id: user?.id || '',
+              title: reloadedSession.title || 'Untitled Chat',
+              agent_type: reloadedSession.agent_type || 'subject',
+              agent_name: reloadedSession.agent_name || 'General',
+              agent_id: reloadedSession.agent_id,
+              created_at: reloadedSession.created_at || new Date().toISOString(),
+              updated_at: reloadedSession.updated_at || new Date().toISOString(),
+              last_message_at: reloadedSession.last_message_at || reloadedSession.created_at || new Date().toISOString(),
+              message_count: reloadedSession.message_count || 0,
+              is_archived: reloadedSession.is_archived || false
+            };
+            setSessions(prev => {
+              // Check if session already exists
+              const exists = prev.find(s => s.id === formattedSession.id);
+              if (exists) return prev;
+              return [formattedSession, ...prev];
+            });
+            // Pass the formatted session directly to avoid stale closure lookup
+            switchSession(formattedSession.id, currentPath === targetPath, formattedSession);
+          } else {
+            console.log('Session still not found after reload, staying on current page');
+            // Don't navigate away - let the user see the welcome screen
+            // The session might appear in next poll
+          }
+        });
+      }
+    }
+  }, [sessionId, currentSessionId, sessions.length, viewType, user?.id]);
 
   // Update agent information when current session changes
   useEffect(() => {
@@ -177,11 +249,11 @@ export default function AdaptiveContent({
 
   const loadSessions = async () => {
     if (!user?.id) return;
-    
+
     try {
       const response = await getChatSessions(user.id);
       const sessionsData = response.sessions || response.chat_sessions || response;
-      
+
       // Also fetch student subjects to get proper agent IDs
       let studentSubjectsData: any[] = [];
       try {
@@ -193,7 +265,7 @@ export default function AdaptiveContent({
       } catch (error) {
         console.log("Could not load student subjects, using fallback logic");
       }
-      
+
       const formattedSessions = (sessionsData || []).map((session: any) => {
         let agentName = session.agent_name;
         if (!agentName && session.title) {
@@ -207,46 +279,46 @@ export default function AdaptiveContent({
             agentName = words.find(word => word.toLowerCase() !== 'new') || session.title.split(' ')[0];
           }
         }
-        
+
         // If agentName is still "New" or empty, try to get it from agent_type or use a default
         if (!agentName || agentName.toLowerCase() === 'new') {
           agentName = session.agent_type || 'General';
         }
-        
+
         let extractedAgentId = session.agent_id;
-        
+
         // If no agent ID or it's invalid (name-based), resolve it using student subjects
-        if (!extractedAgentId || 
-            !extractedAgentId.startsWith('agent_') || 
+        if (!extractedAgentId ||
+            !extractedAgentId.startsWith('agent_') ||
             extractedAgentId.includes(' ') ||
             extractedAgentId === 'agent_ai tutor') {
-          
+
           // Try to extract from session title first
           const titleMatch = session.title?.match(/New (\w+) Chat/);
           if (titleMatch && studentSubjectsData.length > 0) {
             const subjectName = titleMatch[1];
-            const matchingSubject = studentSubjectsData.find((subject: any) => 
+            const matchingSubject = studentSubjectsData.find((subject: any) =>
               subject.name?.toLowerCase() === subjectName.toLowerCase()
             );
-            
+
             if (matchingSubject?.subject_agent_id) {
               extractedAgentId = matchingSubject.subject_agent_id;
               console.log('Resolved agent ID from title:', subjectName, '->', extractedAgentId);
             }
           }
-          
+
           // If still no agent ID, try matching by agent name
           if (!extractedAgentId && agentName && studentSubjectsData.length > 0) {
-            const matchingSubject = studentSubjectsData.find((subject: any) => 
+            const matchingSubject = studentSubjectsData.find((subject: any) =>
               subject.name?.toLowerCase() === agentName?.toLowerCase()
             );
-            
+
             if (matchingSubject?.subject_agent_id) {
               extractedAgentId = matchingSubject.subject_agent_id;
               console.log('Resolved agent ID from agent name:', agentName, '->', extractedAgentId);
             }
           }
-          
+
           // Last resort: generate a reasonable agent ID if we can't resolve it
           if (!extractedAgentId) {
             if (agentName && agentName !== 'AI Tutor' && agentName !== 'New') {
@@ -258,15 +330,21 @@ export default function AdaptiveContent({
             }
           }
         }
-        
+
         if (!extractedAgentId && agentId) {
           extractedAgentId = agentId;
         }
-        
+
+        // Defensive: ensure we have a valid session ID
+        const sessionId = session.chat_session_id || session.id || session._id;
+        if (!sessionId) {
+          console.warn('AdaptiveContent: Session missing ID:', session);
+        }
+
         return {
-          id: session.chat_session_id || session.id,
+          id: sessionId,
           user_id: user.id,
-          title: session.title,
+          title: session.title || 'Untitled Chat',
           agent_type: session.agent_type || 'subject',
           agent_name: agentName || 'General',
           agent_id: extractedAgentId,
@@ -276,12 +354,15 @@ export default function AdaptiveContent({
           message_count: session.message_count || 0,
           is_archived: session.is_archived || false
         };
-      });
-      
+      }).filter((s: ChatSession) => s.id); // Filter out sessions without IDs
+
+      console.log('AdaptiveContent: Loaded sessions:', formattedSessions.length);
       setSessions(formattedSessions);
+      return formattedSessions; // Return the formatted sessions for use by caller
     } catch (error) {
       console.error("Failed to load chat sessions:", error);
       toast.error("Failed to load chat sessions");
+      return []; // Return empty array on error
     }
   };
 
@@ -371,10 +452,13 @@ export default function AdaptiveContent({
       
       const sessionData = {
         student_id: user.id,
+        subject: actualSubjectName,
+        class_name: user.class,
         title: defaultTitle || `New ${actualSubjectName} Chat`,
+        session_name: `${actualSubjectName} Session`,
         agent_type: agentType || 'subject',
         agent_name: actualSubjectName,
-        agent_id: finalAgentId,
+        agent_id: finalAgentId || '',
       };
 
       const response = await createChatSession(sessionData);
@@ -422,28 +506,34 @@ export default function AdaptiveContent({
     }
   };
 
-  const switchSession = async (sessionId: string) => {
+  const switchSession = async (sessionId: string, skipNavigation = false, sessionObject?: ChatSession) => {
     try {
       setIsLoading(true);
-      const session = sessions.find(s => s.id === sessionId);
+      // Use provided session object if available, otherwise look it up
+      const session = sessionObject || sessions.find(s => s.id === sessionId);
       if (!session) {
         console.error('Session not found:', sessionId);
         toast.error("Session not found");
         return;
       }
-      
+
       setCurrentSession(session);
-      
+
       // Load message history for this session
       await loadMessages(sessionId);
-      
-      // Navigate to the session URL
-      navigate(`/student/chat/session/${sessionId}`);
-      
+
+      // Only navigate if not already at this URL and skipNavigation is false
+      if (!skipNavigation) {
+        const targetPath = `/student/chat/session/${sessionId}`;
+        if (window.location.pathname !== targetPath) {
+          navigate(targetPath);
+        }
+      }
+
       if (onSessionSelect) {
         onSessionSelect(session);
       }
-      
+
       console.log('AdaptiveContent: Session switch complete:', session.title);
     } catch (error) {
       console.error("Failed to switch session:", error);

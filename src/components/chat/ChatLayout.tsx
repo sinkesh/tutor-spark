@@ -247,7 +247,13 @@ export default function ChatLayout({
       setIsLoading(true);
       const sessionData = {
         student_id: user.id,
+        subject: agentName,
+        class_name: user.class,
         title: defaultTitle || `New ${agentName} Chat`,
+        session_name: `${agentName} Session`,
+        agent_type: agentType || 'subject',
+        agent_name: agentName,
+        agent_id: agentId || '',
       };
 
       console.log("Creating session with data:", sessionData);

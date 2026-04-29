@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import UnifiedLayout from "@/components/layout/UnifiedLayout";
 import AdaptiveContent from "@/components/layout/AdaptiveContent";
 import { ChatSession } from "@/types/chat";
+import { toast } from "sonner";
 
 export default function ChatSessionPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -9,6 +10,14 @@ export default function ChatSessionPage() {
 
   const handleSessionSelect = (session: ChatSession) => {
     console.log('Session selected:', session);
+
+    // Defensive: ensure session has a valid ID
+    if (!session?.id) {
+      console.error('Cannot select session without ID:', session);
+      toast.error('Invalid session selected');
+      return;
+    }
+
     // Navigate to the selected session to load its history
     navigate(`/student/chat/session/${session.id}`);
   };

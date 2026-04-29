@@ -1,9 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import UnifiedLayout from "@/components/layout/UnifiedLayout";
 import AdaptiveContent from "@/components/layout/AdaptiveContent";
 import { useAuth } from "@/contexts/AuthContext";
-import { createChatSession, getChatSessions } from "@/config/services";
+import { createChatSession } from "@/config/services";
 import { useAgentCache } from "@/hooks/useAgentCache";
 import { AgentResolutionError, handleAgentResolutionError, createFallbackAgent, validateAgentInfo, logAgentResolution } from "@/utils/agentUtils";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ export default function NewAgentChatPage() {
   const [agentInfo, setAgentInfo] = useState<{ agentType: string; agentName: string; agentId: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { resolveAndCacheAgent, isLoading: cacheLoading } = useAgentCache();
+  const hasCreatedSession = useRef(false);
 
   // Resolve agent info when component mounts
   useEffect(() => {
@@ -71,100 +72,65 @@ export default function NewAgentChatPage() {
     resolveAgentInfo();
   }, [subjectName, user?.id, resolveAndCacheAgent]);
 
-  // Check for existing sessions and navigate to last one, or create new if none exist
+  // Create new chat session directly when agent info is resolved
+  // This page is only accessed when starting a NEW chat, so we always create a fresh session
   useEffect(() => {
-    const handleSessionNavigation = async () => {
+    const createNewSession = async () => {
+      // Prevent double-creation in React StrictMode
+      if (hasCreatedSession.current) {
+        console.log("Session already created, skipping...");
+        return;
+      }
+
       if (!agentInfo || !user?.id || isLoading) return;
 
       try {
-        // First, try to get existing sessions for this user
-        const sessionsResponse = await getChatSessions(user.id);
-        
-        const sessionsData = sessionsResponse.sessions || sessionsResponse.chat_sessions || sessionsResponse || [];
+        // Debug: Log user object to see if class is populated
+        console.log("User object:", user);
+        console.log("User class:", user.class);
 
-        // Find most recently updated session FOR THIS SPECIFIC AGENT
-        const agentSessions = sessionsData.filter((session: any) => {
-          // Match by agent_id if available, otherwise match by agent_name
-          if (session.agent_id && session.agent_id === agentInfo.agentId) {
-            return true;
-          }
-          // Fallback to name matching if agent_id is not reliable
-          const sessionAgentName = session.agent_name || session.title?.match(/New (\w+) Chat/)?.[1];
-          
-          if (sessionAgentName?.toLowerCase() === agentInfo.agentName.toLowerCase()) {
-            return true;
-          }
-          
-          return false;
-        });
+        // Create a new session with the selected agent info
+        const sessionData = {
+          student_id: user.id,
+          subject: subjectName || agentInfo.agentName,
+          class_name: user.class || "", // Ensure class is at least an empty string
+          title: `New ${agentInfo.agentName} Chat`,
+          session_name: `${agentInfo.agentName} Session`,
+          agent_type: agentInfo.agentType,
+          agent_name: agentInfo.agentName,
+          agent_id: agentInfo.agentId,
+        };
 
-        console.log("Filtered sessions for agent:", agentInfo.agentName, agentSessions);
+        console.log("Creating new chat session with data:", sessionData);
+        const response = await createChatSession(sessionData);
+        console.log("Session creation response:", response);
 
-        const mostRecentSession = agentSessions.sort((a: any, b: any) => {
-          // Use updated_at first, then last_message_at, then created_at as fallback
-          const dateA = new Date(a.updated_at || a.last_message_at || a.created_at || 0);
-          const dateB = new Date(b.updated_at || b.last_message_at || b.created_at || 0);
-          return dateB.getTime() - dateA.getTime();
-        })[0];
-
-        console.log("Most recent session found:", mostRecentSession);
-
-        if (mostRecentSession) {
-          const sessionId = mostRecentSession.chat_session_id || mostRecentSession.id;
-          
-          // Check if the existing session has an incorrect agent ID (constructed pattern)
-          const hasIncorrectAgentId = mostRecentSession.agent_id?.match(/^agent_[a-z]+$/);
-          
-          if (hasIncorrectAgentId && mostRecentSession.agent_id !== agentInfo.agentId) {
-            console.log('Detected incorrect agent ID in session, will be resolved dynamically:', {
-              sessionId,
-              oldAgentId: mostRecentSession.agent_id,
-              newAgentId: agentInfo.agentId
-            });
-            // Note: Backend doesn't support updating agent_id in existing sessions
-            // The frontend components will resolve the correct agent ID dynamically
-          }
-          
-          console.log("Navigating to most recent session:", sessionId, "Updated at:", mostRecentSession.updated_at);
-          
-          // Navigate to most recent session
-          navigate(`/student/chat/session/${sessionId}`, { replace: true });
-          toast.success(`Opened ${agentInfo.agentName} chat session`);
+        // Defensive: ensure response exists and has valid session ID
+        const newSessionId = response?.chat_session_id || response?.id;
+        if (newSessionId && typeof newSessionId === 'string' && newSessionId.length > 0) {
+          console.log("Navigating to new session:", newSessionId);
+          // Mark as created before navigating
+          hasCreatedSession.current = true;
+          // Navigate to the newly created session
+          navigate(`/student/chat/session/${newSessionId}`, { replace: true });
+          toast.success(`${agentInfo.agentName} chat session created`);
         } else {
-          // No existing sessions for this agent, create a new one
-          const sessionData = {
-            student_id: user.id,
-            title: `New ${agentInfo.agentName} Chat`,
-            agent_type: agentInfo.agentType,
-            agent_name: agentInfo.agentName,
-            agent_id: agentInfo.agentId,
-          };
-
-          console.log("No existing sessions found, creating new session with data:", sessionData);
-          const response = await createChatSession(sessionData);
-          console.log("Session creation response:", response);
-
-          if (response?.chat_session_id) {
-            // Navigate to the newly created session
-            navigate(`/student/chat/session/${response.chat_session_id}`, { replace: true });
-            toast.success(`${agentInfo.agentName} chat session created`);
-          } else {
-            console.error("Invalid session response:", response);
-            toast.error("Failed to create chat session");
-            // Fallback to chat list
-            navigate("/student/chat", { replace: true });
-          }
+          console.error("Invalid session response - no session ID:", response);
+          toast.error("Failed to create chat session - invalid response");
+          // Fallback to chat list
+          navigate("/student/chat", { replace: true });
         }
       } catch (error) {
-        console.error("Failed to handle session navigation:", error);
-        toast.error("Failed to load chat sessions");
+        console.error("Failed to create chat session:", error);
+        toast.error("Failed to create chat session");
         // Fallback to chat list
         navigate("/student/chat", { replace: true });
       }
     };
 
-    handleSessionNavigation();
-  }, [agentInfo, user?.id, navigate, isLoading]);
+    createNewSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentInfo?.agentId, user?.id, subjectName]);
 
   const handleNewChat = () => {
     console.log('New chat requested');
@@ -209,8 +175,8 @@ export default function NewAgentChatPage() {
           <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
             🤖
           </div>
-          <h2 className="text-xl font-semibold mb-2">Opening {agentInfo.agentName} Chat</h2>
-          <p className="text-muted-foreground">Checking for existing sessions...</p>
+          <h2 className="text-xl font-semibold mb-2">Creating {agentInfo.agentName} Chat</h2>
+          <p className="text-muted-foreground">Starting a new chat session...</p>
         </div>
       </div>
     </UnifiedLayout>

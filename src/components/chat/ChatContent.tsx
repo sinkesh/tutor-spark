@@ -256,7 +256,13 @@ export default function ChatContent({
       setIsLoading(true);
       const sessionData = {
         student_id: user.id,
+        subject: sessionAgentName,
+        class_name: user.class,
         title: defaultTitle || `New ${sessionAgentName} Chat`,
+        session_name: `${sessionAgentName} Session`,
+        agent_type: agentType || 'subject',
+        agent_name: sessionAgentName,
+        agent_id: sessionAgentId || '',
       };
 
       console.log("Creating session with data:", sessionData);

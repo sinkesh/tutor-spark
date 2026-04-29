@@ -23,7 +23,7 @@ import {
   BrainCircuit,
   ArrowRight,
 } from "lucide-react";
-import { login as apiLogin } from "@/config/services";
+import { login as apiLogin, getStudentDetails } from "@/config/services";
 import { useToast } from "@/components/ui/use-toast";
 import { User } from "@/types";
 import ThemeToggle from "@/components/theme-toggle";
@@ -98,12 +98,25 @@ export default function LoginPage() {
       const jwtPayload = decodeJWT(access_token);
       const userName = jwtPayload?.name || jwtPayload?.email?.split('@')[0] || 'User';
 
+      // Try to get class from JWT, or fetch from student details API for students
+      let userClass = jwtPayload?.class || "";
+
+      if (role === 'student' && !userClass && user_id) {
+        try {
+          const studentDetails = await getStudentDetails(user_id);
+          userClass = studentDetails.class_name || "";
+          console.log('Fetched student class from API:', userClass);
+        } catch (error) {
+          console.warn('Failed to fetch student details:', error);
+        }
+      }
+
       const user: User = {
         id: user_id,
         email: userEmail || email,
         name: userName,
         role: role,
-        class: jwtPayload?.class || "",
+        class: userClass,
         is_active: true,
         permissions: jwtPayload?.permissions || [],
       };

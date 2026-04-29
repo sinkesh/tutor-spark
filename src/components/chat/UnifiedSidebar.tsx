@@ -65,23 +65,29 @@ export default function UnifiedSidebar({
 
   const loadSessions = async () => {
     if (!user?.id) return;
-    
+
     try {
       setIsLoadingSessions(true);
       const response = await getChatSessions(user.id);
       const sessionsData = response.sessions || response.chat_sessions || response;
-      
+
       const formattedSessions = (sessionsData || []).map((session: any) => {
+        // Defensive: ensure we have a valid session ID
+        const sessionId = session.chat_session_id || session.id || session._id;
+        if (!sessionId) {
+          console.warn('Session missing ID:', session);
+        }
+
         let agentName = session.agent_name;
         if (!agentName && session.title) {
           const subjectMatch = session.title.match(/New (\w+) Chat/);
           agentName = subjectMatch ? subjectMatch[1] : session.title.split(' ')[0];
         }
-        
+
         return {
-          id: session.chat_session_id || session.id,
+          id: sessionId,
           user_id: user.id,
-          title: session.title,
+          title: session.title || 'Untitled Chat',
           agent_type: session.agent_type || 'subject',
           agent_name: agentName || 'General',
           agent_id: session.agent_id,
@@ -91,8 +97,9 @@ export default function UnifiedSidebar({
           message_count: session.message_count || 0,
           is_archived: session.is_archived || false
         };
-      });
-      
+      }).filter((s: ChatSession) => s.id); // Filter out sessions without IDs
+
+      console.log('UnifiedSidebar: Loaded sessions:', formattedSessions.length, 'First session:', formattedSessions[0]);
       setSessions(formattedSessions);
     } catch (error) {
       console.error("Failed to load chat sessions:", error);
@@ -184,11 +191,12 @@ export default function UnifiedSidebar({
 
   const filteredSessions = sessions
     .filter(session => !session.is_archived)
-    .filter(session => 
-      session.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      session.agent_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (session.preview_message && session.preview_message.toLowerCase().includes(searchQuery.toLowerCase()))
-    )
+    .filter(session => {
+      const titleMatch = session.title?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
+      const agentNameMatch = session.agent_name?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
+      const previewMatch = session.preview_message?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
+      return titleMatch || agentNameMatch || previewMatch;
+    })
     .filter(session => {
       // If we're in a specific subject context, only show sessions for that subject
       if (currentSubject) {
@@ -199,10 +207,11 @@ export default function UnifiedSidebar({
     })
     .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
 
-  const filteredSubjects = subjects.filter(subject =>
-    subject.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (subject.description && subject.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredSubjects = subjects.filter(subject => {
+    const nameMatch = subject.name?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
+    const descMatch = subject.description?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
+    return nameMatch || descMatch;
+  });
 
   if (collapsed) {
     return (
@@ -310,7 +319,14 @@ export default function UnifiedSidebar({
                         ? "border-white/15 bg-white text-slate-950 shadow-lg shadow-slate-950/20"
                         : "border-transparent bg-white/8 text-white hover:border-white/10 hover:bg-white/12"
                     )}
-                    onClick={() => onSessionSelect(session)}
+                    onClick={() => {
+                      console.log('Sidebar: Clicking session:', session);
+                      if (!session.id) {
+                        console.error('Sidebar: Session has no ID!');
+                        return;
+                      }
+                      onSessionSelect(session);
+                    }}
                   >
                     <div className="flex items-start gap-3">
                       <div className={cn(
