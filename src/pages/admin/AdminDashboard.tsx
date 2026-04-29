@@ -55,7 +55,22 @@ export default function AdminDashboard() {
 
       const agents = response?.agents ?? [];
 
-      const validAgents = agents.filter(
+      // Map API response fields to frontend expected fields
+      const mappedAgents = agents.map((agent: any) => ({
+        subject_agent_id: agent.agent_id,
+        agent_name: agent.subject,
+        agent_type: "subject",
+        description: `${agent.subject} agent for ${agent.class_name || 'all classes'}`,
+        class: agent.class_name || "none",
+        subject: agent.subject,
+        status: agent.status || "active",
+        unique_students: 0,
+        total_conversations: 0,
+        overall_score: 0,
+        ...agent,
+      }));
+
+      const validAgents = mappedAgents.filter(
         (agent) => Number(agent.overall_score) > 0,
       );
 
@@ -70,7 +85,7 @@ export default function AdminDashboard() {
           : "0.0";
 
       setAvgAccuracyScore(averageScore);
-      const agentsToDisplay = validAgents.length > 0 ? validAgents : agents;
+      const agentsToDisplay = validAgents.length > 0 ? validAgents : mappedAgents;
 
       setAgentsData(agentsToDisplay.slice(0, 3));
     } catch (err) {
