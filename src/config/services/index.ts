@@ -450,15 +450,17 @@ export const getChatSession = async (userId: string, sessionId: string) => {
 export const updateChatSession = async (userId: string, sessionId: string, data: {
   title?: string;
 }) => {
-  // PUT /student/chat/{student_id}/sessions/{session_id}
-  const response = await apiDataJson.put(`${API_URL.STUDENT_CHAT_SESSIONS_GET}/${userId}/sessions/${sessionId}`, data);
+  // PUT /student/sessions/{student_id}/chat-sessions/{session_id}
+  const url = `${API_URL.STUDENT_SESSIONS_BASE}/${userId}/chat-sessions/${sessionId}`;
+  console.log("UPDATE URL:", url);
+  const response = await apiDataJson.put(url, data);
   return response.data;
 };
 
 export const deleteChatSession = async (userId: string, sessionId: string) => {
   console.log("Deleting chat session:", sessionId, "for user:", userId);
-  // DELETE /student/chat/{student_id}/sessions/{session_id}
-  const url = `${API_URL.STUDENT_CHAT_SESSIONS_GET}/${userId}/sessions/${sessionId}`;
+  // DELETE /student/sessions/{student_id}/chat-sessions/{session_id}
+  const url = `${API_URL.STUDENT_SESSIONS_BASE}/${userId}/chat-sessions/${sessionId}`;
   console.log("DELETE URL:", url);
 
   try {

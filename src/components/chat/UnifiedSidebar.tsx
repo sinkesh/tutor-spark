@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getChatSessions, deleteChatSession, getStudentAgent } from "@/config/services";
+import { getChatSessions, deleteChatSession, updateChatSession, getStudentAgent } from "@/config/services";
 import { ChatSession } from "@/types/chat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,13 +16,10 @@ import {
   MessageSquare,
   Plus,
   Search,
+  BookOpen,
+  Trash2,
   MoreVertical,
   Pencil,
-  Trash2,
-  Archive,
-  Bot,
-  Clock,
-  BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
@@ -35,6 +32,7 @@ interface UnifiedSidebarProps {
   onRenameSession?: (sessionId: string, currentTitle: string) => void;
   activeView: 'sessions' | 'subjects';
   collapsed?: boolean;
+  refreshKey?: number; // Trigger to reload sessions
 }
 
 interface StudentSubject {
@@ -50,21 +48,26 @@ export default function UnifiedSidebar({
   onRenameSession,
   activeView,
   collapsed = false,
+  refreshKey = 0,
 }: UnifiedSidebarProps) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [subjects, setSubjects] = useState<StudentSubject[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
   const { user } = useAuth();
 
   useEffect(() => {
-    // Only load subjects initially - needed for sidebar display
-    // Sessions will be loaded only when viewing the sessions tab
-    if (activeView === 'subjects') {
+    // Load sessions when viewing sessions tab, subjects when viewing subjects tab
+    if (activeView === 'sessions') {
+      loadSessions();
+    } else if (activeView === 'subjects') {
       loadSubjects();
     }
-  }, [activeView]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeView, refreshKey]);
 
   const loadSessions = async () => {
     if (!user?.id) return;
@@ -72,37 +75,30 @@ export default function UnifiedSidebar({
     try {
       setIsLoadingSessions(true);
       const response = await getChatSessions(user.id);
-      const sessionsData = response.sessions || response.chat_sessions || response;
+      // Handle API response format: { status, student_id, sessions: [...] }
+      const sessionsData = response.sessions || [];
 
-      const formattedSessions = (sessionsData || []).map((session: any) => {
-        // Defensive: ensure we have a valid session ID
-        const sessionId = session.chat_session_id || session.id || session._id;
-        if (!sessionId) {
-          console.warn('Session missing ID:', session);
-        }
-
-        let agentName = session.agent_name;
-        if (!agentName && session.title) {
-          const subjectMatch = session.title.match(/New (\w+) Chat/);
-          agentName = subjectMatch ? subjectMatch[1] : session.title.split(' ')[0];
-        }
+      const formattedSessions = sessionsData.map((session: any) => {
+        // Use session_id from new API format
+        const sessionId = session.session_id || session.id || session._id;
 
         return {
           id: sessionId,
           user_id: user.id,
-          title: session.title || 'Untitled Chat',
+          // Show only session_name as requested
+          title: session.session_name || 'Untitled Chat',
           agent_type: session.agent_type || 'subject',
-          agent_name: agentName || 'General',
+          agent_name: session.subject || 'General',
           agent_id: session.agent_id,
           created_at: session.created_at || new Date().toISOString(),
-          updated_at: session.updated_at || new Date().toISOString(),
+          updated_at: session.last_message_at || session.created_at || new Date().toISOString(),
           last_message_at: session.last_message_at || session.created_at || new Date().toISOString(),
           message_count: session.message_count || 0,
-          is_archived: session.is_archived || false
+          is_archived: !session.is_active
         };
       }).filter((s: ChatSession) => s.id); // Filter out sessions without IDs
 
-      console.log('UnifiedSidebar: Loaded sessions:', formattedSessions.length, 'First session:', formattedSessions[0]);
+      console.log('UnifiedSidebar: Loaded sessions:', formattedSessions.length);
       setSessions(formattedSessions);
     } catch (error) {
       console.error("Failed to load chat sessions:", error);
@@ -129,9 +125,9 @@ export default function UnifiedSidebar({
 
   const handleDeleteSession = async (sessionId: string, event: React.MouseEvent) => {
     event.stopPropagation();
-    
+
     if (!user?.id) return;
-    
+
     try {
       await deleteChatSession(user.id, sessionId);
       setSessions(prev => prev.filter(s => s.id !== sessionId));
@@ -142,10 +138,19 @@ export default function UnifiedSidebar({
     }
   };
 
-  const handleArchiveSession = async (sessionId: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    await handleDeleteSession(sessionId, event);
-    toast.success("Chat session archived");
+  const handleUpdateSessionName = async (sessionId: string, newName: string) => {
+    if (!user?.id || !newName.trim()) return;
+
+    try {
+      await updateChatSession(user.id, sessionId, { title: newName.trim() });
+      setSessions(prev => prev.map(s =>
+        s.id === sessionId ? { ...s, title: newName.trim() } : s
+      ));
+      toast.success("Session name updated");
+    } catch (error) {
+      console.error("Failed to update session name:", error);
+      toast.error("Failed to update session name");
+    }
   };
 
   const formatLastMessageTime = (timestamp: string) => {
@@ -317,12 +322,16 @@ export default function UnifiedSidebar({
                   <div
                     key={session.id}
                     className={cn(
-                      "group relative cursor-pointer rounded-[24px] border p-3 transition-all hover:-translate-y-0.5 hover:shadow-md",
-                      currentSessionId === session.id
+                      "group relative rounded-[20px] border p-3 transition-all",
+                      editingSessionId === session.id
+                        ? "border-fuchsia-300 bg-white/10"
+                        : "cursor-pointer hover:-translate-y-0.5 hover:shadow-md",
+                      currentSessionId === session.id && editingSessionId !== session.id
                         ? "border-white/15 bg-white text-slate-950 shadow-lg shadow-slate-950/20"
-                        : "border-transparent bg-white/8 text-white hover:border-white/10 hover:bg-white/12"
+                        : editingSessionId !== session.id && "border-transparent bg-white/8 text-white hover:border-white/10 hover:bg-white/12"
                     )}
                     onClick={() => {
+                      if (editingSessionId) return;
                       console.log('Sidebar: Clicking session:', session);
                       if (!session.id) {
                         console.error('Sidebar: Session has no ID!');
@@ -331,96 +340,111 @@ export default function UnifiedSidebar({
                       onSessionSelect(session);
                     }}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={cn(
-                        "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[16px] ring-1",
-                        currentSessionId === session.id
-                          ? "bg-slate-100 text-fuchsia-500 ring-slate-200"
-                          : "bg-white/10 text-cyan-100 ring-white/10"
-                      )}>
-                        <Bot className="w-4 h-4" />
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-sm truncate">{session.title}</h4>
-                          <Badge variant="secondary" className="capitalize rounded-full border border-white/60 bg-white/70 text-xs dark:border-white/10 dark:bg-white/10">
-                            {session.agent_type}
-                          </Badge>
-                        </div>
-                        
-                        <p className={cn(
-                          "text-xs mb-1",
-                          currentSessionId === session.id ? "text-white/75" : "text-muted-foreground"
-                        )}>
-                          {session.agent_name}
-                        </p>
-                        
-                        {session.preview_message && (
-                          <p className="text-xs text-muted-foreground line-clamp-2">
-                            {session.preview_message}
-                          </p>
-                        )}
-                        
+                    {editingSessionId === session.id ? (
+                      /* Edit Mode */
+                      <div className="flex items-center gap-2">
                         <div className={cn(
-                          "flex items-center gap-2 mt-1 text-xs",
-                          currentSessionId === session.id ? "text-white/75" : "text-muted-foreground"
+                          "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[16px] ring-1",
+                          "bg-white/10 text-cyan-100 ring-white/10"
                         )}>
-                          <span className="flex items-center gap-1">
-                            <MessageSquare className="w-3 h-3" />
-                            {session.message_count}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {formatLastMessageTime(session.last_message_at)}
-                          </span>
+                          <MessageSquare className="w-4 h-4" />
                         </div>
+                        <input
+                          type="text"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleUpdateSessionName(session.id, editName);
+                              setEditingSessionId(null);
+                            } else if (e.key === 'Escape') {
+                              setEditingSessionId(null);
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex-1 min-w-0 bg-transparent text-white text-sm font-medium border-b border-fuchsia-400 focus:outline-none focus:border-fuchsia-300 px-1 py-0.5"
+                          autoFocus
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUpdateSessionName(session.id, editName);
+                            setEditingSessionId(null);
+                          }}
+                          className="p-1.5 rounded-full hover:bg-white/10 text-fuchsia-400"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingSessionId(null);
+                          }}
+                          className="p-1.5 rounded-full hover:bg-white/10 text-white/50"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
                       </div>
-                      
-                      {/* Dropdown Menu */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="rounded-[16px] opacity-0 transition-opacity group-hover:opacity-100"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48 rounded-2xl">
-                          {onRenameSession && (
-                            <>
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onRenameSession(session.id, session.title);
-                                }}
-                              >
-                                <Pencil className="w-4 h-4 mr-2" />
-                                Rename
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                            </>
-                          )}
-                          <DropdownMenuItem
-                            onClick={(e) => handleArchiveSession(session.id, e)}
-                          >
-                            <Archive className="w-4 h-4 mr-2" />
-                            Archive
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={(e) => handleDeleteSession(session.id, e)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                    ) : (
+                      /* Normal Mode */
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[16px] ring-1",
+                          currentSessionId === session.id
+                            ? "bg-slate-100 text-fuchsia-500 ring-slate-200"
+                            : "bg-white/10 text-cyan-100 ring-white/10"
+                        )}>
+                          <MessageSquare className="w-4 h-4" />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <h4 className={cn(
+                            "font-medium text-sm truncate",
+                            currentSessionId === session.id ? "text-slate-950" : "text-white"
+                          )}>
+                            {session.title}
+                          </h4>
+                        </div>
+
+                        {/* Three-dot menu - visible on hover */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              onClick={(e) => e.stopPropagation()}
+                              className={cn(
+                                "opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-white/10",
+                                currentSessionId === session.id ? "text-slate-400 hover:text-slate-600" : "text-white/50 hover:text-white"
+                              )}
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setEditingSessionId(session.id);
+                                setEditName(session.title);
+                              }}
+                            >
+                              <Pencil className="w-4 h-4 mr-2" />
+                              Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={(e) => handleDeleteSession(session.id, e as unknown as React.MouseEvent)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

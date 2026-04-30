@@ -54,6 +54,7 @@ interface AdaptiveContentProps {
   onSessionSelect?: (session: ChatSession) => void;
   onNewChat?: () => void;
   onRenameSession?: (sessionId: string, currentTitle: string) => void;
+  onSessionCreated?: () => void; // Called after new session is created
   agentType?: string;
   agentName?: string;
   agentId?: string;
@@ -73,6 +74,7 @@ export default function AdaptiveContent({
   onSessionSelect,
   onNewChat,
   onRenameSession,
+  onSessionCreated,
   agentType,
   agentName,
   agentId,
@@ -499,6 +501,9 @@ export default function AdaptiveContent({
 
       navigate(`/student/chat/session/${newSession.id}`, { replace: true });
       toast.success("New chat session created");
+
+      // Notify parent that session was created
+      onSessionCreated?.();
     } catch (error) {
       console.error("Failed to create session:", error);
       toast.error("Failed to create chat session");
@@ -1258,8 +1263,8 @@ export default function AdaptiveContent({
             isSplitViewOpen ? "w-1/2" : "w-full"
           )}>
             <div className="pro-header relative flex-shrink-0 overflow-hidden px-3 py-2 sm:px-4 sm:py-2.5">
-              <div className="absolute inset-y-0 right-0 w-48 bg-gradient-to-l from-primary/10 via-accent/5 to-transparent blur-2xl" />
-              <div className="flex items-center justify-between">
+              <div className="absolute inset-y-0 right-0 w-48 bg-gradient-to-l from-primary/10 via-accent/5 to-transparent blur-2xl pointer-events-none" />
+              <div className="relative flex items-center justify-between z-10">
                 <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                   {onBack && (
                     <Button variant="ghost" size="icon-sm" onClick={onBack}>

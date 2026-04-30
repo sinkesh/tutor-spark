@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from 'react';
+import React, { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -58,6 +58,7 @@ interface UnifiedLayoutProps {
   onSessionSelect?: (session: ChatSession) => void;
   onNewChat?: () => void;
   onRenameSession?: (sessionId: string, currentTitle: string) => void;
+  onSessionCreated?: () => void; // Called when new session is created
   showBackButton?: boolean;
   title?: string;
   viewType?: 'dashboard' | 'chat' | 'explore';
@@ -75,6 +76,7 @@ export default function UnifiedLayout({
   onSessionSelect,
   onNewChat,
   onRenameSession,
+  onSessionCreated,
   showBackButton = false,
   title = "AI Teachers",
   viewType = 'dashboard',
@@ -86,8 +88,15 @@ export default function UnifiedLayout({
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [activeView, setActiveView] = useState<'subjects' | 'sessions'>('sessions');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const isSidebarExpanded = !collapsed || isSidebarHovered;
   const isSidebarCompressed = !isSidebarExpanded;
+
+  // Handle session creation - refresh sidebar and call parent callback
+  const handleSessionCreated = () => {
+    setRefreshTrigger(prev => prev + 1);
+    onSessionCreated?.();
+  };
 
   // Get current subject from URL to filter subjects
   const getCurrentSubject = () => {
@@ -227,6 +236,7 @@ export default function UnifiedLayout({
                       onRenameSession={onRenameSession}
                       activeView="sessions"
                       collapsed={isSidebarCompressed}
+                      refreshKey={refreshTrigger}
                     />
                   </div>
                 ) : (
@@ -238,6 +248,7 @@ export default function UnifiedLayout({
                       onRenameSession={onRenameSession}
                       activeView="subjects"
                       collapsed={isSidebarCompressed}
+                      refreshKey={refreshTrigger}
                     />
                   </div>
                 )}
@@ -402,7 +413,8 @@ export default function UnifiedLayout({
         </div>
         <main className="min-h-0 flex-1 overflow-y-auto">
           <div className="h-full animate-in fade-in-0 duration-500"> {/* Reduced from 73px */}
-            {children}
+            {/* Pass session creation callback to children */}
+            {React.cloneElement(children as React.ReactElement, { onSessionCreated: handleSessionCreated })}
           </div>
         </main>
       </div>
