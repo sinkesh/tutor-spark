@@ -43,7 +43,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ChatSession } from '@/types/chat';
-import { getStudentAgent } from '@/config/services';
 
 // Re-import existing components
 import UnifiedSidebar from '@/components/chat/UnifiedSidebar';
@@ -62,12 +61,6 @@ interface UnifiedLayoutProps {
   showBackButton?: boolean;
   title?: string;
   viewType?: 'dashboard' | 'chat' | 'explore';
-}
-
-interface StudentSubject {
-  subject_agent_id: string;
-  name: string;
-  description?: string;
 }
 
 const navItems = [
@@ -93,8 +86,6 @@ export default function UnifiedLayout({
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [activeView, setActiveView] = useState<'subjects' | 'sessions'>('sessions');
-  const [subjects, setSubjects] = useState<StudentSubject[]>([]);
-  const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
   const isSidebarExpanded = !collapsed || isSidebarHovered;
   const isSidebarCompressed = !isSidebarExpanded;
 
@@ -114,28 +105,8 @@ export default function UnifiedLayout({
 
   const currentSubject = getCurrentSubject();
 
-  // Load subjects for sidebar
-  useEffect(() => {
-    if (user?.id && currentSubject) {
-      // Only load subjects when we have a current subject context
-      loadSubjects();
-    }
-  }, [user?.id, currentSubject]);
-
-  const loadSubjects = async () => {
-    if (!user?.id) return;
-    
-    try {
-      setIsLoadingSubjects(true);
-      const response = await getStudentAgent(user.id);
-      setSubjects(response?.student_subjects || []);
-    } catch (error) {
-      console.error('Failed to load subjects:', error);
-      toast.error('Failed to load subjects');
-    } finally {
-      setIsLoadingSubjects(false);
-    }
-  };
+  // Don't auto-load subjects - let the sidebar handle it when needed
+  // This prevents duplicate API calls
 
   const isChatPage = location.pathname.startsWith('/student/chat');
   const isExplorePage = location.pathname.startsWith('/student/explore');

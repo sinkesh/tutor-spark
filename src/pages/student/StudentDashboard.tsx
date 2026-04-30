@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getRecentActivityStudent, getStudentAgent } from "@/config/services";
-import { useAgentCache } from "@/hooks/useAgentCache";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import SubjectSkeletonItem from "@/components/loader/SubjectSkeletonItem";
@@ -73,7 +72,6 @@ export default function StudentDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [recentActivity, setRecentActivity] = useState(null);
   const { user } = useAuth();
-  const { resolveAndCacheAgent } = useAgentCache();
 
   // Get current subject from URL to filter subjects
   const getCurrentSubject = () => {
@@ -92,6 +90,8 @@ export default function StudentDashboard() {
   const currentSubject = getCurrentSubject();
 
   const getSubject = async () => {
+    if (isLoading || !user?.id) return;
+
     try {
       setIsLoading(true);
 
@@ -103,32 +103,18 @@ export default function StudentDashboard() {
 
       console.log('Assigned student subjects:', assignedSubjects);
 
-      // Enhance subjects with additional metadata and pre-cache agent info
-      const enhancedSubjects = await Promise.all(
-        assignedSubjects.map(async (subject) => {
-          const displayName = subject.name || subject.subject || 'Unknown Subject';
+      // Enhance subjects with additional metadata
+      const enhancedSubjects = assignedSubjects.map((subject) => {
+        const displayName = subject.name || subject.subject || 'Unknown Subject';
 
-          // Pre-cache agent info for better performance
-          if (subject.subject_agent_id) {
-            try {
-              const cachedAgent = await resolveAndCacheAgent(displayName, user?.id);
-              if (!cachedAgent) {
-                console.warn(`Failed to cache agent for ${displayName}, but continuing...`);
-              }
-            } catch (error) {
-              console.warn(`Failed to pre-cache agent for ${displayName}:`, error);
-            }
-          }
-
-          return {
-            ...subject,
-            displayName,
-            agentCount: subject.agent_count || 1,
-            isAssigned: !!subject.student_id, // Indicates if specifically assigned to this student
-            subject_agent_id: subject.subject_agent_id
-          };
-        })
-      );
+        return {
+          ...subject,
+          displayName,
+          agentCount: subject.agent_count || 1,
+          isAssigned: !!subject.student_id,
+          subject_agent_id: subject.subject_agent_id
+        };
+      });
 
       setIsSubject(enhancedSubjects);
       console.log('Enhanced subjects with metadata:', enhancedSubjects);
@@ -143,11 +129,15 @@ export default function StudentDashboard() {
   };
 
   useEffect(() => {
-    getSubject();
-    fetchRecentActivity();
-  }, [resolveAndCacheAgent]);
+    if (user?.id) {
+      getSubject();
+      fetchRecentActivity();
+    }
+  }, [user?.id]);
 
   const fetchRecentActivity = async () => {
+    if (!user?.id) return;
+
     try {
       setIsLoading(true);
 

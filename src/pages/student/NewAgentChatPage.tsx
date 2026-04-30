@@ -1,23 +1,44 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import UnifiedLayout from "@/components/layout/UnifiedLayout";
 import AdaptiveContent from "@/components/layout/AdaptiveContent";
 import { useAuth } from "@/contexts/AuthContext";
-import { createChatSession } from "@/config/services";
-import { useAgentCache } from "@/hooks/useAgentCache";
-import { AgentResolutionError, handleAgentResolutionError, createFallbackAgent, validateAgentInfo, logAgentResolution } from "@/utils/agentUtils";
+import { resolveAgentId, getAgentTopics } from "@/config/services";
 import { toast } from "sonner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { BookOpen, ChevronRight, Sparkles } from "lucide-react";
+
+interface Subtopic {
+  subtopic: string;
+  description: string;
+  confidence: number;
+}
+
+interface Topic {
+  topic: string;
+  description: string;
+  confidence: number;
+  subtopics: Subtopic[];
+}
+
+interface TopicsResponse {
+  status: string;
+  subject_agent_id: string;
+  topics: Topic[];
+  total_chunks_analyzed: number;
+}
 
 export default function NewAgentChatPage() {
   const { subjectName } = useParams<{ subjectName: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [agentInfo, setAgentInfo] = useState<{ agentType: string; agentName: string; agentId: string } | null>(null);
+  const [topics, setTopics] = useState<Topic[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { resolveAndCacheAgent, isLoading: cacheLoading } = useAgentCache();
-  const hasCreatedSession = useRef(false);
 
-  // Resolve agent info when component mounts
+  // Resolve agent info when component mounts - only subjects and topics APIs
+  // NO session creation here - session is created when first message is sent
   useEffect(() => {
     const resolveAgentInfo = async () => {
       if (!subjectName) {
@@ -25,119 +46,62 @@ export default function NewAgentChatPage() {
         return;
       }
 
-      logAgentResolution('START', { subjectName, userId: user?.id });
-      
       try {
-        // Always try dynamic resolution with caching first
-        logAgentResolution('DYNAMIC_RESOLUTION_ATTEMPT', { subjectName });
-        const resolvedAgentInfo = await resolveAndCacheAgent(subjectName, user?.id);
-        
-        if (resolvedAgentInfo) {
-          validateAgentInfo(resolvedAgentInfo);
-          logAgentResolution('DYNAMIC_RESOLUTION_SUCCESS', { subjectName, agentId: resolvedAgentInfo.agentId });
-          setAgentInfo(resolvedAgentInfo);
+        // Resolve agent ID (subjects API)
+        const agentId = await resolveAgentId(subjectName, user?.id);
+
+        if (agentId) {
+          // Also fetch topics for this agent (topics API)
+          let topicsData: Topic[] = [];
+          try {
+            const response = await getAgentTopics(agentId) as TopicsResponse;
+            if (response?.topics && Array.isArray(response.topics)) {
+              topicsData = response.topics;
+              setTopics(topicsData);
+            }
+          } catch (e) {
+            // Topics fetch is optional
+            console.log('Topics fetch skipped or failed:', e);
+          }
+
+          setAgentInfo({
+            agentId,
+            agentName: subjectName,
+            agentType: 'subject'
+          });
         } else {
-          throw new AgentResolutionError(
-            'No agent found',
-            'AGENT_NOT_FOUND',
-            { subjectName }
-          );
+          // Create fallback agent
+          const fallbackId = `agent_${subjectName.toLowerCase().replace(/\s+/g, '_')}`;
+          setAgentInfo({
+            agentId: fallbackId,
+            agentName: subjectName,
+            agentType: 'subject'
+          });
+          toast.warning('Using default agent configuration');
         }
       } catch (error) {
-        logAgentResolution('DYNAMIC_RESOLUTION_FAILED', { subjectName, error: error.message });
-        
-        // Handle specific error types
-        if (error instanceof AgentResolutionError) {
-          handleAgentResolutionError(error, subjectName);
-        } else {
-          handleAgentResolutionError(error, subjectName);
-        }
-        
-        // Create fallback agent as last resort
-        const fallbackAgent = createFallbackAgent(subjectName);
-        logAgentResolution('FALLBACK_CREATED', { subjectName, agentId: fallbackAgent.agentId });
-        
-        if (fallbackAgent) {
-          setAgentInfo(fallbackAgent);
-          toast.warning('Using default agent configuration - some features may not work correctly');
-        } else {
-          logAgentResolution('COMPLETE_FAILURE', { subjectName });
-          toast.error(`No agent found for subject: ${subjectName}`);
-        }
+        console.error('Failed to resolve agent:', error);
+        // Create fallback agent
+        const fallbackId = `agent_${subjectName.toLowerCase().replace(/\s+/g, '_')}`;
+        setAgentInfo({
+          agentId: fallbackId,
+          agentName: subjectName,
+          agentType: 'subject'
+        });
       }
-      
+
       setIsLoading(false);
     };
 
     resolveAgentInfo();
-  }, [subjectName, user?.id, resolveAndCacheAgent]);
-
-  // Create new chat session directly when agent info is resolved
-  // This page is only accessed when starting a NEW chat, so we always create a fresh session
-  useEffect(() => {
-    const createNewSession = async () => {
-      // Prevent double-creation in React StrictMode
-      if (hasCreatedSession.current) {
-        console.log("Session already created, skipping...");
-        return;
-      }
-
-      if (!agentInfo || !user?.id || isLoading) return;
-
-      try {
-        // Debug: Log user object to see if class is populated
-        console.log("User object:", user);
-        console.log("User class:", user.class);
-
-        // Create a new session with the selected agent info
-        const sessionData = {
-          student_id: user.id,
-          subject: subjectName || agentInfo.agentName,
-          class_name: user.class || "", // Ensure class is at least an empty string
-          title: `New ${agentInfo.agentName} Chat`,
-          session_name: `${agentInfo.agentName} Session`,
-          agent_type: agentInfo.agentType,
-          agent_name: agentInfo.agentName,
-          agent_id: agentInfo.agentId,
-        };
-
-        console.log("Creating new chat session with data:", sessionData);
-        const response = await createChatSession(sessionData);
-        console.log("Session creation response:", response);
-
-        // Defensive: ensure response exists and has valid session ID
-        const newSessionId = response?.chat_session_id || response?.id;
-        if (newSessionId && typeof newSessionId === 'string' && newSessionId.length > 0) {
-          console.log("Navigating to new session:", newSessionId);
-          // Mark as created before navigating
-          hasCreatedSession.current = true;
-          // Navigate to the newly created session
-          navigate(`/student/chat/session/${newSessionId}`, { replace: true });
-          toast.success(`${agentInfo.agentName} chat session created`);
-        } else {
-          console.error("Invalid session response - no session ID:", response);
-          toast.error("Failed to create chat session - invalid response");
-          // Fallback to chat list
-          navigate("/student/chat", { replace: true });
-        }
-      } catch (error) {
-        console.error("Failed to create chat session:", error);
-        toast.error("Failed to create chat session");
-        // Fallback to chat list
-        navigate("/student/chat", { replace: true });
-      }
-    };
-
-    createNewSession();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentInfo?.agentId, user?.id, subjectName]);
+  }, [subjectName, user?.id]);
 
   const handleNewChat = () => {
     console.log('New chat requested');
     navigate("/student/chat");
   };
 
-  if (isLoading || cacheLoading || !agentInfo) {
+  if (isLoading || !agentInfo) {
     return (
       <UnifiedLayout
         title="AI Chat"
@@ -162,7 +126,7 @@ export default function NewAgentChatPage() {
     );
   }
 
-  // Show loading state while checking sessions
+  // Render the chat interface with topics cards
   return (
     <UnifiedLayout
       title={`${agentInfo.agentName} Chat`}
@@ -170,13 +134,80 @@ export default function NewAgentChatPage() {
       viewType="chat"
       onNewChat={handleNewChat}
     >
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-            🤖
+      <div className="flex flex-col h-full">
+        {/* Topics Section - Card View - Fixed height, not scrollable */}
+        {topics.length > 0 && (
+          <div className="flex-shrink-0 border-b border-border bg-gradient-to-br from-violet-50/50 via-fuchsia-50/30 to-sky-50/50 dark:from-violet-950/20 dark:via-fuchsia-950/10 dark:to-sky-950/20 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-5 h-5 text-fuchsia-500" />
+              <h2 className="text-lg font-semibold bg-gradient-to-r from-fuchsia-600 to-violet-600 bg-clip-text text-transparent">
+                Topics for {agentInfo.agentName}
+              </h2>
+              <Badge variant="secondary" className="ml-auto">
+                {topics.length} topics
+              </Badge>
+            </div>
+
+            {/* Horizontal scrollable topics */}
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-fuchsia-200 scrollbar-track-transparent">
+              {topics.map((topic, index) => (
+                <Card
+                  key={index}
+                  className="group cursor-pointer flex-shrink-0 w-[400px] border-white/60 bg-white/70 backdrop-blur-sm hover:border-fuchsia-300 hover:shadow-lg hover:shadow-fuchsia-200/30 dark:border-white/10 dark:bg-white/5 dark:hover:border-fuchsia-500/50 transition-all duration-300"
+                >
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <CardTitle className="text-sm font-semibold text-foreground group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-fuchsia-500 flex-shrink-0" />
+                        <span className="line-clamp-1">{topic.topic}</span>
+                      </CardTitle>
+                      <Badge
+                        variant={topic.confidence >= 0.9 ? "default" : "secondary"}
+                        className={`text-[10px] flex-shrink-0 ${topic.confidence >= 0.9 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' : ''}`}
+                      >
+                        {(topic.confidence * 100).toFixed(0)}%
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                      {topic.description}
+                    </p>
+
+                    {/* Subtopics preview */}
+                    {topic.subtopics && topic.subtopics.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {topic.subtopics.slice(0, 2).map((sub, idx) => (
+                          <Badge
+                            key={idx}
+                            variant="outline"
+                            className="text-[9px] px-1.5 py-0.5 border-fuchsia-200/60 bg-fuchsia-50/50 text-fuchsia-700 dark:border-fuchsia-500/30 dark:bg-fuchsia-500/10 dark:text-fuchsia-300"
+                          >
+                            {sub.subtopic.length > 20 ? sub.subtopic.substring(0, 20) + '...' : sub.subtopic}
+                          </Badge>
+                        ))}
+                        {topic.subtopics.length > 2 && (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0.5">
+                            +{topic.subtopics.length - 2}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
-          <h2 className="text-xl font-semibold mb-2">Creating {agentInfo.agentName} Chat</h2>
-          <p className="text-muted-foreground">Starting a new chat session...</p>
+        )}
+
+        {/* Chat Interface - Full remaining height */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <AdaptiveContent
+            viewType="chat"
+            agentType={agentInfo.agentType}
+            agentName={agentInfo.agentName}
+            agentId={agentInfo.agentId}
+          />
         </div>
       </div>
     </UnifiedLayout>

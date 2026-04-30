@@ -59,9 +59,12 @@ export default function UnifiedSidebar({
   const { user } = useAuth();
 
   useEffect(() => {
-    loadSessions();
-    loadSubjects();
-  }, []);
+    // Only load subjects initially - needed for sidebar display
+    // Sessions will be loaded only when viewing the sessions tab
+    if (activeView === 'subjects') {
+      loadSubjects();
+    }
+  }, [activeView]);
 
   const loadSessions = async () => {
     if (!user?.id) return;

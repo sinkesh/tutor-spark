@@ -84,7 +84,7 @@ export default function AdaptiveContent({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  
+
   // Document preview state
   const [agentDocuments, setAgentDocuments] = useState<AgentDocument[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<DocumentPreview | null>(null);
@@ -94,7 +94,7 @@ export default function AdaptiveContent({
   const [isSplitViewOpen, setIsSplitViewOpen] = useState(false);
   const [currentDocumentIndex, setCurrentDocumentIndex] = useState(0);
   const [externalInputValue, setExternalInputValue] = useState<string | undefined>(undefined);
-  
+
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -117,12 +117,14 @@ export default function AdaptiveContent({
     }
   });
 
-  // Load sessions on mount
+  // Load sessions on mount - only if we have a session ID (existing chat)
+  // Don't load sessions for new chats (no sessionId in URL and no currentSessionId prop)
   useEffect(() => {
-    if (viewType === 'chat') {
+    if (viewType === 'chat' && (sessionId || currentSessionId)) {
       loadSessions();
     }
-  }, [viewType]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewType, sessionId, currentSessionId]);
 
   // Reset currentSession when URL sessionId changes to a different session
   useEffect(() => {
@@ -213,7 +215,7 @@ export default function AdaptiveContent({
     if (currentSession) {
       if (currentSession.agent_id && (!currentSession.agent_id.startsWith('agent_') || currentSession.agent_id.includes(' ') || currentSession.agent_id === 'agent_ai tutor')) {
         console.log('Session has invalid agent_id, updating document functionality');
-        
+
         // Try to resolve the agent ID asynchronously
         const resolveSessionAgentId = async () => {
           try {
@@ -222,26 +224,26 @@ export default function AdaptiveContent({
               ...(studentSubjectsResponse.student_subjects || []),
               ...(studentSubjectsResponse.general_subjects || []),
             ];
-            
+
             // If we have a current session with agent_name, try to find matching subject
             if (currentSession?.agent_name) {
-              const matchingSubject = allSubjects.find((subject: any) => 
+              const matchingSubject = allSubjects.find((subject: any) =>
                 subject.name?.toLowerCase() === currentSession.agent_name?.toLowerCase()
               );
-              
+
               if (matchingSubject?.subject_agent_id) {
                 const resolvedAgentId = matchingSubject.subject_agent_id;
                 console.log('Resolved session agent ID from name:', resolvedAgentId);
-                
+
                 // Update the current session with the found agent ID
-                setCurrentSession(prev => prev ? {...prev, agent_id: resolvedAgentId} : null);
+                setCurrentSession(prev => prev ? { ...prev, agent_id: resolvedAgentId } : null);
               }
             }
           } catch (error) {
             console.error('Failed to resolve session agent ID:', error);
           }
         };
-        
+
         resolveSessionAgentId();
       }
     }
@@ -289,9 +291,9 @@ export default function AdaptiveContent({
 
         // If no agent ID or it's invalid (name-based), resolve it using student subjects
         if (!extractedAgentId ||
-            !extractedAgentId.startsWith('agent_') ||
-            extractedAgentId.includes(' ') ||
-            extractedAgentId === 'agent_ai tutor') {
+          !extractedAgentId.startsWith('agent_') ||
+          extractedAgentId.includes(' ') ||
+          extractedAgentId === 'agent_ai tutor') {
 
           // Try to extract from session title first
           const titleMatch = session.title?.match(/New (\w+) Chat/);
@@ -368,11 +370,11 @@ export default function AdaptiveContent({
 
   const loadMessages = async (sessionId: string) => {
     if (!user?.id) return;
-    
+
     try {
       const response = await getChatMessages(user.id, sessionId);
       const historyData = response.history || response.messages || [];
-      
+
       const formattedMessages = historyData.map((msg: any) => {
         const userMessage: ChatMessage = {
           id: msg._id || `user_${Date.now()}`,
@@ -383,7 +385,7 @@ export default function AdaptiveContent({
           created_at: msg.timestamp,
           conversation_id: msg._id,
         };
-        
+
         const aiMessage: ChatMessage = {
           id: `${msg._id}_response` || `ai_${Date.now()}`,
           session_id: msg.chat_session_id,
@@ -394,10 +396,10 @@ export default function AdaptiveContent({
           conversation_id: msg._id,
           feedback: msg.feedback === 'like' ? 'like' : msg.feedback === 'dislike' ? 'dislike' : undefined,
         };
-        
+
         return [userMessage, aiMessage];
       }).flat().sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      
+
       setMessages(formattedMessages);
     } catch (error) {
       console.error("Failed to load messages:", error);
@@ -407,15 +409,15 @@ export default function AdaptiveContent({
 
   const createSession = async (agentType: string, agentName: string, agentId?: string) => {
     if (!user?.id || isCreating) return;
-    
+
     try {
       setIsCreating(true);
       setIsLoading(true);
-      
+
       // Resolve agent ID and actual subject name
       let finalAgentId = agentId;
       let actualSubjectName = agentName;
-      
+
       if ((!finalAgentId || actualSubjectName === 'AI Tutor' || actualSubjectName === 'New' || !finalAgentId.startsWith('agent_')) && agentName) {
         try {
           const studentSubjectsResponse = await getStudentAgent(user.id);
@@ -423,12 +425,12 @@ export default function AdaptiveContent({
             ...(studentSubjectsResponse.student_subjects || []),
             ...(studentSubjectsResponse.general_subjects || []),
           ];
-          
+
           // Try to find matching subject by name
-          const matchingSubject = allSubjects.find((subject: any) => 
+          const matchingSubject = allSubjects.find((subject: any) =>
             subject.name?.toLowerCase() === agentName?.toLowerCase()
           );
-          
+
           if (matchingSubject) {
             finalAgentId = matchingSubject.subject_agent_id;
             actualSubjectName = matchingSubject.name;
@@ -443,13 +445,13 @@ export default function AdaptiveContent({
               console.log('Session creation - generated agent ID:', finalAgentId);
             }
           }
-          
+
           console.log('Session creation - resolved agent ID:', finalAgentId, 'for subject:', actualSubjectName);
         } catch (error) {
           console.error('Failed to resolve agent ID and subject name during session creation:', error);
         }
       }
-      
+
       const sessionData = {
         student_id: user.id,
         subject: actualSubjectName,
@@ -462,7 +464,7 @@ export default function AdaptiveContent({
       };
 
       const response = await createChatSession(sessionData);
-      
+
       const newSession: ChatSession = {
         id: response.chat_session_id,
         user_id: user.id,
@@ -476,17 +478,17 @@ export default function AdaptiveContent({
         message_count: 0,
         is_archived: false
       };
-      
+
       if (!newSession || !newSession.id) {
         console.error("Invalid session response:", response);
         toast.error("Invalid session response from server");
         return;
       }
-      
+
       setSessions(prev => [newSession, ...prev]);
       setCurrentSession(newSession);
       setMessages([]);
-      
+
       // Update local session state with resolved agent ID if different from backend response
       if (finalAgentId && finalAgentId !== newSession.agent_id) {
         console.log('Updating local session with resolved agent ID:', finalAgentId);
@@ -494,7 +496,7 @@ export default function AdaptiveContent({
         setCurrentSession(updatedSession);
         setSessions(prev => prev.map(s => s.id === updatedSession.id ? updatedSession : s));
       }
-      
+
       navigate(`/student/chat/session/${newSession.id}`, { replace: true });
       toast.success("New chat session created");
     } catch (error) {
@@ -545,10 +547,10 @@ export default function AdaptiveContent({
 
   const sendMessage = async (content: string) => {
     if (!currentSession || !user?.id) return;
-    
+
     try {
       setIsLoading(true);
-      
+
       const userMessage: ChatMessage = {
         id: `temp-${Date.now()}`,
         session_id: currentSession.id,
@@ -557,9 +559,9 @@ export default function AdaptiveContent({
         message_type: "text",
         created_at: new Date().toISOString(),
       };
-      
+
       setMessages(prev => [...prev, userMessage]);
-      
+
       // Resolve the actual subject name from student subjects
       let actualSubject = currentSession.agent_name;
       if (actualSubject === 'AI Tutor' || actualSubject === 'New' || !actualSubject) {
@@ -569,10 +571,10 @@ export default function AdaptiveContent({
             ...(studentSubjectsResponse.student_subjects || []),
             ...(studentSubjectsResponse.general_subjects || []),
           ];
-          
+
           // If we have agent_id, find the matching subject
           if (currentSession.agent_id) {
-            const matchingSubject = allSubjects.find((subject: any) => 
+            const matchingSubject = allSubjects.find((subject: any) =>
               subject.subject_agent_id === currentSession.agent_id
             );
             if (matchingSubject?.name) {
@@ -611,9 +613,9 @@ export default function AdaptiveContent({
           actualSubject = 'General';
         }
       }
-      
+
       console.log('Sending message with resolved subject:', actualSubject, 'for session:', currentSession.id, 'agent_id:', currentSession.agent_id);
-      
+
       const response = await sendChatMessage({
         student_id: user.id,
         subject: actualSubject,
@@ -621,12 +623,12 @@ export default function AdaptiveContent({
         query: content,
         chat_session_id: currentSession.id,
       });
-      
+
       console.log('API response structure:', response);
-      
+
       // Handle different response structures
       let responseContent = response.response;
-      
+
       // If response has nested structure with summary, use that
       if (response.response && typeof response.response === 'object' && response.response.summary) {
         responseContent = response.response.summary;
@@ -635,7 +637,7 @@ export default function AdaptiveContent({
         responseContent = response.response;
         console.log('Using direct response:', responseContent);
       }
-      
+
       const aiMessage: ChatMessage = {
         id: response.conversation_id || `ai-${Date.now()}`,
         session_id: currentSession.id,
@@ -645,18 +647,18 @@ export default function AdaptiveContent({
         message_type: "text",
         created_at: new Date().toISOString(),
       };
-      
+
       setMessages(prev => [...prev, aiMessage]);
-      
-      setSessions(prev => prev.map(s => 
-        s.id === currentSession.id 
+
+      setSessions(prev => prev.map(s =>
+        s.id === currentSession.id
           ? { ...s, last_message_at: new Date().toISOString(), message_count: s.message_count + 2 }
           : s
       ));
-      
+
     } catch (error) {
       console.error("Failed to send message:", error);
-      
+
       if (error.response?.status === 500) {
         toast.error("Server error. Please try again or contact support.");
       } else if (error.response?.status === 404) {
@@ -664,7 +666,7 @@ export default function AdaptiveContent({
       } else {
         toast.error("Failed to send message. Please try again.");
       }
-      
+
       setMessages(prev => prev.filter(m => m.id !== `temp-${Date.now()}`));
     } finally {
       setIsLoading(false);
@@ -675,7 +677,7 @@ export default function AdaptiveContent({
     console.log('handleNewChat called with:', { agentType, agentName, agentId });
     console.log('Current session:', currentSession);
     console.log('Available sessions:', sessions);
-    
+
     // Create a new chat session with the current subject
     if (agentType && agentName) {
       console.log('Creating new session with props agent');
@@ -726,11 +728,11 @@ export default function AdaptiveContent({
       };
 
       await updateMessageFeedback(feedbackData);
-      
-      setMessages(prev => prev.map(m => 
+
+      setMessages(prev => prev.map(m =>
         m.id === messageId ? { ...m, feedback } : m
       ));
-      
+
       toast.success("Feedback submitted");
     } catch (error) {
       console.error("Failed to submit feedback:", error);
@@ -760,49 +762,49 @@ export default function AdaptiveContent({
     const sessionAgentId = currentSession?.agent_id;
     const propAgentId = agentId;
     let finalAgentId = sessionAgentId || propAgentId;
-    
+
     console.log('Initial agent data:', {
       sessionAgentId,
       propAgentId,
       currentSession,
       agentId
     });
-    
+
     // If agent ID is invalid (empty, undefined, appears to be a name, or is a constructed pattern), try to resolve it
-    if (!finalAgentId || 
-        !finalAgentId.startsWith('agent_') || 
-        finalAgentId.includes(' ') ||
-        finalAgentId === 'agent_ai tutor' ||
-        // Check for constructed patterns like agent_resumescience (all lowercase after agent_)
-        finalAgentId.match(/^agent_[a-z]+$/)) {
-      
+    if (!finalAgentId ||
+      !finalAgentId.startsWith('agent_') ||
+      finalAgentId.includes(' ') ||
+      finalAgentId === 'agent_ai tutor' ||
+      // Check for constructed patterns like agent_resumescience (all lowercase after agent_)
+      finalAgentId.match(/^agent_[a-z]+$/)) {
+
       console.log('Invalid or constructed agent ID detected, attempting resolution:', finalAgentId);
-      
+
       // Try to get the actual agent ID from student subjects
       try {
         const studentSubjectsResponse = await getStudentAgent(user.id);
         console.log('Student subjects response:', studentSubjectsResponse);
-        
+
         const allSubjects = [
           ...(studentSubjectsResponse.student_subjects || []),
           ...(studentSubjectsResponse.general_subjects || []),
         ];
-        
+
         // If we have a current session with agent_name, try to find matching subject
         if (currentSession?.agent_name) {
-          const matchingSubject = allSubjects.find((subject: any) => 
+          const matchingSubject = allSubjects.find((subject: any) =>
             subject.name?.toLowerCase() === currentSession.agent_name?.toLowerCase()
           );
-          
+
           if (matchingSubject?.subject_agent_id) {
             finalAgentId = matchingSubject.subject_agent_id;
             console.log('Resolved agent ID from session agent name:', finalAgentId);
-            
+
             // Update the current session with the found agent ID
-            setCurrentSession(prev => prev ? {...prev, agent_id: finalAgentId} : null);
+            setCurrentSession(prev => prev ? { ...prev, agent_id: finalAgentId } : null);
           }
         }
-        
+
         // If still no valid ID, try to use the first available subject
         if (!finalAgentId || !finalAgentId.startsWith('agent_')) {
           if (allSubjects.length > 0 && allSubjects[0].subject_agent_id) {
@@ -810,14 +812,14 @@ export default function AdaptiveContent({
             console.log('Using first available subject agent ID:', finalAgentId);
           }
         }
-        
+
       } catch (error) {
         console.error('Failed to resolve agent ID:', error);
         setDocumentError("Failed to resolve agent for documents");
         return;
       }
     }
-    
+
     // Final validation
     if (!finalAgentId || !finalAgentId.startsWith('agent_')) {
       console.error('No valid agent ID could be resolved. Final value:', finalAgentId);
@@ -828,21 +830,21 @@ export default function AdaptiveContent({
     try {
       setIsLoadingDocuments(true);
       setDocumentError(null);
-      
+
       console.log('Making API call to get documents for agent:', finalAgentId);
       const response = await getStudentAgentDocuments(user.id, finalAgentId);
       console.log('Documents API response:', response);
-      
+
       // Handle the API response format - it returns document IDs
       const documentIds = response.documents || response.document_ids || response.doc_unique_ids || response || [];
       console.log('Document IDs extracted:', documentIds);
-      
+
       if (!Array.isArray(documentIds) || documentIds.length === 0) {
         console.log('No documents found for agent:', finalAgentId);
         setAgentDocuments([]);
         return;
       }
-      
+
       // Convert document IDs to AgentDocument format
       const documents: AgentDocument[] = documentIds.map((docId: string) => ({
         id: docId,
@@ -852,7 +854,7 @@ export default function AdaptiveContent({
         agent_id: finalAgentId,
         agent_name: currentSession?.agent_name || 'Unknown Agent'
       }));
-      
+
       console.log('Documents converted to AgentDocument format:', documents);
       setAgentDocuments(documents);
     } catch (error) {
@@ -871,45 +873,45 @@ export default function AdaptiveContent({
     const sessionAgentId = currentSession?.agent_id;
     const propAgentId = agentId;
     let finalAgentId = sessionAgentId || propAgentId;
-    
+
     // If agent ID is invalid, try to resolve it using the same logic as loadAgentDocuments
-    if (!finalAgentId || 
-        !finalAgentId.startsWith('agent_') || 
-        finalAgentId.includes(' ') ||
-        finalAgentId === 'agent_ai tutor') {
-      
+    if (!finalAgentId ||
+      !finalAgentId.startsWith('agent_') ||
+      finalAgentId.includes(' ') ||
+      finalAgentId === 'agent_ai tutor') {
+
       try {
         const studentSubjectsResponse = await getStudentAgent(user.id);
         const allSubjects = [
           ...(studentSubjectsResponse.student_subjects || []),
           ...(studentSubjectsResponse.general_subjects || []),
         ];
-        
+
         // If we have a current session with agent_name, try to find matching subject
         if (currentSession?.agent_name) {
-          const matchingSubject = allSubjects.find((subject: any) => 
+          const matchingSubject = allSubjects.find((subject: any) =>
             subject.name?.toLowerCase() === currentSession.agent_name?.toLowerCase()
           );
-          
+
           if (matchingSubject?.subject_agent_id) {
             finalAgentId = matchingSubject.subject_agent_id;
           }
         }
-        
+
         // If still no valid ID, try to use the first available subject
         if (!finalAgentId || !finalAgentId.startsWith('agent_')) {
           if (allSubjects.length > 0 && allSubjects[0].subject_agent_id) {
             finalAgentId = allSubjects[0].subject_agent_id;
           }
         }
-        
+
       } catch (error) {
         console.error('Document preview: failed to resolve agent ID:', error);
         toast.error("Failed to resolve agent for document preview");
         return;
       }
     }
-    
+
     // Final validation
     if (!finalAgentId || !finalAgentId.startsWith('agent_')) {
       toast.error("No valid agent selected for document preview");
@@ -919,13 +921,13 @@ export default function AdaptiveContent({
     try {
       setIsLoadingPreview(true);
       setDocumentError(null);
-      
+
       const response = await previewDocument(user.id, finalAgentId, document.id);
-      
+
       // Debug: Check the actual response structure
       let content = '';
       let contentType: 'text' | 'pdf' | 'binary' | 'markdown' | 'html' = 'text';
-      
+
       if (typeof response === 'string') {
         if (response.startsWith('%PDF')) {
           // This is actual PDF binary data - we can't display it directly
@@ -942,7 +944,7 @@ export default function AdaptiveContent({
       } else if (typeof response === 'object' && response !== null) {
         content = response.content || response.preview || response.data || response.text || JSON.stringify(response);
         const responseContentType = response.content_type || response.type || 'text';
-        
+
         if (responseContentType === 'pdf' || responseContentType === 'application/pdf') {
           contentType = 'pdf';
         } else if (responseContentType === 'binary') {
@@ -954,7 +956,7 @@ export default function AdaptiveContent({
         } else {
           contentType = 'text';
         }
-        
+
         // Check if content is actually binary data
         if (content && typeof content === 'string' && (content.includes('0x') || content.includes('\u0000'))) {
           content = 'Binary content - download to view';
@@ -964,7 +966,7 @@ export default function AdaptiveContent({
         content = '[No content available]';
         contentType = 'text';
       }
-      
+
       const documentPreview: DocumentPreview = {
         id: document.id,
         content: content,
@@ -978,7 +980,7 @@ export default function AdaptiveContent({
           download_url: `${BASE_URL}${VERSION}/student/${user.id}/agents/${finalAgentId}/documents/${document.id}/preview`
         },
       };
-      
+
       setSelectedDocument(documentPreview);
       setCurrentDocumentIndex(agentDocuments.findIndex(doc => doc.id === document.id));
     } catch (error) {
@@ -1012,11 +1014,11 @@ export default function AdaptiveContent({
 
   const handleTextAction = (action: 'explain' | 'summarize', text: string, documentId: string) => {
     console.log('handleTextAction called:', { action, text, documentId });
-    
+
     // Get agent info from current session instead of props
     const currentAgentName = currentSession?.agent_name || agentName;
     const currentAgentId = currentSession?.agent_id || agentId;
-    
+
     if (!user?.id || !currentAgentName || !currentAgentId) {
       console.log('Missing required data:', { user: !!user, currentAgentName, currentAgentId });
       return;
@@ -1025,7 +1027,7 @@ export default function AdaptiveContent({
     // Create query with action keyword and selected text
     const query = `${action} ${text}`;
     console.log('Created query:', query);
-    
+
     // Set the query in the chat input box
     console.log('Setting external input value:', query);
     setExternalInputValue(query);
@@ -1043,9 +1045,9 @@ export default function AdaptiveContent({
     createSession,
     switchSession,
     sendMessage,
-    deleteSession: async (id) => {},
-    renameSession: async (id, title) => {},
-    archiveSession: async (id) => {},
+    deleteSession: async (id) => { },
+    renameSession: async (id, title) => { },
+    archiveSession: async (id) => { },
     loadSessions,
     loadMessages: switchSession,
   };
@@ -1221,7 +1223,7 @@ export default function AdaptiveContent({
               </div>
             </div>
           </div>
-          
+
           <TopicsPreview />
         </div>
       </div>
@@ -1255,26 +1257,26 @@ export default function AdaptiveContent({
             "flex flex-col min-w-0 h-full overflow-hidden",
             isSplitViewOpen ? "w-1/2" : "w-full"
           )}>
-            <div className="pro-header relative flex-shrink-0 overflow-hidden p-3 sm:p-4">
+            <div className="pro-header relative flex-shrink-0 overflow-hidden px-3 py-2 sm:px-4 sm:py-2.5">
               <div className="absolute inset-y-0 right-0 w-48 bg-gradient-to-l from-primary/10 via-accent/5 to-transparent blur-2xl" />
               <div className="flex items-center justify-between">
-                <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                   {onBack && (
                     <Button variant="ghost" size="icon-sm" onClick={onBack}>
-                      <ArrowLeft className="w-5 h-5" />
+                      <ArrowLeft className="w-4 h-4" />
                     </Button>
                   )}
-                  
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 text-primary ring-1 ring-primary/10">
-                      <Bot className="w-5 h-5" />
+
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 text-primary ring-1 ring-primary/10">
+                      <Bot className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
-                      <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-primary/10 bg-primary/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-                        <Sparkles className="h-3.5 w-3.5" />
+                      <div className="mb-0.5 inline-flex items-center gap-1.5 rounded-full border border-primary/10 bg-primary/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary">
+                        <Sparkles className="h-3 w-3" />
                         Tutor mode
                       </div>
-                      <h1 className="truncate text-lg font-semibold tracking-[-0.02em]">
+                      <h1 className="truncate text-sm font-semibold tracking-[-0.02em]">
                         {currentSession?.title || (agentName ? `${agentName} Chat` : "AI Chat")}
                         {isSplitViewOpen && (
                           <span className="ml-2 text-xs text-muted-foreground">
@@ -1282,15 +1284,10 @@ export default function AdaptiveContent({
                           </span>
                         )}
                       </h1>
-                      {currentSession && (
-                        <p className="text-xs text-muted-foreground">
-                          {currentSession.agent_name} • {currentSession.message_count} messages
-                        </p>
-                      )}
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex flex-shrink-0 items-center gap-2">
                   <DocumentPreviewButton
                     agentId={currentSession?.agent_id}
@@ -1300,7 +1297,7 @@ export default function AdaptiveContent({
                     onClick={handleDocumentPreviewClick}
                     isSplitViewOpen={isSplitViewOpen}
                   />
-                  
+
                   {!isSplitViewOpen && (
                     <Button
                       onClick={handleNewChat}
@@ -1317,7 +1314,7 @@ export default function AdaptiveContent({
             </div>
 
             {/* Chat Content */}
-            <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
               {currentSession ? (
                 <ChatWindow
                   messages={messages}
@@ -1331,39 +1328,37 @@ export default function AdaptiveContent({
                   onExternalInputClear={handleExternalInputClear}
                 />
               ) : (
-                <div className="flex-1 flex flex-col">
-                  <div className="flex-1 flex items-center justify-center p-6">
-                    <div className="hero-card max-w-xl overflow-hidden">
-                      <div className="relative px-8 py-9 text-center">
-                        <div className="absolute left-1/2 top-8 h-28 w-28 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
-                        <div className="relative mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[22px] bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 ring-1 ring-primary/10">
-                          <MessageSquare className="h-8 w-8 text-primary" />
-                        </div>
-                        <div className="relative inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary shadow-sm">
-                          <BookOpen className="h-3.5 w-3.5" />
-                          Fresh workspace
-                        </div>
-                        <h2 className="relative mt-4 text-2xl font-black tracking-[-0.03em] text-slate-950">Welcome to AI Chat</h2>
-                        <p className="relative mx-auto mt-3 max-w-md text-sm leading-7 text-slate-600">
-                          Select an existing conversation or launch a new one to enter a cleaner, more focused tutor experience.
-                        </p>
-
-                        <div className="relative mt-6 grid gap-3 text-left sm:grid-cols-3">
-                          {learningHighlights.map((item) => (
-                            <div
-                              key={item}
-                              className="rounded-2xl border border-white/75 bg-white/75 p-4 text-sm leading-6 text-slate-600 shadow-sm"
-                            >
-                              {item}
-                            </div>
-                          ))}
-                        </div>
-
-                        <Button onClick={handleNewChat} className="relative mt-7 rounded-full px-6 shadow-glow">
-                          <Plus className="mr-2 h-4 w-4" />
-                          Start New Chat
-                        </Button>
+                <div className="flex-1 flex items-center justify-center p-4">
+                  <div className="hero-card max-w-xl">
+                    <div className="relative px-6 py-6 text-center">
+                      <div className="absolute left-1/2 top-6 h-20 w-20 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
+                      <div className="relative mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 ring-1 ring-primary/10">
+                        <MessageSquare className="h-6 w-6 text-primary" />
                       </div>
+                      <div className="relative inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/75 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary shadow-sm">
+                        <BookOpen className="h-3 w-3" />
+                        Fresh workspace
+                      </div>
+                      <h2 className="relative mt-2 text-lg font-black tracking-[-0.03em] text-slate-950">Welcome to AI Chat</h2>
+                      <p className="relative mx-auto mt-1 max-w-md text-xs leading-5 text-slate-600">
+                        Select an existing conversation or launch a new one to enter a cleaner, more focused tutor experience.
+                      </p>
+
+                      <div className="relative mt-3 grid gap-2 text-left sm:grid-cols-3">
+                        {learningHighlights.map((item) => (
+                          <div
+                            key={item}
+                            className="rounded-xl border border-white/75 bg-white/75 p-3 text-xs leading-5 text-slate-600 shadow-sm"
+                          >
+                            {item}
+                          </div>
+                        ))}
+                      </div>
+
+                      <Button onClick={handleNewChat} className="relative mt-5 rounded-full px-6 shadow-glow">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Start New Chat
+                      </Button>
                     </div>
                   </div>
                 </div>
