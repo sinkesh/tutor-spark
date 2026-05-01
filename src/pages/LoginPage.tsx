@@ -23,7 +23,7 @@ import {
   BrainCircuit,
   ArrowRight,
 } from "lucide-react";
-import { login as apiLogin, getStudentDetails } from "@/config/services";
+import { login as apiLogin } from "@/config/services";
 import { useToast } from "@/components/ui/use-toast";
 import { User } from "@/types";
 import ThemeToggle from "@/components/theme-toggle";
@@ -94,22 +94,16 @@ export default function LoginPage() {
         throw new Error("Invalid response data from server");
       }
 
+      // Store tokens immediately so subsequent API calls are authenticated
+      localStorage.setItem("access_token", access_token);
+      localStorage.setItem("refresh_token", refresh_token);
+
       // Decode JWT to get user name (stored in token payload)
       const jwtPayload = decodeJWT(access_token);
       const userName = jwtPayload?.name || jwtPayload?.email?.split('@')[0] || 'User';
 
-      // Try to get class from JWT, or fetch from student details API for students
-      let userClass = jwtPayload?.class || "";
-
-      if (role === 'student' && !userClass && user_id) {
-        try {
-          const studentDetails = await getStudentDetails(user_id);
-          userClass = studentDetails.class_name || "";
-          console.log('Fetched student class from API:', userClass);
-        } catch (error) {
-          console.warn('Failed to fetch student details:', error);
-        }
-      }
+      // Get class from JWT if available; student details API is admin-only so we skip it
+      const userClass = jwtPayload?.class || "";
 
       const user: User = {
         id: user_id,
@@ -121,9 +115,7 @@ export default function LoginPage() {
         permissions: jwtPayload?.permissions || [],
       };
 
-      // Store tokens and user data
-      localStorage.setItem("access_token", access_token);
-      localStorage.setItem("refresh_token", refresh_token);
+      // Store user data
       localStorage.setItem("user", JSON.stringify(user));
 
       // Update auth context
