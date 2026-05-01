@@ -60,6 +60,7 @@ interface AdaptiveContentProps {
   agentId?: string;
   defaultTitle?: string;
   onBack?: () => void;
+  showTopicsCard?: boolean;
 }
 
 interface StudentSubject {
@@ -78,6 +79,7 @@ export default function AdaptiveContent({
   agentType,
   agentName,
   agentId,
+  showTopicsCard = true,
   defaultTitle,
   onBack,
 }: AdaptiveContentProps) {
@@ -1320,54 +1322,18 @@ export default function AdaptiveContent({
 
             {/* Chat Content */}
             <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
-              {currentSession ? (
-                <ChatWindow
-                  messages={messages}
-                  isLoading={isLoading}
-                  onSendMessage={sendMessage}
-                  onFeedback={handleFeedback}
-                  placeholder={`Ask anything about ${currentSession.agent_name}...`}
-                  agentId={currentSession.agent_id}
-                  agentName={currentSession.agent_name}
-                  externalInputValue={externalInputValue}
-                  onExternalInputClear={handleExternalInputClear}
-                />
-              ) : (
-                <div className="flex-1 flex items-center justify-center p-4">
-                  <div className="hero-card max-w-xl">
-                    <div className="relative px-6 py-6 text-center">
-                      <div className="absolute left-1/2 top-6 h-20 w-20 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
-                      <div className="relative mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 ring-1 ring-primary/10">
-                        <MessageSquare className="h-6 w-6 text-primary" />
-                      </div>
-                      <div className="relative inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/75 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary shadow-sm">
-                        <BookOpen className="h-3 w-3" />
-                        Fresh workspace
-                      </div>
-                      <h2 className="relative mt-2 text-lg font-black tracking-[-0.03em] text-slate-950">Welcome to AI Chat</h2>
-                      <p className="relative mx-auto mt-1 max-w-md text-xs leading-5 text-slate-600">
-                        Select an existing conversation or launch a new one to enter a cleaner, more focused tutor experience.
-                      </p>
-
-                      <div className="relative mt-3 grid gap-2 text-left sm:grid-cols-3">
-                        {learningHighlights.map((item) => (
-                          <div
-                            key={item}
-                            className="rounded-xl border border-white/75 bg-white/75 p-3 text-xs leading-5 text-slate-600 shadow-sm"
-                          >
-                            {item}
-                          </div>
-                        ))}
-                      </div>
-
-                      <Button onClick={handleNewChat} className="relative mt-5 rounded-full px-6 shadow-glow">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Start New Chat
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <ChatWindow
+                messages={messages}
+                isLoading={isLoading}
+                onSendMessage={sendMessage}
+                onFeedback={handleFeedback}
+                placeholder={currentSession ? `Ask anything about ${currentSession.agent_name}...` : "Type your message..."}
+                agentId={currentSession?.agent_id || agentId}
+                agentName={currentSession?.agent_name || agentName}
+                externalInputValue={externalInputValue}
+                onExternalInputClear={handleExternalInputClear}
+                showTopicsCard={showTopicsCard}
+              />
             </div>
           </div>
         </div>
