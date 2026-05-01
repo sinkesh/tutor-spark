@@ -216,7 +216,6 @@ export default function NewAgentChatPage() {
             agentType={agentInfo.agentType}
             agentName={agentInfo.agentName}
             agentId={agentInfo.agentId}
-            showTopicsCard={false}
           />
         </div>
       </div>

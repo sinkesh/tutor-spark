@@ -66,41 +66,22 @@ export default function HistoryPage() {
     try {
       setIsLoading(true);
       const response = await getChatSessions(user.id);
-      console.log("Sessions loaded in history:", response);
       const sessionsData = response.sessions || response.chat_sessions || response;
-      console.log("Sessions data extracted:", sessionsData);
 
-      // Map your backend response to ChatSession format
-      const formattedSessions = (sessionsData || []).map((session: any) => {
-        console.log("History processing session:", session);
+      const formattedSessions = (sessionsData || []).map((session: any) => ({
+        id: session.session_id || session.chat_session_id || session.id,
+        user_id: user.id,
+        title: session.session_name || session.title || 'Untitled Chat',
+        agent_type: session.agent_type || 'subject',
+        agent_name: session.subject || session.agent_name || 'General',
+        agent_id: session.agent_id,
+        created_at: session.created_at || new Date().toISOString(),
+        updated_at: session.last_message_at || session.updated_at || session.created_at || new Date().toISOString(),
+        last_message_at: session.last_message_at || session.created_at || new Date().toISOString(),
+        message_count: session.message_count || 0,
+        is_archived: session.is_active === false || session.is_archived === true
+      }));
 
-        // Extract subject from title or use a mapping
-        let agentName = session.agent_name;
-        if (!agentName && session.title) {
-          // Extract subject from title like "New Science Chat" -> "Science"
-          const subjectMatch = session.title.match(/New (\w+) Chat/);
-          agentName = subjectMatch ? subjectMatch[1] : session.title.split(' ')[0];
-        }
-
-        const formattedSession = {
-          id: session.chat_session_id || session.id,
-          user_id: user.id,
-          title: session.title,
-          agent_type: session.agent_type || 'subject',
-          agent_name: agentName || 'General',
-          agent_id: session.agent_id,
-          created_at: session.created_at || new Date().toISOString(),
-          updated_at: session.updated_at || new Date().toISOString(),
-          last_message_at: session.last_message_at || session.created_at || new Date().toISOString(),
-          message_count: session.message_count || 0,
-          is_archived: session.is_archived || false
-        };
-
-        console.log("History formatted session:", formattedSession);
-        return formattedSession;
-      });
-
-      console.log("Formatted sessions:", formattedSessions);
       setSessions(formattedSessions);
     } catch (error) {
       console.error("Failed to load chat sessions:", error);

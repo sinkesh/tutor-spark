@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import MarkdownMessage from "@/components/MarkdownMessage";
-import TopicsCard from "./TopicsCard";
 import { useTTS } from "@/hooks/useTTS";
 import { SpeakerIcon, StopIcon } from "@/components/icons/SpeakerIcon";
 
@@ -32,7 +31,6 @@ interface ChatWindowProps {
   agentName?: string;
   externalInputValue?: string; // New prop for external input control
   onExternalInputClear?: () => void; // Callback to clear external input
-  showTopicsCard?: boolean;
 }
 
 export default function ChatWindow({
@@ -46,7 +44,6 @@ export default function ChatWindow({
   agentName,
   externalInputValue,
   onExternalInputClear,
-  showTopicsCard = true,
 }: ChatWindowProps) {
   const [inputValue, setInputValue] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -305,13 +302,6 @@ export default function ChatWindow({
     <div className="flex h-full flex-col overflow-hidden">
       {/* Messages */}
       <div className="dashboard-content-padding min-h-0 flex-1 space-y-6 overflow-y-auto">
-        {/* Show TopicsCard when there's an active session */}
-        {showTopicsCard && agentId && agentName && (
-          <div className="mb-6">
-            <TopicsCard agentId={agentId} agentName={agentName} />
-          </div>
-        )}
-        
         {messages.map((message) => (
           <div
             key={message.id}

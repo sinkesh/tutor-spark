@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -20,7 +20,6 @@ import StudentsPage from "@/pages/admin/StudentsPage";
 import SettingsPage from "@/pages/admin/SettingsPage";
 import StudentDashboard from "@/pages/student/StudentDashboard";
 import ExplorePage from "@/pages/student/ExplorePage";
-import ChatPage from "@/pages/student/ChatPage";
 import NewChatPage from "@/pages/student/NewChatPage";
 import ChatSessionPage from "@/pages/student/ChatSessionPage";
 import NewAgentChatPage from "@/pages/student/NewAgentChatPage";
@@ -63,6 +62,11 @@ function AuthRedirect() {
   return (
     <Navigate to={user?.role === "admin" ? "/admin" : "/student"} replace />
   );
+}
+
+function LegacyChatRedirect() {
+  const { subjectName } = useParams<{ subjectName: string }>();
+  return <Navigate to={`/student/chat/new/subject/${subjectName}`} replace />;
 }
 
 function AppRoutes() {
@@ -204,13 +208,11 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-
-      {/* Legacy Chat Route (for backward compatibility) */}
       <Route
         path="/student/chat/:subjectName"
         element={
           <ProtectedRoute allowedRole="student">
-            <ChatPage />
+            <LegacyChatRedirect />
           </ProtectedRoute>
         }
       />

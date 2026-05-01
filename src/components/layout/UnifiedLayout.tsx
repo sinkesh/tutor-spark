@@ -50,7 +50,6 @@ import ChatWindow from '@/components/chat/ChatWindow';
 import DocumentPreviewButton from '@/components/documents/DocumentPreviewButton';
 import DocumentListModal from '@/components/documents/DocumentListModal';
 import DocumentPreviewModal from '@/components/documents/DocumentPreviewModal';
-import TopicsPreview from '@/components/chat/TopicsPreview';
 
 interface UnifiedLayoutProps {
   children: ReactNode;
