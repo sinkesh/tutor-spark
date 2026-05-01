@@ -10,19 +10,21 @@ This is a **Teacher AI Agent** application - a React-based web platform for AI-p
 
 ## Tech Stack
 
-- **Framework**: React 18 + TypeScript 5 + Vite 5
+- **Framework**: React 18 + TypeScript 5 + Vite 5 (SWC plugin)
 - **UI**: shadcn/ui + Tailwind CSS 3 + Radix UI primitives
 - **Routing**: React Router v6 with basename `/Teacher_AI_Agent`
 - **State**: TanStack Query (React Query) + React Context (Auth)
 - **Backend**: FastAPI (configured at `http://localhost:8000`)
 - **Testing**: Vitest + React Testing Library + jsdom
-- **Build Tool**: Vite with SWC plugin
+- **Dev Tooling**: `lovable-tagger` Vite plugin (component tagging in dev mode)
 
 ## Common Commands
 
 ```bash
 # Development server (runs on port 8080)
 npm run dev
+# or
+npm start
 
 # Build for production
 npm run build
@@ -33,38 +35,17 @@ npm run build:dev
 # Run linter
 npm run lint
 
-# Run tests
+# Run tests (single run)
 npm run test
 
 # Run tests in watch mode
 npm run test:watch
 
+# Run a single test file/pattern
+npm run test -- <pattern>
+
 # Preview production build
 npm run preview
-```
-
-## Project Structure
-
-```
-src/
-├── App.tsx                 # Main app with routes and auth guards
-├── main.tsx               # Entry point
-├── pages/                 # Route-level components
-│   ├── admin/            # Admin pages (dashboard, agents, students, etc.)
-│   ├── student/          # Student pages (chat, history, profile)
-│   ├── LoginPage.tsx
-│   └── NotFound.tsx
-├── components/
-│   ├── ui/               # shadcn/ui components (50+ components)
-│   ├── chat/             # Chat system components (ChatLayout, ChatWindow, etc.)
-│   ├── layout/           # Layout components
-│   └── ...               # Feature-specific components
-├── hooks/                # Custom React hooks (useTTS, useAgentCache, etc.)
-├── contexts/             # React contexts (AuthContext)
-├── types/                # TypeScript type definitions
-├── lib/                  # Utility functions (cn() for Tailwind)
-├── config/               # Configuration (API URLs, services)
-└── test/                 # Test setup and example tests
 ```
 
 ## Architecture Patterns
@@ -74,32 +55,31 @@ src/
 - Stores `user`, `access_token`, `refresh_token` in localStorage
 - `ProtectedRoute` component guards routes by role (admin/student)
 - JWT tokens sent via `Authorization: Bearer <token>` header
+- **Note**: There is no token refresh mechanism; auth is initialized from localStorage on mount
 
-### API Integration
+### API Layer
 - Base URL configured in `src/config/api_urls/index.ts`
 - Default: `http://localhost:8000/api/v1`
-- API endpoints organized by feature in `API_URL` object
-- Axios used for HTTP requests throughout
-
-### Authentication Endpoints
-- **Login**: `POST /api/v1/login` - Works for both admin and student (role determined by credentials)
-- **Student Signup**: `POST /api/v1/signup` - Creates new student account
-- **Admin Signup**: `POST /api/v1/admin/signup` - Creates new admin account
+- **Two axios instances** in `src/config/services/index.ts`:
+  - `api` — configured for `multipart/form-data` (file uploads, form submissions)
+  - `apiDataJson` — configured for `application/json` (standard API calls)
+- Both instances have request interceptors injecting the Bearer token and response interceptors handling 401 by clearing localStorage and redirecting to `/login`
+- API endpoints organized by feature in the `API_URL` object
 
 ### Chat System (Core Feature)
 The chat system uses a ChatGPT-style interface:
 - **Components**: `ChatLayout`, `ChatSidebar`, `ChatWindow`, `ChatContent`
-- **Routes**: 
-  - `/student/chat` - Main chat interface
-  - `/student/chat/session/:sessionId` - Specific session
-  - `/student/chat/new/subject/:subjectName` - New chat with subject
-- **State Management**: React Query for server state, local state for UI
+- **State Management**: React Context (`ChatContext` in `ChatLayout.tsx`) for session/message state, React Query for server state
 - **Message Types**: text, notes, study_plan, quiz (see `src/types/chat.ts`)
+- **Routing evolution**:
+  - New routes: `/student/chat`, `/student/chat/session/:sessionId`, `/student/chat/new/subject/:subjectName`
+  - Legacy route (backward compat): `/student/chat/:subjectName`
+- **Session APIs**: See `docs/api-integration-guide.md` for endpoint mapping
 
 ### Component Organization
-- **UI components**: `src/components/ui/` - shadcn components, generic and reusable
+- **UI components**: `src/components/ui/` — shadcn components, generic and reusable
 - **Feature components**: `src/components/chat/`, `src/components/feedback/` etc.
-- **Pages**: `src/pages/` - Route components that compose features
+- **Pages**: `src/pages/` — Route components that compose features
 
 ### Path Aliases
 All imports use `@/` alias mapped to `./src`:
@@ -110,16 +90,16 @@ import { useAuth } from "@/contexts/AuthContext";
 
 ## Key Conventions
 
-### Styling
-- Tailwind CSS with custom CSS variables for theming
-- Dark mode support via `ThemeProvider`
-- `cn()` utility in `src/lib/utils.ts` for conditional class merging
-- Custom color palette with HSL variables in `index.css`
-
 ### TypeScript
-- Strict mode enabled
+- `tsconfig.json` has **relaxed strictness**: `strictNullChecks: false`, `noImplicitAny: false`, `noUnusedLocals: false`, `noUnusedParameters: false`
 - Types in `src/types/` organized by feature
 - Common types in `src/types/index.ts`
+
+### Styling
+- Tailwind CSS with custom CSS variables for theming
+- Dark mode support via `ThemeProvider` (default: light, storage key: `ai-teachers-theme`)
+- `cn()` utility in `src/lib/utils.ts` for conditional class merging
+- Custom color palette with HSL variables and gradient utilities in `index.css`
 
 ### shadcn/ui
 - Components added via `npx shadcn add <component>`
@@ -130,21 +110,22 @@ import { useAuth } from "@/contexts/AuthContext";
 
 Tests use Vitest with jsdom environment:
 - Test files: `*.test.ts` or `*.test.tsx`
-- Setup file: `src/test/setup.ts`
+- Setup file: `src/test/setup.ts` (includes `matchMedia` mock and jest-dom matchers)
 - Run single test: `npm run test -- <pattern>`
 
 ## Environment Notes
 
 - **Dev server**: Port 8080, host `::` (IPv6 compatible)
-- **HMR overlay**: Disabled in vite.config.ts
+- **HMR overlay**: Disabled in `vite.config.ts`
 - **Router basename**: `/Teacher_AI_Agent` (for GitHub Pages deployment)
+- **Vite plugin**: `lovable-tagger` runs only in development mode for component inspection
 
 ## Documentation
 
 Additional documentation in `docs/`:
-- `api-integration-guide.md` - API mapping for chat system
-- `chat-system-README.md` - Chat system architecture
-- `API_DOCUMENTATION.md` - Complete backend API reference
+- `api-integration-guide.md` — API mapping for chat system
+- `chat-system-README.md` — Chat system architecture
+- `API_DOCUMENTATION.md` — Complete backend API reference
 
 ### Admin Dashboard APIs
-- `GET /api/v1/admin/dashboard/stats` - Dashboard statistics (students, agents, sessions)
+- `GET /api/v1/admin/dashboard/stats` — Dashboard statistics (students, agents, sessions)
