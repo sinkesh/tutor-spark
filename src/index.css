@@ -354,10 +354,6 @@
     background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--success)));
   }
 
-  .pro-header {
-    @apply border-b border-slate-200/70 bg-white/85 shadow-sm shadow-slate-200/70 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/80 dark:shadow-black/20;
-  }
-
   .dashboard-header {
     @apply border-b border-white/50 bg-white/60 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/40;
   }

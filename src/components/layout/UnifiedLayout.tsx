@@ -317,99 +317,103 @@ export default function UnifiedLayout({
         "flex min-w-0 min-h-0 flex-1 flex-col overflow-hidden transition-all duration-300 ease-in-out h-screen lg:mb-3 lg:mr-3 lg:h-[calc(100vh-0.75rem)]",
         collapsed ? "lg:ml-[5.75rem]" : "lg:ml-[18.75rem]" // Adjusted for new sidebar width plus gutter
       )}>
-        {/* Header */}
-        <div className="pro-header sticky top-0 z-30 shrink-0 lg:mb-3 lg:overflow-hidden lg:rounded-[24px] lg:border lg:border-white/45 lg:bg-white/78 dark:lg:border-white/10 dark:lg:bg-slate-950/60">
-          <div className="p-3">
-            <div className="dashboard-header-row relative flex items-center justify-between gap-3">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              {/* Mobile Menu Toggle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-                className="dashboard-header-leading header-action lg:hidden"
-              >
-                <Menu className="w-4 h-4" />
-              </Button>
-
-              {/* Back Button */}
-              {showBackButton && (
-                <Button 
-                  variant="ghost" 
-                  size="icon-sm" 
-                  onClick={() => navigate(-1)}
-                  className="dashboard-header-leading header-action"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </Button>
-              )}
-
-              {/* Page Title */}
-              <div className="dashboard-header-title min-w-0 lg:max-w-xs">
-                <h1 className="text-base font-semibold flex items-center gap-2"> {/* Reduced from text-lg */}
-                  {title}
-                  {isChatPage && <Sparkles className="w-3 h-3 text-primary animate-pulse" />} {/* Reduced icon size */}
-                </h1>
-                {isChatPage && !collapsed && (
-                  <p className="text-xs text-muted-foreground animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
-                    {currentSessionId 
-                      ? 'Chat conversation in progress' 
-                      : activeView === 'sessions' 
-                        ? 'Chat conversations' 
-                        : 'Browse subjects'
-                    }
-                  </p>
-                )}
-              </div>
-              <GlobalPageSearch className="flex-1 max-w-none min-w-[2.75rem] sm:min-w-[12rem]" />
-            </div>
-
-            {/* Status Indicators */}
-            <div className="dashboard-header-actions flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="header-action relative">
-                <Bell className="h-4 w-4" />
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-fuchsia-500" />
-              </Button>
-              <HeaderFullscreenToggle />
-              <ThemeToggle collapsed />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="profile-pill h-11 min-w-9">
-                    <span className="profile-avatar h-9 w-9 text-xs">
-                      {user?.name?.charAt(0)}
-                    </span>
-                    <span className="hidden min-w-0 text-left sm:block">
-                      <span className="block max-w-28 truncate text-sm leading-4">{user?.name}</span>
-                      <span className="block max-w-28 truncate text-[11px] leading-3 text-muted-foreground">{user?.email}</span>
-                    </span>
+        {!isChatPage && (
+          <>
+            {/* Header */}
+            <div className="sticky top-0 z-30 shrink-0">
+              <div className="p-3">
+                <div className="dashboard-header-row relative flex items-center justify-between gap-3">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  {/* Mobile Menu Toggle */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+                    className="dashboard-header-leading header-action lg:hidden"
+                  >
+                    <Menu className="w-4 h-4" />
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 rounded-2xl">
-                  <DropdownMenuLabel>
-                    <span className="block truncate">{user?.name}</span>
-                    <span className="block truncate text-xs font-normal text-muted-foreground">{user?.email}</span>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/student/profile">
-                      <User className="mr-2 h-4 w-4" />
-                      Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground"> {/* Reduced gap */}
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> {/* Reduced size */}
-                <span>Online</span>
+
+                  {/* Back Button */}
+                  {showBackButton && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon-sm" 
+                      onClick={() => navigate(-1)}
+                      className="dashboard-header-leading header-action"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                    </Button>
+                  )}
+
+                  {/* Page Title */}
+                  <div className="dashboard-header-title min-w-0 lg:max-w-xs">
+                    <h1 className="text-base font-semibold flex items-center gap-2"> {/* Reduced from text-lg */}
+                      {title}
+                      {isChatPage && <Sparkles className="w-3 h-3 text-primary animate-pulse" />} {/* Reduced icon size */}
+                    </h1>
+                    {isChatPage && !collapsed && (
+                      <p className="text-xs text-muted-foreground animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+                        {currentSessionId 
+                          ? 'Chat conversation in progress' 
+                          : activeView === 'sessions' 
+                            ? 'Chat conversations' 
+                            : 'Browse subjects'
+                        }
+                      </p>
+                    )}
+                  </div>
+                  <GlobalPageSearch className="flex-1 max-w-none min-w-[2.75rem] sm:min-w-[12rem]" />
+                </div>
+
+                {/* Status Indicators */}
+                <div className="dashboard-header-actions flex items-center gap-2">
+                  <Button variant="ghost" size="icon" className="header-action relative">
+                    <Bell className="h-4 w-4" />
+                    <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-fuchsia-500" />
+                  </Button>
+                  <HeaderFullscreenToggle />
+                  <ThemeToggle collapsed />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="profile-pill h-11 min-w-9">
+                        <span className="profile-avatar h-9 w-9 text-xs">
+                          {user?.name?.charAt(0)}
+                        </span>
+                        <span className="hidden min-w-0 text-left sm:block">
+                          <span className="block max-w-28 truncate text-sm leading-4">{user?.name}</span>
+                          <span className="block max-w-28 truncate text-[11px] leading-3 text-muted-foreground">{user?.email}</span>
+                        </span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56 rounded-2xl">
+                      <DropdownMenuLabel>
+                        <span className="block truncate">{user?.name}</span>
+                        <span className="block truncate text-xs font-normal text-muted-foreground">{user?.email}</span>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/student/profile">
+                          <User className="mr-2 h-4 w-4" />
+                          Profile
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Sign out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground"> {/* Reduced gap */}
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> {/* Reduced size */}
+                    <span>Online</span>
+                  </div>
+                </div>
+              </div>
               </div>
             </div>
-          </div>
-          </div>
-        </div>
+          </>
+        )}
         <main className="min-h-0 flex-1 overflow-y-auto">
           <div className="h-full animate-in fade-in-0 duration-500"> {/* Reduced from 73px */}
             {/* Pass session creation callback to children */}

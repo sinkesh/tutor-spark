@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import ChatWindow from "@/components/chat/ChatWindow";
+import TopicsDropdown from "@/components/chat/TopicsDropdown";
 import DocumentPreviewButton from "@/components/documents/DocumentPreviewButton";
 import SplitDocumentView from "@/components/documents/SplitDocumentView";
 import { ChatSession, ChatMessage, ChatContextType } from "@/types/chat";
@@ -1171,7 +1172,7 @@ export default function AdaptiveContent({
             "flex flex-col min-w-0 h-full overflow-hidden",
             isSplitViewOpen ? "w-1/2" : "w-full"
           )}>
-            <div className="pro-header relative flex-shrink-0 overflow-hidden px-3 py-2 sm:px-4 sm:py-2.5">
+            <div className="relative flex-shrink-0 px-3 py-2 sm:px-4 sm:py-2.5">
               <div className="absolute inset-y-0 right-0 w-48 bg-gradient-to-l from-primary/10 via-accent/5 to-transparent blur-2xl pointer-events-none" />
               <div className="relative flex items-center justify-between z-10">
                 <div className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -1210,6 +1211,11 @@ export default function AdaptiveContent({
                     isLoading={isLoadingDocuments}
                     onClick={handleDocumentPreviewClick}
                     isSplitViewOpen={isSplitViewOpen}
+                  />
+
+                  <TopicsDropdown
+                    agentId={currentSession?.agent_id || agentId}
+                    agentName={currentSession?.agent_name || agentName}
                   />
 
                   {!isSplitViewOpen && (
