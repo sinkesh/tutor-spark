@@ -278,6 +278,44 @@ export default function AdaptiveContent({
         const sessionIdForMsg = msg.chat_session_id || msg.student_id || sessionId;
         const createdAt = msg.timestamp || msg.created_at || new Date().toISOString();
 
+        // Detect quiz intent in history
+        const isQuiz = msg.intent === 'quiz' || msg.response?.questions;
+        let aiMessage: ChatMessage;
+
+        if (isQuiz) {
+          const quizData = msg.evaluation?.quiz_data || msg.response;
+          aiMessage = {
+            id: `${msgId}_ai`,
+            session_id: sessionIdForMsg,
+            role: 'assistant',
+            content: quizData?.title || 'Quiz',
+            message_type: 'quiz',
+            metadata: {
+              quiz: {
+                title: quizData?.title,
+                description: quizData?.description,
+                questions: quizData?.questions || [],
+                current_question_index: 0,
+                user_answers: {},
+              },
+            },
+            created_at: createdAt,
+            conversation_id: msg.conversation_id || msgId,
+            feedback: msg.feedback === 'like' ? 'like' : msg.feedback === 'dislike' ? 'dislike' : undefined,
+          };
+        } else {
+          aiMessage = {
+            id: `${msgId}_ai`,
+            session_id: sessionIdForMsg,
+            role: "assistant",
+            content: msg.response || msg.summary || "",
+            message_type: "text",
+            created_at: createdAt,
+            conversation_id: msg.conversation_id || msgId,
+            feedback: msg.feedback === 'like' ? 'like' : msg.feedback === 'dislike' ? 'dislike' : undefined,
+          };
+        }
+
         const userMessage: ChatMessage = {
           id: `${msgId}_user`,
           session_id: sessionIdForMsg,
@@ -286,17 +324,6 @@ export default function AdaptiveContent({
           message_type: "text",
           created_at: createdAt,
           conversation_id: msg.conversation_id || msgId,
-        };
-
-        const aiMessage: ChatMessage = {
-          id: `${msgId}_ai`,
-          session_id: sessionIdForMsg,
-          role: "assistant",
-          content: msg.response || msg.summary || "",
-          message_type: "text",
-          created_at: createdAt,
-          conversation_id: msg.conversation_id || msgId,
-          feedback: msg.feedback === 'like' ? 'like' : msg.feedback === 'dislike' ? 'dislike' : undefined,
         };
 
         return [userMessage, aiMessage];
@@ -527,6 +554,34 @@ export default function AdaptiveContent({
 
       setMessages(prev => [...prev, userMessage]);
 
+      // Exit quiz command detection
+      const exitCommands = ['exit', 'quit', 'quit quiz', 'stop', 'stop quiz'];
+      const isExitCommand = exitCommands.includes(content.trim().toLowerCase());
+      const lastUnfinishedQuiz = [...messages].reverse().find(
+        (m: ChatMessage) => m.message_type === 'quiz' && !m.metadata?.quiz?.final_score
+      );
+
+      if (isExitCommand && lastUnfinishedQuiz) {
+        handleUpdateMessage(lastUnfinishedQuiz.id, {
+          metadata: {
+            ...lastUnfinishedQuiz.metadata,
+            quiz: { ...lastUnfinishedQuiz.metadata!.quiz!, final_score: 'Quiz exited' },
+          },
+        });
+
+        const followUp: ChatMessage = {
+          id: `ai-${Date.now()}`,
+          session_id: session.id,
+          role: 'assistant',
+          content: 'Quiz exited. What would you like to learn next?',
+          message_type: 'text',
+          created_at: new Date().toISOString(),
+        };
+        setMessages(prev => [...prev, followUp]);
+        setIsLoading(false);
+        return;
+      }
+
       // Resolve the actual subject name from student subjects only if invalid
       let actualSubject = session.agent_name;
       if (actualSubject === 'AI Tutor' || actualSubject === 'New' || actualSubject === 'General' || !actualSubject) {
@@ -592,29 +647,56 @@ export default function AdaptiveContent({
 
       console.log('API response structure:', response);
 
-      // Handle different response structures
-      let responseContent = response.response;
+      // Handle quiz intent
+      if (response.intent === 'quiz') {
+        const quizData = response.evaluation?.quiz_data || response.response;
+        const questions = quizData?.questions || [];
 
-      // If response has nested structure with summary, use that
-      if (response.response && typeof response.response === 'object' && response.response.summary) {
-        responseContent = response.response.summary;
-        console.log('Using nested summary response:', responseContent);
-      } else if (response.response && typeof response.response === 'string') {
-        responseContent = response.response;
-        console.log('Using direct response:', responseContent);
+        const aiMessage: ChatMessage = {
+          id: response.conversation_id || `ai-${Date.now()}`,
+          session_id: session.id,
+          conversation_id: response.conversation_id,
+          role: 'assistant',
+          content: quizData?.title || 'Quiz',
+          message_type: 'quiz',
+          metadata: {
+            quiz: {
+              title: quizData?.title,
+              description: quizData?.description,
+              questions,
+              current_question_index: 0,
+              user_answers: {},
+            },
+          },
+          created_at: new Date().toISOString(),
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        // Handle different response structures
+        let responseContent = response.response;
+
+        // If response has nested structure with summary, use that
+        if (response.response && typeof response.response === 'object' && response.response.summary) {
+          responseContent = response.response.summary;
+          console.log('Using nested summary response:', responseContent);
+        } else if (response.response && typeof response.response === 'string') {
+          responseContent = response.response;
+          console.log('Using direct response:', responseContent);
+        }
+
+        const aiMessage: ChatMessage = {
+          id: response.conversation_id || `ai-${Date.now()}`,
+          session_id: session.id,
+          conversation_id: response.conversation_id,
+          role: "assistant",
+          content: responseContent,
+          message_type: "text",
+          created_at: new Date().toISOString(),
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
       }
-
-      const aiMessage: ChatMessage = {
-        id: response.conversation_id || `ai-${Date.now()}`,
-        session_id: session.id,
-        conversation_id: response.conversation_id,
-        role: "assistant",
-        content: responseContent,
-        message_type: "text",
-        created_at: new Date().toISOString(),
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
 
       setSessions(prev => prev.map(s =>
         s.id === session.id
@@ -1016,6 +1098,10 @@ export default function AdaptiveContent({
     setExternalInputValue(undefined);
   };
 
+  const handleUpdateMessage = (messageId: string, updates: Partial<ChatMessage>) => {
+    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, ...updates } : m));
+  };
+
   const chatContextValue: ChatContextType = {
     sessions,
     currentSession,
@@ -1301,6 +1387,7 @@ export default function AdaptiveContent({
                 isLoading={isLoading}
                 onSendMessage={sendMessage}
                 onFeedback={handleFeedback}
+                onUpdateMessage={handleUpdateMessage}
                 placeholder={currentSession ? `Ask anything about ${currentSession.agent_name}...` : "Type your message..."}
                 agentId={currentSession?.agent_id || agentId}
                 agentName={currentSession?.agent_name || agentName}

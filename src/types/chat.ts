@@ -32,6 +32,14 @@ export interface Topic {
   subtopics?: Subtopic[];
 }
 
+export interface QuizQuestion {
+  question_number: number;
+  question: string;
+  options: Record<string, string>;
+  correct_answer: string;
+  explanation: string;
+}
+
 export interface ChatMessage {
   id: string;
   session_id: string;
@@ -43,8 +51,15 @@ export interface ChatMessage {
     notes?: { topic?: string; notes: string };
     study_plan?: { study_plan: string; subject?: string; topic?: string };
     quiz?: {
+      title?: string;
+      description?: string;
       message?: string;
       feedback?: string;
+      // Multi-question flow
+      questions?: QuizQuestion[];
+      current_question_index?: number;
+      user_answers?: Record<number, string>;
+      // Legacy single-question flow
       question?: {
         question_number: number;
         total_questions: number;

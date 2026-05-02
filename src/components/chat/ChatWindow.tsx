@@ -25,6 +25,7 @@ interface ChatWindowProps {
   isLoading: boolean;
   onSendMessage: (content: string) => void;
   onFeedback: (messageId: string, feedback: 'like' | 'dislike') => void;
+  onUpdateMessage?: (messageId: string, updates: Partial<ChatMessage>) => void;
   placeholder?: string;
   disabled?: boolean;
   agentId?: string;
@@ -38,6 +39,7 @@ export default function ChatWindow({
   isLoading,
   onSendMessage,
   onFeedback,
+  onUpdateMessage,
   placeholder = "Type your message...",
   disabled = false,
   agentId,
@@ -47,6 +49,7 @@ export default function ChatWindow({
 }: ChatWindowProps) {
   const [inputValue, setInputValue] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [quizSelections, setQuizSelections] = useState<Record<string, string>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { playTTS, stopAudio, getMessagePlaybackState, currentPlaybackState, cleanup } = useTTS();
 
@@ -78,10 +81,19 @@ export default function ChatWindow({
       case 'quiz':
         const quiz = message.metadata?.quiz;
         if (!quiz) return '';
-        
+
         text = quiz.message || '';
-        if (quiz.feedback) text += '. ' + quiz.feedback;
-        if (quiz.question) {
+        if (quiz.title) text = quiz.title;
+        if (quiz.questions && quiz.questions.length > 0) {
+          const idx = quiz.current_question_index ?? 0;
+          if (idx < quiz.questions.length) {
+            const q = quiz.questions[idx];
+            text += `. Question ${q.question_number} of ${quiz.questions.length}: ${q.question}. `;
+            text += Object.entries(q.options).map(([label, opt]) => `Option ${label}: ${opt}`).join('. ');
+          } else {
+            text += '. Quiz completed.';
+          }
+        } else if (quiz.question) {
           text += `. Question ${quiz.question.question_number} of ${quiz.question.total_questions}: ${quiz.question.question}. `;
           text += quiz.question.options.map((option, idx) => `Option ${String.fromCharCode(65 + idx)}: ${option}`).join('. ');
         }
@@ -236,31 +248,158 @@ export default function ChatWindow({
     }
 
     if (message.message_type === 'quiz' && message.metadata?.quiz) {
+      const quiz = message.metadata.quiz;
+
+      // Multi-question flow (new backend format)
+      if (quiz.questions && quiz.questions.length > 0) {
+        const currentIndex = quiz.current_question_index ?? 0;
+        const isFinished = quiz.final_score !== undefined || currentIndex >= quiz.questions.length;
+        const correctCount = quiz.questions.filter(
+          (q) => quiz.user_answers?.[q.question_number] === q.correct_answer
+        ).length;
+        const totalQuestions = quiz.questions.length;
+
+        return (
+          <div className="space-y-3 mt-2">
+            {quiz.title && (
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-primary">{quiz.title}</p>
+                {!isFinished && (
+                  <button
+                    className="text-xs text-muted-foreground hover:text-foreground underline"
+                    onClick={() =>
+                      onUpdateMessage?.(message.id, {
+                        metadata: {
+                          ...message.metadata,
+                          quiz: { ...quiz, final_score: 'Quiz exited' },
+                        },
+                      })
+                    }
+                  >
+                    Exit Quiz
+                  </button>
+                )}
+              </div>
+            )}
+
+            {quiz.description && (
+              <p className="text-sm text-muted-foreground">{quiz.description}</p>
+            )}
+
+            {isFinished ? (
+              <div className="p-4 rounded-xl border bg-primary/5 text-center space-y-2">
+                {quiz.final_score === 'Quiz exited' ? (
+                  <p className="text-lg font-bold">Quiz Exited</p>
+                ) : (
+                  <>
+                    <p className="text-lg font-bold">🎉 Quiz Completed!</p>
+                    <p className="text-sm text-muted-foreground">Your Score</p>
+                    <p className="text-2xl font-extrabold text-primary mt-2">
+                      {correctCount} / {totalQuestions} correct
+                    </p>
+                  </>
+                )}
+              </div>
+            ) : (
+              (() => {
+                const currentQuestion = quiz.questions[currentIndex];
+                const selected = quizSelections[message.id];
+
+                return (
+                  <div className="p-3 rounded-xl border bg-background space-y-3">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Question {currentQuestion.question_number} of {totalQuestions}
+                    </p>
+                    <p className="font-semibold">{currentQuestion.question}</p>
+                    <div className="space-y-2">
+                      {Object.entries(currentQuestion.options).map(([label, option]) => {
+                        const isSelected = selected === label;
+                        return (
+                          <button
+                            key={label}
+                            className={cn(
+                              "w-full text-left p-2 rounded-lg border transition flex gap-2",
+                              isSelected
+                                ? "bg-primary/10 border-primary"
+                                : "hover:bg-muted"
+                            )}
+                            onClick={() =>
+                              setQuizSelections((prev) => ({
+                                ...prev,
+                                [message.id]: label,
+                              }))
+                            }
+                          >
+                            <span className="font-semibold">{label}.</span>
+                            <span>{option}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      disabled={!selected}
+                      onClick={() => {
+                        const nextAnswers = {
+                          ...quiz.user_answers,
+                          [currentQuestion.question_number]: selected,
+                        };
+                        onUpdateMessage?.(message.id, {
+                          metadata: {
+                            ...message.metadata,
+                            quiz: {
+                              ...quiz,
+                              current_question_index: currentIndex + 1,
+                              user_answers: nextAnswers,
+                            },
+                          },
+                        });
+                        setQuizSelections((prev) => {
+                          const next = { ...prev };
+                          delete next[message.id];
+                          return next;
+                        });
+                      }}
+                    >
+                      Submit
+                    </Button>
+                  </div>
+                );
+              })()
+            )}
+          </div>
+        );
+      }
+
+      // Legacy single-question flow
       return (
         <div className="space-y-3 mt-2">
-          {message.metadata.quiz.feedback && (
-            <div className={cn(
-              "p-2 rounded-lg text-sm font-medium",
-              message.metadata.quiz.feedback.startsWith("✅")
-                ? "bg-green-50 text-green-700 dark:bg-green-900/20"
-                : "bg-red-50 text-red-700 dark:bg-red-900/20",
-            )}>
-              {message.metadata.quiz.feedback}
+          {quiz.feedback && (
+            <div
+              className={cn(
+                "p-2 rounded-lg text-sm font-medium",
+                quiz.feedback.startsWith("✅")
+                  ? "bg-green-50 text-green-700 dark:bg-green-900/20"
+                  : "bg-red-50 text-red-700 dark:bg-red-900/20"
+              )}
+            >
+              {quiz.feedback}
             </div>
           )}
-          
-          {message.metadata.quiz.message && (
-            <p className="font-semibold text-primary">{message.metadata.quiz.message}</p>
+
+          {quiz.message && (
+            <p className="font-semibold text-primary">{quiz.message}</p>
           )}
-          
-          {message.metadata.quiz.question && (
+
+          {quiz.question && (
             <div className="p-3 rounded-xl border bg-background">
               <p className="text-xs text-muted-foreground mb-1">
-                Question {message.metadata.quiz.question.question_number} of {message.metadata.quiz.question.total_questions}
+                Question {quiz.question.question_number} of {quiz.question.total_questions}
               </p>
-              <p className="font-semibold mb-3">{message.metadata.quiz.question.question}</p>
+              <p className="font-semibold mb-3">{quiz.question.question}</p>
               <div className="space-y-2">
-                {message.metadata.quiz.question.options.map((option, idx) => {
+                {quiz.question.options.map((option, idx) => {
                   const label = String.fromCharCode(65 + idx);
                   return (
                     <button
@@ -276,13 +415,13 @@ export default function ChatWindow({
               </div>
             </div>
           )}
-          
-          {message.metadata.quiz.final_score && (
+
+          {quiz.final_score && (
             <div className="p-4 rounded-xl border bg-primary/5 text-center">
               <p className="text-lg font-bold">🎉 Quiz Completed!</p>
               <p className="text-sm text-muted-foreground mt-1">Your Score</p>
               <p className="text-2xl font-extrabold text-primary mt-2">
-                {message.metadata.quiz.final_score}
+                {quiz.final_score}
               </p>
             </div>
           )}
