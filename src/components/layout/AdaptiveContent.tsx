@@ -285,7 +285,7 @@ export default function AdaptiveContent({
           content: msg.query || msg.content || "",
           message_type: "text",
           created_at: createdAt,
-          conversation_id: msgId,
+          conversation_id: msg.conversation_id || msgId,
         };
 
         const aiMessage: ChatMessage = {
@@ -295,7 +295,7 @@ export default function AdaptiveContent({
           content: msg.response || msg.summary || "",
           message_type: "text",
           created_at: createdAt,
-          conversation_id: msgId,
+          conversation_id: msg.conversation_id || msgId,
           feedback: msg.feedback === 'like' ? 'like' : msg.feedback === 'dislike' ? 'dislike' : undefined,
         };
 
@@ -701,9 +701,9 @@ export default function AdaptiveContent({
       }
 
       const feedbackData = {
+        student_id: user.id,
         conversation_id: message.conversation_id,
         feedback: feedback, // Send 'like' or 'dislike' instead of emojis
-        rating: feedback === 'like' ? 5 : 1,
       };
 
       await updateMessageFeedback(feedbackData);

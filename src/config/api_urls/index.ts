@@ -11,7 +11,7 @@ export const API_URL = {
   LIST_STUDENT: "/admin/users/students",
   STUDENT: "/admin/users/students",
   VECTORS: "admin/vectors",
-  STUDENT_FEEDBACK: "/student/feedback",
+  STUDENT_FEEDBACK: "/student/chat/{student_id}/feedback",
   // Auth endpoints
   LOGIN: "/login",
   STUDENT_SIGNUP: "/signup",

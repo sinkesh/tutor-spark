@@ -513,11 +513,16 @@ export const sendChatMessage = async (data: {
 };
 
 export const updateMessageFeedback = async (data: {
+  student_id: string;
   conversation_id: string;
   feedback: string;
-  rating?: number;
 }) => {
-  const response = await apiDataJson.post(API_URL.STUDENT_FEEDBACK, data);
+  const url = API_URL.STUDENT_FEEDBACK.replace('{student_id}', data.student_id);
+  const response = await apiDataJson.post(url, {
+    conversation_id: data.conversation_id,
+    liked: data.feedback === 'like',
+    comment: data.feedback,
+  });
   return response.data;
 };
 

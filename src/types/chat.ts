@@ -65,7 +65,7 @@ export interface ChatContextType {
   isLoading: boolean;
   
   // Actions
-  createSession: (agentType: string, agentName: string, agentId?: string) => Promise<void>;
+  createSession: (agentType: string, agentName: string, agentId?: string) => Promise<ChatSession | null>;
   switchSession: (sessionId: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
   deleteSession: (sessionId: string) => Promise<void>;
