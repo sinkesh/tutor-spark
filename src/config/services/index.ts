@@ -478,9 +478,9 @@ export const deleteChatSession = async (userId: string, sessionId: string) => {
 };
 
 export const getChatMessages = async (userId: string, sessionId: string, limit = 50) => {
-  // GET /student/chat/{student_id}/sessions/{session_id}/history
+  // GET /student/chat/{student_id}/history/{session_id}?limit=50
   const response = await apiDataJson.get(
-    `${API_URL.STUDENT_CHAT_SESSIONS_GET}/${userId}/sessions/${sessionId}/history?limit=${limit}`
+    `${API_URL.STUDENT_CHAT_SESSIONS_GET}/${userId}/history/${sessionId}?limit=${limit}`
   );
   return response.data;
 };
@@ -490,11 +490,12 @@ export const sendChatMessage = async (data: {
   subject: string;
   class_name: string;
   query: string;
-  chat_session_id?: string;
+  session_id?: string;
+  language?: string;
 }) => {
-  console.log("API call: POST /student/agent-query", data);
+  console.log("API call: POST /student/chat/agent-query", data);
   console.log("Full URL:", `${BASE_URL}${VERSION}${API_URL.AGENT_QUERY}`);
-  
+
   try {
     const response = await apiDataJson.post(API_URL.AGENT_QUERY, data);
     console.log("Agent query response:", response);

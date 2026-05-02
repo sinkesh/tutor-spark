@@ -23,7 +23,7 @@ import {
   BrainCircuit,
   ArrowRight,
 } from "lucide-react";
-import { login as apiLogin } from "@/config/services";
+import { login as apiLogin, getStudentDetails } from "@/config/services";
 import { useToast } from "@/components/ui/use-toast";
 import { User } from "@/types";
 import ThemeToggle from "@/components/theme-toggle";
@@ -87,7 +87,7 @@ export default function LoginPage() {
 
     try {
       const response = await apiLogin({ email, password });
-      const { access_token, refresh_token, user_id, role, email: userEmail } = response.data;
+      const { access_token, refresh_token, user_id, role, email: userEmail, class_name, class: responseClass } = response.data;
 
       // Validate response data structure
       if (!access_token || !user_id || !role) {
@@ -102,8 +102,22 @@ export default function LoginPage() {
       const jwtPayload = decodeJWT(access_token);
       const userName = jwtPayload?.name || jwtPayload?.email?.split('@')[0] || 'User';
 
-      // Get class from JWT if available; student details API is admin-only so we skip it
-      const userClass = jwtPayload?.class || "";
+      // Use class_name from login response first, then class, then JWT, then empty
+      let userClass = class_name || responseClass || jwtPayload?.class || jwtPayload?.class_name || "";
+
+      // If class is still missing for a student, fetch from student details API
+      if (!userClass && role === "student") {
+        try {
+          const studentDetails = await getStudentDetails(user_id);
+          const fetchedClass = (studentDetails as any).student_details?.class_name || studentDetails.class_name || "";
+          if (fetchedClass) {
+            userClass = fetchedClass;
+            console.log("Fetched class_name from student details:", userClass);
+          }
+        } catch (err) {
+          console.error("Failed to fetch student details for class_name:", err);
+        }
+      }
 
       const user: User = {
         id: user_id,

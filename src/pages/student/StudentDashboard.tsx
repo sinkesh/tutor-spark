@@ -14,10 +14,12 @@ import {
   Compass,
   Rocket,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getRecentActivityStudent, getStudentAgent } from "@/config/services";
+import { getLastSessionForSubject } from "@/lib/chat-utils";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 import SubjectSkeletonItem from "@/components/loader/SubjectSkeletonItem";
 
 // const assignedClasses = [
@@ -71,7 +73,9 @@ export default function StudentDashboard() {
   const [isSubject, setIsSubject] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [recentActivity, setRecentActivity] = useState(null);
+  const [subjectLoading, setSubjectLoading] = useState<string | null>(null);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Get current subject from URL to filter subjects
   const getCurrentSubject = () => {
@@ -268,11 +272,31 @@ export default function StudentDashboard() {
                   isSubject?.filter(subject =>
                     currentSubject ? subject.name === currentSubject : true
                   ).map((cls) => (
-                    <Link
+                    <div
                       key={cls?.subject_agent_id || cls?.id}
-                      to={`/student/chat/new/subject/${cls.displayName}`}
-                    className="group hover-lift flex items-center gap-4 rounded-[24px] border border-white/70 bg-white/70 p-4 hover:border-fuchsia-200 hover:bg-white dark:border-white/10 dark:bg-white/5"
-                  >
+                      onClick={async () => {
+                        if (subjectLoading || !user?.id) return;
+                        setSubjectLoading(cls.displayName);
+                        try {
+                          const lastSession = await getLastSessionForSubject(user.id, cls.displayName);
+                          if (lastSession?.id) {
+                            navigate(`/student/chat/session/${lastSession.id}`);
+                          } else {
+                            navigate(`/student/chat/new/subject/${cls.displayName}`);
+                          }
+                        } catch (err) {
+                          console.error('Error finding last session:', err);
+                          navigate(`/student/chat/new/subject/${cls.displayName}`);
+                        } finally {
+                          setSubjectLoading(null);
+                        }
+                      }}
+                      className={cn(
+                        "group hover-lift flex items-center gap-4 rounded-[24px] border border-white/70 bg-white/70 p-4 hover:border-fuchsia-200 hover:bg-white dark:border-white/10 dark:bg-white/5",
+                        subjectLoading === cls.displayName && "opacity-60 pointer-events-none"
+                      )}
+                      style={{ cursor: "pointer" }}
+                    >
                       <div className="dashboard-orb flex h-12 w-12 items-center justify-center rounded-[18px] bg-gradient-to-br from-fuchsia-500/15 to-sky-500/20 ring-1 ring-white/50">
                         <BookOpen className="w-6 h-6 text-primary" />
                       </div>
@@ -300,8 +324,12 @@ export default function StudentDashboard() {
                           )}
                         </div>
                       </div>
-                      <ArrowRight className="h-5 w-5 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
-                    </Link>
+                      {subjectLoading === cls.displayName ? (
+                        <div className="w-5 h-5 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <ArrowRight className="h-5 w-5 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+                      )}
+                    </div>
                   ))
                 ) : (
                   <Card className="insight-card border-0 p-8 text-center">

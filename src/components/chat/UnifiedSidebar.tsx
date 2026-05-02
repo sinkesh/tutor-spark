@@ -22,8 +22,9 @@ import {
   Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { getLastSessionForSubject } from "@/lib/chat-utils";
 
 interface UnifiedSidebarProps {
   currentSessionId?: string;
@@ -57,7 +58,9 @@ export default function UnifiedSidebar({
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [subjectLoading, setSubjectLoading] = useState<string | null>(null);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Load sessions when viewing sessions tab, subjects when viewing subjects tab
@@ -110,7 +113,7 @@ export default function UnifiedSidebar({
 
   const loadSubjects = async () => {
     if (!user?.id) return;
-    
+
     try {
       setIsLoadingSubjects(true);
       const response = await getStudentAgent(user.id);
@@ -120,6 +123,37 @@ export default function UnifiedSidebar({
       toast.error('Failed to load subjects');
     } finally {
       setIsLoadingSubjects(false);
+    }
+  };
+
+  const handleSubjectClick = async (subjectName: string) => {
+    if (subjectLoading || !user?.id) return;
+    setSubjectLoading(subjectName);
+    try {
+      const lastSession = await getLastSessionForSubject(user.id, subjectName);
+      if (lastSession?.id) {
+        const formattedSession: ChatSession = {
+          id: lastSession.id,
+          user_id: user.id,
+          title: lastSession.title || "Untitled Chat",
+          agent_type: lastSession.agent_type || "subject",
+          agent_name: lastSession.agent_name || subjectName,
+          agent_id: lastSession.agent_id,
+          created_at: lastSession.created_at || new Date().toISOString(),
+          updated_at: lastSession.updated_at || new Date().toISOString(),
+          last_message_at: lastSession.last_message_at || new Date().toISOString(),
+          message_count: lastSession.message_count || 0,
+          is_archived: lastSession.is_archived || false,
+        };
+        onSessionSelect(formattedSession);
+      } else {
+        navigate(`/student/chat/new/subject/${subjectName}`);
+      }
+    } catch (err) {
+      console.error('Error finding last session:', err);
+      navigate(`/student/chat/new/subject/${subjectName}`);
+    } finally {
+      setSubjectLoading(null);
     }
   };
 
@@ -259,19 +293,19 @@ export default function UnifiedSidebar({
             {filteredSubjects
               .filter(subject => currentSubject ? subject.name === currentSubject : true)
               .slice(0, 5).map((subject) => (
-              <Link
+              <Button
                 key={subject.subject_agent_id}
-                to={`/student/chat/new/subject/${subject.name}`}
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "w-full rounded-[18px]",
+                  subjectLoading === subject.name && "opacity-60 pointer-events-none"
+                )}
+                title={subject.name}
+                onClick={() => handleSubjectClick(subject.name)}
               >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-full rounded-[18px]"
-                  title={subject.name}
-                >
-                  <BookOpen className="w-4 h-4" />
-                </Button>
-              </Link>
+                <BookOpen className="w-4 h-4" />
+              </Button>
             ))}
           </div>
         )}
@@ -475,46 +509,55 @@ export default function UnifiedSidebar({
                 {filteredSubjects
                   .filter(subject => currentSubject ? subject.name === currentSubject : true)
                   .map((subject) => (
-                  <Link
+                  <div
                     key={subject.subject_agent_id}
-                    to={`/student/chat/new/subject/${subject.name}`}
-                    className="block"
+                    onClick={() => handleSubjectClick(subject.name)}
+                    className={cn(
+                      "group relative cursor-pointer rounded-[24px] border border-transparent bg-white/8 p-3 text-white transition-all duration-200 hover:-translate-y-0.5 hover:border-white/10 hover:bg-white/12 hover:shadow-md",
+                      subjectLoading === subject.name && "opacity-60 pointer-events-none"
+                    )}
                   >
-                    <div className="group relative cursor-pointer rounded-[24px] border border-transparent bg-white/8 p-3 text-white transition-all duration-200 hover:-translate-y-0.5 hover:border-white/10 hover:bg-white/12 hover:shadow-md">
-                      <div className="flex items-start gap-3">
-                        <div className={cn(
-                          "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[16px] bg-white/10 ring-1 ring-white/10",
-                          currentSubject === subject.name && "bg-white text-fuchsia-500 ring-white/20"
-                        )}>
-                          <BookOpen className={cn(
-                            "w-4 h-4",
-                            currentSubject === subject.name ? "text-fuchsia-500" : "text-cyan-100"
-                          )} />
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm truncate capitalize">
-                            {subject.name}
-                          </h4>
-                          {subject.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                              {subject.description}
-                            </p>
-                          )}
-                        </div>
-                        
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="rounded-[16px] hover:bg-white/10"
-                          >
+                    <div className="flex items-start gap-3">
+                      <div className={cn(
+                        "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[16px] bg-white/10 ring-1 ring-white/10",
+                        currentSubject === subject.name && "bg-white text-fuchsia-500 ring-white/20"
+                      )}>
+                        <BookOpen className={cn(
+                          "w-4 h-4",
+                          currentSubject === subject.name ? "text-fuchsia-500" : "text-cyan-100"
+                        )} />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm truncate capitalize">
+                          {subject.name}
+                        </h4>
+                        {subject.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                            {subject.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="rounded-[16px] hover:bg-white/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSubjectClick(subject.name);
+                          }}
+                        >
+                          {subjectLoading === subject.name ? (
+                            <div className="w-4 h-4 border-2 border-white/50 border-t-transparent rounded-full animate-spin" />
+                          ) : (
                             <Plus className="w-4 h-4" />
-                          </Button>
-                        </div>
+                          )}
+                        </Button>
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             )}

@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { User, UserRole } from "@/types";
+import { getStudentDetails } from "@/config/services";
 
 interface AuthContextType {
   user: User | null;
   login: (userData: User) => Promise<void>;
+  updateUser: (updates: Partial<User>) => void;
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -20,9 +22,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const userData = localStorage.getItem('user');
         const token = localStorage.getItem('access_token');
-        
+
         if (userData && token) {
-          setUser(JSON.parse(userData));
+          const parsed = JSON.parse(userData) as User;
+          setUser(parsed);
+
+          if (!parsed.class && parsed.role === "student") {
+            try {
+              const details = await getStudentDetails(parsed.id);
+              const cls = (details as any).student_details?.class_name || details.class_name || "";
+              if (cls) {
+                const updated: User = { ...parsed, class: cls };
+                localStorage.setItem("user", JSON.stringify(updated));
+                setUser(updated);
+              }
+            } catch (err) {
+              console.error("Failed to refresh student class on startup:", err);
+            }
+          }
         }
       } catch (error) {
         console.error('Failed to initialize auth:', error);
@@ -39,11 +56,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (userData: User) => {
     try {
+      localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
     } catch (error) {
       console.error('Login error:', error);
       throw new Error('Failed to login. Please try again.');
     }
+  };
+
+  const updateUser = (updates: Partial<User>) => {
+    if (!user) return;
+    const updated = { ...user, ...updates };
+    localStorage.setItem('user', JSON.stringify(updated));
+    setUser(updated);
   };
 
   const logout = () => {
@@ -55,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, login, logout, isAuthenticated: !!user, isLoading }}
+      value={{ user, login, updateUser, logout, isAuthenticated: !!user, isLoading }}
     >
       {children}
     </AuthContext.Provider>

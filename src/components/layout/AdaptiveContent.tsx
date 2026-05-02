@@ -18,6 +18,7 @@ import {
   getStudentAgentDocuments,
   previewDocument,
   getStudentAgent,
+  getStudentDetails,
 } from "@/config/services";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -99,7 +100,7 @@ export default function AdaptiveContent({
 
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
 
   // Global document click handler
   useDocumentClick({
@@ -273,24 +274,28 @@ export default function AdaptiveContent({
       const historyData = response.history || response.messages || [];
 
       const formattedMessages = historyData.map((msg: any) => {
+        const msgId = msg.id || msg._id || `msg_${Date.now()}`;
+        const sessionIdForMsg = msg.chat_session_id || msg.student_id || sessionId;
+        const createdAt = msg.timestamp || msg.created_at || new Date().toISOString();
+
         const userMessage: ChatMessage = {
-          id: msg._id || `user_${Date.now()}`,
-          session_id: msg.chat_session_id,
+          id: `${msgId}_user`,
+          session_id: sessionIdForMsg,
           role: "user",
-          content: msg.query,
+          content: msg.query || msg.content || "",
           message_type: "text",
-          created_at: msg.timestamp,
-          conversation_id: msg._id,
+          created_at: createdAt,
+          conversation_id: msgId,
         };
 
         const aiMessage: ChatMessage = {
-          id: `${msg._id}_response` || `ai_${Date.now()}`,
-          session_id: msg.chat_session_id,
+          id: `${msgId}_ai`,
+          session_id: sessionIdForMsg,
           role: "assistant",
-          content: msg.response,
+          content: msg.response || msg.summary || "",
           message_type: "text",
-          created_at: msg.timestamp,
-          conversation_id: msg._id,
+          created_at: createdAt,
+          conversation_id: msgId,
           feedback: msg.feedback === 'like' ? 'like' : msg.feedback === 'dislike' ? 'dislike' : undefined,
         };
 
@@ -304,8 +309,30 @@ export default function AdaptiveContent({
     }
   };
 
+  const ensureClass = async (): Promise<string | null> => {
+    if (user?.class) return user.class;
+    if (!user?.id || user?.role !== "student") return null;
+    try {
+      const details = await getStudentDetails(user.id);
+      console.log("Fetched student details for class_name:", details);
+      const cls = (details as any).student_details?.class_name || details.class_name || (details as any).class || "";
+      if (cls) {
+        updateUser({ class: cls });
+        return cls;
+      }
+    } catch (err) {
+      console.error("Failed to fetch class_name on demand:", err);
+    }
+    return null;
+  };
+
   const createSession = async (agentType: string, agentName: string, agentId?: string) => {
-    if (!user?.id || isCreating) return;
+    if (!user?.id || isCreating) return null;
+    const userClass = await ensureClass();
+    if (!userClass) {
+      toast.error("Class information is missing. Could not load from profile.");
+      return null;
+    }
 
     try {
       setIsCreating(true);
@@ -357,7 +384,7 @@ export default function AdaptiveContent({
       const sessionData = {
         student_id: user.id,
         subject: actualSubjectName,
-        class_name: user.class,
+        class_name: userClass,
         title: defaultTitle || `New ${actualSubjectName} Chat`,
         session_name: `${actualSubjectName} Session`,
         agent_type: agentType || 'subject',
@@ -384,7 +411,7 @@ export default function AdaptiveContent({
       if (!newSession || !newSession.id) {
         console.error("Invalid session response:", response);
         toast.error("Invalid session response from server");
-        return;
+        return null;
       }
 
       setSessions(prev => [newSession, ...prev]);
@@ -404,9 +431,12 @@ export default function AdaptiveContent({
 
       // Notify parent that session was created
       onSessionCreated?.();
+
+      return newSession;
     } catch (error) {
       console.error("Failed to create session:", error);
       toast.error("Failed to create chat session");
+      return null;
     } finally {
       setIsLoading(false);
       setIsCreating(false);
@@ -451,14 +481,44 @@ export default function AdaptiveContent({
   };
 
   const sendMessage = async (content: string) => {
-    if (!currentSession || !user?.id) return;
+    console.log("sendMessage called:", { content, currentSession, userId: user?.id, agentType, agentName, agentId });
+    if (!user?.id) {
+      console.warn("sendMessage blocked: user.id is missing");
+      toast.error("User not authenticated. Please log in again.");
+      return;
+    }
+    const userClass = await ensureClass();
+    if (!userClass) {
+      toast.error("Class information is missing. Could not load from profile.");
+      return;
+    }
+
+    let session = currentSession;
+
+    // Auto-create a session if none exists and we have agent info
+    if (!session) {
+      if (!agentType || !agentName) {
+        console.warn("sendMessage blocked: no session and no agent info to create one");
+        toast.error("No active chat session. Please select a subject first.");
+        return;
+      }
+      console.log("Auto-creating session before sending message...", { agentType, agentName, agentId });
+      const newSession = await createSession(agentType, agentName, agentId);
+      if (!newSession) {
+        console.error("Failed to auto-create session");
+        toast.error("Failed to start chat session. Please try again.");
+        return;
+      }
+      session = newSession;
+      console.log("Auto-created session:", session.id);
+    }
 
     try {
       setIsLoading(true);
 
       const userMessage: ChatMessage = {
         id: `temp-${Date.now()}`,
-        session_id: currentSession.id,
+        session_id: session.id,
         role: "user",
         content,
         message_type: "text",
@@ -468,7 +528,7 @@ export default function AdaptiveContent({
       setMessages(prev => [...prev, userMessage]);
 
       // Resolve the actual subject name from student subjects only if invalid
-      let actualSubject = currentSession.agent_name;
+      let actualSubject = session.agent_name;
       if (actualSubject === 'AI Tutor' || actualSubject === 'New' || actualSubject === 'General' || !actualSubject) {
         try {
           const studentSubjectsResponse = await getStudentAgent(user.id);
@@ -478,19 +538,19 @@ export default function AdaptiveContent({
           ];
 
           // If we have agent_id, find the matching subject
-          if (currentSession.agent_id) {
+          if (session.agent_id) {
             const matchingSubject = allSubjects.find((subject: any) =>
-              subject.subject_agent_id === currentSession.agent_id
+              subject.subject_agent_id === session.agent_id
             );
             if (matchingSubject?.name) {
               actualSubject = matchingSubject.name;
-              console.log('Resolved subject from agent_id:', currentSession.agent_id, '->', actualSubject);
+              console.log('Resolved subject from agent_id:', session.agent_id, '->', actualSubject);
             } else {
               // Try to extract subject from session title as fallback
-              const titleMatch = currentSession.title?.match(/New (\w+) Chat/);
+              const titleMatch = session.title?.match(/New (\w+) Chat/);
               if (titleMatch) {
                 actualSubject = titleMatch[1];
-                console.log('Resolved subject from title:', currentSession.title, '->', actualSubject);
+                console.log('Resolved subject from title:', session.title, '->', actualSubject);
               } else {
                 // Last resort: use first available subject
                 if (allSubjects.length > 0) {
@@ -501,10 +561,10 @@ export default function AdaptiveContent({
             }
           } else {
             // No agent_id, try to extract from title
-            const titleMatch = currentSession.title?.match(/New (\w+) Chat/);
+            const titleMatch = session.title?.match(/New (\w+) Chat/);
             if (titleMatch) {
               actualSubject = titleMatch[1];
-              console.log('Resolved subject from title (no agent_id):', currentSession.title, '->', actualSubject);
+              console.log('Resolved subject from title (no agent_id):', session.title, '->', actualSubject);
             } else {
               // Last resort: use first available subject
               if (allSubjects.length > 0) {
@@ -519,14 +579,15 @@ export default function AdaptiveContent({
         }
       }
 
-      console.log('Sending message with resolved subject:', actualSubject, 'for session:', currentSession.id, 'agent_id:', currentSession.agent_id);
+      console.log('Sending message with resolved subject:', actualSubject, 'for session:', session.id, 'agent_id:', session.agent_id);
 
       const response = await sendChatMessage({
         student_id: user.id,
         subject: actualSubject,
-        class_name: user.class || 'Class10A',
+        class_name: userClass,
         query: content,
-        chat_session_id: currentSession.id,
+        session_id: session.id,
+        language: 'auto',
       });
 
       console.log('API response structure:', response);
@@ -545,7 +606,7 @@ export default function AdaptiveContent({
 
       const aiMessage: ChatMessage = {
         id: response.conversation_id || `ai-${Date.now()}`,
-        session_id: currentSession.id,
+        session_id: session.id,
         conversation_id: response.conversation_id,
         role: "assistant",
         content: responseContent,
@@ -556,7 +617,7 @@ export default function AdaptiveContent({
       setMessages(prev => [...prev, aiMessage]);
 
       setSessions(prev => prev.map(s =>
-        s.id === currentSession.id
+        s.id === session.id
           ? { ...s, last_message_at: new Date().toISOString(), message_count: s.message_count + 2 }
           : s
       ));

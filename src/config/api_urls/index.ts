@@ -6,7 +6,7 @@ export const API_URL = {
   CREATE_VECTORS: "/admin/vectors/create",
   ALL_COLLECTIONS: "/admin/vectors/collections",
   AGENT_OF_CLASS: "/admin/vectors/agents/by-class",
-  AGENT_QUERY: "/student/agent-query",
+  AGENT_QUERY: "/student/chat/agent-query",
   CREATE_STUDENT: "/admin/users/students",
   LIST_STUDENT: "/admin/users/students",
   STUDENT: "/admin/users/students",
