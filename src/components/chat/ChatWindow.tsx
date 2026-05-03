@@ -99,6 +99,9 @@ export default function ChatWindow({
         if (sp?.summary) text += 'Summary: ' + sp.summary;
         if (!text) text = sp?.study_plan || '';
         break;
+      case 'study':
+        text = message.content || '';
+        break;
       case 'quiz':
         const quiz = message.metadata?.quiz;
         if (!quiz) return '';
@@ -652,6 +655,34 @@ export default function ChatWindow({
       );
     }
 
+    // Study explanation message
+    if (message.message_type === 'study' && message.content) {
+      return (
+        <div className="mt-3">
+          <div className="p-4 rounded-xl border bg-gradient-to-br from-blue-50/60 to-indigo-50/40 dark:from-blue-900/20 dark:to-indigo-900/10">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-400/20 flex items-center justify-center">
+                📚
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg leading-tight">Study</h3>
+                <p className="text-xs text-muted-foreground">Learning explanation</p>
+              </div>
+            </div>
+            <div className={cn(
+              "prose prose-sm max-w-none",
+              "prose-ul:list-disc prose-ul:pl-5",
+              "prose-li:my-1.5",
+              "prose-strong:text-primary prose-strong:font-semibold",
+              "dark:prose-invert",
+            )}>
+              <MarkdownMessage content={message.content} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Default text message
     if (message.content) {
       return <MarkdownMessage content={message.content} />;
@@ -749,6 +780,8 @@ export default function ChatWindow({
                             if (sp.summary) parts.push(`Summary: ${sp.summary}`);
                             if (!parts.length) parts.push(sp.study_plan || "");
                             textToCopy = parts.join('\n\n');
+                          } else if (message.message_type === 'study') {
+                            textToCopy = message.content || "";
                           } else {
                             textToCopy =
                               message.content ||

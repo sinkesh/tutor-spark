@@ -46,7 +46,7 @@ export interface ChatMessage {
   conversation_id?: string;
   role: 'user' | 'assistant';
   content?: string;
-  message_type: 'text' | 'notes' | 'study_plan' | 'quiz';
+  message_type: 'text' | 'notes' | 'study_plan' | 'quiz' | 'study';
   metadata?: {
     notes?: {
       topic?: string;

@@ -305,6 +305,8 @@ export default function AdaptiveContent({
             detectedIntent = 'notes';
           } else if (rawResponse?.plan || rawResponse?.topic_details) {
             detectedIntent = 'study_plan';
+          } else if (typeof rawResponse === 'string' && rawResponse.length > 100) {
+            detectedIntent = 'study';
           }
         }
 
@@ -401,6 +403,24 @@ export default function AdaptiveContent({
                 study_plan: responseData.full_plan || '',
               },
             },
+            created_at: createdAt,
+            conversation_id: msg.conversation_id || msgId,
+            feedback: msg.feedback === 'like' ? 'like' : msg.feedback === 'dislike' ? 'dislike' : undefined,
+          };
+        } else if (intent === 'study') {
+          let textContent = '';
+          if (typeof responseObj === 'string') {
+            textContent = responseObj;
+          } else if (typeof responseObj === 'object' && responseObj !== null) {
+            textContent = responseObj.summary || responseObj.title || responseObj.response || JSON.stringify(responseObj);
+          }
+
+          aiMessage = {
+            id: `${msgId}_ai`,
+            session_id: sessionIdForMsg,
+            role: 'assistant',
+            content: textContent,
+            message_type: 'study',
             created_at: createdAt,
             conversation_id: msg.conversation_id || msgId,
             feedback: msg.feedback === 'like' ? 'like' : msg.feedback === 'dislike' ? 'dislike' : undefined,
@@ -847,6 +867,23 @@ export default function AdaptiveContent({
               subject: actualSubject,
             },
           },
+          created_at: new Date().toISOString(),
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+      } else if (response.intent === 'study') {
+        let responseContent = response.response;
+        if (response.response && typeof response.response === 'object' && response.response.summary) {
+          responseContent = response.response.summary;
+        }
+
+        const aiMessage: ChatMessage = {
+          id: response.conversation_id || `ai-${Date.now()}`,
+          session_id: session.id,
+          conversation_id: response.conversation_id,
+          role: 'assistant',
+          content: responseContent,
+          message_type: 'study',
           created_at: new Date().toISOString(),
         };
 
