@@ -48,8 +48,42 @@ export interface ChatMessage {
   content?: string;
   message_type: 'text' | 'notes' | 'study_plan' | 'quiz';
   metadata?: {
-    notes?: { topic?: string; notes: string };
-    study_plan?: { study_plan: string; subject?: string; topic?: string };
+    notes?: {
+      topic?: string;
+      notes?: string;
+      // Structured notes from backend (intent: notes)
+      title?: string;
+      description?: string;
+      format?: string;
+      detail_level?: string;
+      sections?: { heading: string; content: string }[];
+      key_points?: string[];
+      definitions?: { term: string; definition: string }[];
+      summary?: string;
+    };
+    study_plan?: {
+      // Legacy
+      study_plan?: string;
+      subject?: string;
+      topic?: string;
+      // Structured from backend (intent: study_plan)
+      title?: string;
+      description?: string;
+      level?: string;
+      duration_days?: number;
+      schedule?: {
+        day: number;
+        focus: string;
+        tasks: string[];
+        duration_minutes?: number;
+        resources?: string[];
+      }[];
+      milestones?: { milestone: string; by_day: number }[];
+      key_concepts?: string[];
+      subtopics?: string[];
+      summary?: string;
+      full_plan?: string;
+    };
     quiz?: {
       title?: string;
       description?: string;

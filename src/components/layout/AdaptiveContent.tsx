@@ -273,17 +273,54 @@ export default function AdaptiveContent({
       const response = await getChatMessages(user.id, sessionId);
       const historyData = response.history || response.messages || [];
 
+      const parseHistoryResponse = (msg: any): { intent: string | null; data: any } => {
+        let rawResponse = msg.response;
+        let detectedIntent: string | null = msg.intent || null;
+
+        // Some backends serialize response as a JSON string
+        if (typeof rawResponse === 'string') {
+          try {
+            rawResponse = JSON.parse(rawResponse);
+          } catch {
+            // leave as string
+          }
+        }
+
+        // Check for intent nested inside response object
+        if (!detectedIntent && typeof rawResponse === 'object' && rawResponse?.intent) {
+          detectedIntent = rawResponse.intent;
+        }
+
+        // Also check if backend stores structured data under evaluation directly
+        if (!detectedIntent && msg.evaluation) {
+          if (msg.evaluation.quiz_data) detectedIntent = 'quiz';
+          else if (msg.evaluation.study_plan_data) detectedIntent = 'study_plan';
+        }
+
+        // Fallback: detect by shape when intent is missing
+        if (!detectedIntent && typeof rawResponse === 'object' && rawResponse !== null) {
+          if (rawResponse?.questions && Array.isArray(rawResponse.questions)) {
+            detectedIntent = 'quiz';
+          } else if (rawResponse?.content?.sections || rawResponse?.content?.key_points) {
+            detectedIntent = 'notes';
+          } else if (rawResponse?.plan || rawResponse?.topic_details) {
+            detectedIntent = 'study_plan';
+          }
+        }
+
+        return { intent: detectedIntent, data: rawResponse };
+      };
+
       const formattedMessages = historyData.map((msg: any) => {
         const msgId = msg.id || msg._id || `msg_${Date.now()}`;
         const sessionIdForMsg = msg.chat_session_id || msg.student_id || sessionId;
         const createdAt = msg.timestamp || msg.created_at || new Date().toISOString();
 
-        // Detect quiz intent in history
-        const isQuiz = msg.intent === 'quiz' || msg.response?.questions;
+        const { intent, data: responseObj } = parseHistoryResponse(msg);
         let aiMessage: ChatMessage;
 
-        if (isQuiz) {
-          const quizData = msg.evaluation?.quiz_data || msg.response;
+        if (intent === 'quiz') {
+          const quizData = msg.evaluation?.quiz_data || responseObj;
           aiMessage = {
             id: `${msgId}_ai`,
             session_id: sessionIdForMsg,
@@ -303,12 +340,85 @@ export default function AdaptiveContent({
             conversation_id: msg.conversation_id || msgId,
             feedback: msg.feedback === 'like' ? 'like' : msg.feedback === 'dislike' ? 'dislike' : undefined,
           };
+        } else if (intent === 'notes') {
+          const notesData = responseObj;
+          const content = notesData?.content || {};
+          aiMessage = {
+            id: `${msgId}_ai`,
+            session_id: sessionIdForMsg,
+            role: 'assistant',
+            content: notesData?.title || 'Notes',
+            message_type: 'notes',
+            metadata: {
+              notes: {
+                title: notesData?.title,
+                description: notesData?.description,
+                format: notesData?.format,
+                detail_level: notesData?.detail_level,
+                sections: content?.sections || [],
+                key_points: content?.key_points || [],
+                definitions: content?.definitions || [],
+                summary: content?.summary || '',
+              },
+            },
+            created_at: createdAt,
+            conversation_id: msg.conversation_id || msgId,
+            feedback: msg.feedback === 'like' ? 'like' : msg.feedback === 'dislike' ? 'dislike' : undefined,
+          };
+        } else if (intent === 'study_plan') {
+          const studyPlanData = msg.evaluation?.study_plan_data || {};
+          const responseData = responseObj || {};
+          const topicDetails = responseData.topic_details || {};
+
+          const schedule = studyPlanData.schedule?.length > 0
+            ? studyPlanData.schedule
+            : (responseData.plan || []).map((p: any) => ({
+                day: p.day,
+                focus: p.focus,
+                tasks: p.tasks || [],
+                duration_minutes: p.duration_minutes,
+                resources: p.resources || [],
+              }));
+
+          aiMessage = {
+            id: `${msgId}_ai`,
+            session_id: sessionIdForMsg,
+            role: 'assistant',
+            content: topicDetails.title || studyPlanData.title || 'Study Plan',
+            message_type: 'study_plan',
+            metadata: {
+              study_plan: {
+                title: topicDetails.title || studyPlanData.title,
+                description: topicDetails.description || studyPlanData.description,
+                level: topicDetails.level || studyPlanData.level,
+                duration_days: topicDetails.duration_days || studyPlanData.duration_days,
+                schedule,
+                milestones: studyPlanData.milestones || [],
+                key_concepts: studyPlanData.key_concepts || responseData.subtopics || [],
+                subtopics: studyPlanData.subtopics || [],
+                summary: studyPlanData.summary || responseData.summary || '',
+                full_plan: responseData.full_plan || '',
+                study_plan: responseData.full_plan || '',
+              },
+            },
+            created_at: createdAt,
+            conversation_id: msg.conversation_id || msgId,
+            feedback: msg.feedback === 'like' ? 'like' : msg.feedback === 'dislike' ? 'dislike' : undefined,
+          };
         } else {
+          // Plain text fallback — avoid dumping raw objects
+          let textContent = '';
+          if (typeof responseObj === 'string') {
+            textContent = responseObj;
+          } else if (typeof responseObj === 'object' && responseObj !== null) {
+            textContent = responseObj.summary || responseObj.title || JSON.stringify(responseObj);
+          }
+
           aiMessage = {
             id: `${msgId}_ai`,
             session_id: sessionIdForMsg,
             role: "assistant",
-            content: msg.response || msg.summary || "",
+            content: textContent,
             message_type: "text",
             created_at: createdAt,
             conversation_id: msg.conversation_id || msgId,
@@ -666,6 +776,75 @@ export default function AdaptiveContent({
               questions,
               current_question_index: 0,
               user_answers: {},
+            },
+          },
+          created_at: new Date().toISOString(),
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+      } else if (response.intent === 'notes') {
+        const notesData = response.response;
+        const content = notesData?.content || {};
+
+        const aiMessage: ChatMessage = {
+          id: response.conversation_id || `ai-${Date.now()}`,
+          session_id: session.id,
+          conversation_id: response.conversation_id,
+          role: 'assistant',
+          content: notesData?.title || 'Notes',
+          message_type: 'notes',
+          metadata: {
+            notes: {
+              title: notesData?.title,
+              description: notesData?.description,
+              format: notesData?.format,
+              detail_level: notesData?.detail_level,
+              sections: content?.sections || [],
+              key_points: content?.key_points || [],
+              definitions: content?.definitions || [],
+              summary: content?.summary || '',
+            },
+          },
+          created_at: new Date().toISOString(),
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+      } else if (response.intent === 'study_plan') {
+        const studyPlanData = response.evaluation?.study_plan_data || {};
+        const responseData = response.response || {};
+        const topicDetails = responseData.topic_details || {};
+
+        const schedule = studyPlanData.schedule?.length > 0
+          ? studyPlanData.schedule
+          : (responseData.plan || []).map((p: any) => ({
+              day: p.day,
+              focus: p.focus,
+              tasks: p.tasks || [],
+              duration_minutes: p.duration_minutes,
+              resources: p.resources || [],
+            }));
+
+        const aiMessage: ChatMessage = {
+          id: response.conversation_id || `ai-${Date.now()}`,
+          session_id: session.id,
+          conversation_id: response.conversation_id,
+          role: 'assistant',
+          content: topicDetails.title || studyPlanData.title || 'Study Plan',
+          message_type: 'study_plan',
+          metadata: {
+            study_plan: {
+              title: topicDetails.title || studyPlanData.title,
+              description: topicDetails.description || studyPlanData.description,
+              level: topicDetails.level || studyPlanData.level,
+              duration_days: topicDetails.duration_days || studyPlanData.duration_days,
+              schedule,
+              milestones: studyPlanData.milestones || [],
+              key_concepts: studyPlanData.key_concepts || responseData.subtopics || [],
+              subtopics: studyPlanData.subtopics || [],
+              summary: studyPlanData.summary || responseData.summary || '',
+              full_plan: responseData.full_plan || '',
+              study_plan: responseData.full_plan || '',
+              subject: actualSubject,
             },
           },
           created_at: new Date().toISOString(),

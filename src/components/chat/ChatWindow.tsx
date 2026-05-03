@@ -73,10 +73,31 @@ export default function ChatWindow({
     
     switch (message.message_type) {
       case 'notes':
-        text = message.metadata?.notes?.notes || '';
+        const notes = message.metadata?.notes;
+        if (notes?.title) text += notes.title + '. ';
+        if (notes?.sections && notes.sections.length > 0) {
+          text += notes.sections.map(s => `${s.heading}. ${s.content}`).join('. ');
+        }
+        if (notes?.key_points && notes.key_points.length > 0) {
+          text += '. Key points: ' + notes.key_points.join('. ');
+        }
+        if (notes?.summary) text += '. Summary: ' + notes.summary;
+        if (!text) text = notes?.notes || '';
         break;
       case 'study_plan':
-        text = message.metadata?.study_plan?.study_plan || '';
+        const sp = message.metadata?.study_plan;
+        if (sp?.title) text += sp.title + '. ';
+        if (sp?.description) text += sp.description + '. ';
+        if (sp?.level) text += `Level: ${sp.level}. `;
+        if (sp?.duration_days) text += `Duration: ${sp.duration_days} days. `;
+        if (sp?.schedule && sp.schedule.length > 0) {
+          sp.schedule.forEach(d => {
+            text += `Day ${d.day}: ${d.focus}. `;
+            text += d.tasks.join('. ') + '. ';
+          });
+        }
+        if (sp?.summary) text += 'Summary: ' + sp.summary;
+        if (!text) text = sp?.study_plan || '';
         break;
       case 'quiz':
         const quiz = message.metadata?.quiz;
@@ -185,6 +206,75 @@ export default function ChatWindow({
   const renderMessageContent = (message: ChatMessage) => {
     // Handle different message types
     if (message.message_type === 'notes' && message.metadata?.notes) {
+      const notes = message.metadata.notes;
+
+      // Structured notes from backend (intent: notes)
+      if (notes.sections && notes.sections.length > 0) {
+        return (
+          <div className="mt-3">
+            <div className="p-4 rounded-xl border bg-gradient-to-br from-yellow-50/60 to-orange-50/40 dark:from-yellow-900/20 dark:to-orange-900/10">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-yellow-400/20 flex items-center justify-center">
+                  📝
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg leading-tight">
+                    {notes.title || 'Notes'}
+                  </h3>
+                  {notes.description && (
+                    <p className="text-xs text-muted-foreground">{notes.description}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Sections */}
+              <div className="space-y-4">
+                {notes.sections.map((section, idx) => (
+                  <div key={idx} className="bg-white/50 dark:bg-yellow-900/10 rounded-lg p-3">
+                    <h4 className="font-semibold text-sm text-primary mb-1">{section.heading}</h4>
+                    <p className="text-sm text-foreground leading-relaxed">{section.content}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Key Points */}
+              {notes.key_points && notes.key_points.length > 0 && (
+                <div className="mt-4 bg-yellow-100/40 dark:bg-yellow-900/20 rounded-lg p-3">
+                  <h4 className="font-semibold text-sm text-primary mb-2">Key Points</h4>
+                  <ul className="list-disc list-inside space-y-1">
+                    {notes.key_points.map((point, idx) => (
+                      <li key={idx} className="text-sm text-foreground">{point}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Definitions */}
+              {notes.definitions && notes.definitions.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <h4 className="font-semibold text-sm text-primary">Definitions</h4>
+                  {notes.definitions.map((def, idx) => (
+                    <div key={idx} className="bg-white/50 dark:bg-yellow-900/10 rounded-lg p-3">
+                      <p className="text-sm font-semibold text-foreground">{def.term}</p>
+                      <p className="text-sm text-muted-foreground mt-0.5">{def.definition}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Summary */}
+              {notes.summary && (
+                <div className="mt-4 border-t border-yellow-200/50 dark:border-yellow-800/30 pt-3">
+                  <h4 className="font-semibold text-sm text-primary mb-1">Summary</h4>
+                  <p className="text-sm text-foreground leading-relaxed">{notes.summary}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      // Legacy plain-string notes
       return (
         <div className="mt-3">
           <div className="p-4 rounded-xl border bg-gradient-to-br from-yellow-50/60 to-orange-50/40 dark:from-yellow-900/20 dark:to-orange-900/10">
@@ -195,8 +285,8 @@ export default function ChatWindow({
               <div>
                 <h3 className="font-semibold text-lg leading-tight">
                   Notes
-                  {message.metadata.notes.topic && (
-                    <span className="text-primary"> – {message.metadata.notes.topic}</span>
+                  {notes.topic && (
+                    <span className="text-primary"> – {notes.topic}</span>
                   )}
                 </h3>
                 <p className="text-xs text-muted-foreground">Quick revision points</p>
@@ -209,7 +299,7 @@ export default function ChatWindow({
               "prose-strong:text-primary prose-strong:font-semibold",
               "dark:prose-invert",
             )}>
-              <MarkdownMessage content={message.metadata.notes.notes} />
+              {notes.notes && <MarkdownMessage content={notes.notes} />}
             </div>
           </div>
         </div>
@@ -217,6 +307,139 @@ export default function ChatWindow({
     }
 
     if (message.message_type === 'study_plan' && message.metadata?.study_plan) {
+      const plan = message.metadata.study_plan;
+
+      // Structured study plan (new backend format)
+      if (plan.schedule && plan.schedule.length > 0) {
+        return (
+          <div className="mt-3 space-y-3">
+            <div className="p-4 rounded-xl border bg-gradient-to-br from-primary/5 to-accent/5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  ✨
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg leading-tight">
+                    {plan.title || 'Study Plan'}
+                  </h3>
+                  {plan.description && (
+                    <p className="text-xs text-muted-foreground">{plan.description}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Badges */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {plan.level && (
+                  <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary">
+                    Level: {plan.level}
+                  </span>
+                )}
+                {plan.duration_days && (
+                  <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-accent/10 text-accent">
+                    {plan.duration_days} days
+                  </span>
+                )}
+                {plan.subject && (
+                  <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">
+                    {plan.subject}
+                  </span>
+                )}
+              </div>
+
+              {/* Schedule */}
+              <div className="space-y-3">
+                {plan.schedule.map((day, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-white/50 dark:bg-primary/5 rounded-lg p-3 border border-primary/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">
+                          {day.day}
+                        </span>
+                        <h4 className="font-semibold text-sm">{day.focus}</h4>
+                      </div>
+                      {day.duration_minutes && (
+                        <span className="text-xs text-muted-foreground">{day.duration_minutes} min</span>
+                      )}
+                    </div>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      {day.tasks.map((task, tIdx) => (
+                        <li key={tIdx} className="text-sm text-foreground">{task}</li>
+                      ))}
+                    </ul>
+                    {day.resources && day.resources.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {day.resources.map((res, rIdx) => (
+                          <span
+                            key={rIdx}
+                            className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground"
+                          >
+                            {res}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Milestones */}
+              {plan.milestones && plan.milestones.length > 0 && (
+                <div className="mt-4 bg-accent/5 rounded-lg p-3 border border-accent/10">
+                  <h4 className="font-semibold text-sm text-accent mb-2">Milestones</h4>
+                  <ul className="space-y-1">
+                    {plan.milestones.map((m, idx) => (
+                      <li key={idx} className="text-sm text-foreground flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-accent/10 text-accent text-xs font-bold flex items-center justify-center flex-shrink-0">
+                          {m.by_day}
+                        </span>
+                        {m.milestone}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Key Concepts / Subtopics */}
+              {(plan.key_concepts?.length > 0 || plan.subtopics?.length > 0) && (
+                <div className="mt-4">
+                  <h4 className="font-semibold text-sm text-primary mb-2">Key Concepts</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {plan.key_concepts?.map((concept, idx) => (
+                      <span
+                        key={idx}
+                        className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary"
+                      >
+                        {concept}
+                      </span>
+                    ))}
+                    {plan.subtopics?.map((topic, idx) => (
+                      <span
+                        key={idx}
+                        className="text-xs px-2 py-0.5 rounded-full bg-accent/10 text-accent"
+                      >
+                        {topic}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Summary */}
+              {plan.summary && (
+                <div className="mt-4 border-t border-primary/10 pt-3">
+                  <h4 className="font-semibold text-sm text-primary mb-1">Summary</h4>
+                  <p className="text-sm text-foreground leading-relaxed">{plan.summary}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      // Legacy study plan markdown
       return (
         <div className="mt-3 space-y-3">
           <div className="p-4 rounded-xl border bg-gradient-to-br from-primary/5 to-accent/5">
@@ -227,20 +450,20 @@ export default function ChatWindow({
               <div>
                 <h3 className="font-semibold text-lg leading-tight">
                   Study Plan
-                  {message.metadata.study_plan.topic && (
-                    <span className="text-primary"> – {message.metadata.study_plan.topic}</span>
+                  {plan.topic && (
+                    <span className="text-primary"> – {plan.topic}</span>
                   )}
                 </h3>
                 <p className="text-xs text-muted-foreground">Structured learning guide</p>
               </div>
             </div>
-            {message.metadata.study_plan.subject && (
+            {plan.subject && (
               <span className="inline-block mb-3 px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary">
-                {message.metadata.study_plan.subject}
+                {plan.subject}
               </span>
             )}
             <div className="prose prose-sm dark:prose-invert max-w-none">
-              <MarkdownMessage content={message.metadata.study_plan.study_plan} />
+              {plan.study_plan && <MarkdownMessage content={plan.study_plan} />}
             </div>
           </div>
         </div>
@@ -483,11 +706,56 @@ export default function ChatWindow({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          const textToCopy =
-                            message.content ||
-                            message.metadata?.notes?.notes ||
-                            message.metadata?.study_plan?.study_plan ||
-                            "";
+                          let textToCopy = message.content || "";
+                          if (message.message_type === 'notes' && message.metadata?.notes) {
+                            const notes = message.metadata.notes;
+                            const parts: string[] = [];
+                            if (notes.title) parts.push(notes.title);
+                            if (notes.description) parts.push(notes.description);
+                            if (notes.sections && notes.sections.length > 0) {
+                              notes.sections.forEach(s => {
+                                parts.push(`${s.heading}\n${s.content}`);
+                              });
+                            }
+                            if (notes.key_points && notes.key_points.length > 0) {
+                              parts.push(`Key Points:\n${notes.key_points.map(p => `• ${p}`).join('\n')}`);
+                            }
+                            if (notes.definitions && notes.definitions.length > 0) {
+                              notes.definitions.forEach(d => {
+                                parts.push(`${d.term}: ${d.definition}`);
+                              });
+                            }
+                            if (notes.summary) parts.push(`Summary: ${notes.summary}`);
+                            if (!parts.length) parts.push(notes.notes || "");
+                            textToCopy = parts.join('\n\n');
+                          } else if (message.message_type === 'study_plan' && message.metadata?.study_plan) {
+                            const sp = message.metadata.study_plan;
+                            const parts: string[] = [];
+                            if (sp.title) parts.push(sp.title);
+                            if (sp.description) parts.push(sp.description);
+                            if (sp.level) parts.push(`Level: ${sp.level}`);
+                            if (sp.duration_days) parts.push(`Duration: ${sp.duration_days} days`);
+                            if (sp.schedule && sp.schedule.length > 0) {
+                              sp.schedule.forEach(d => {
+                                parts.push(`Day ${d.day}: ${d.focus}\n${d.tasks.map(t => `• ${t}`).join('\n')}`);
+                              });
+                            }
+                            if (sp.milestones && sp.milestones.length > 0) {
+                              parts.push(`Milestones:\n${sp.milestones.map(m => `• Day ${m.by_day}: ${m.milestone}`).join('\n')}`);
+                            }
+                            if (sp.key_concepts && sp.key_concepts.length > 0) {
+                              parts.push(`Key Concepts: ${sp.key_concepts.join(', ')}`);
+                            }
+                            if (sp.summary) parts.push(`Summary: ${sp.summary}`);
+                            if (!parts.length) parts.push(sp.study_plan || "");
+                            textToCopy = parts.join('\n\n');
+                          } else {
+                            textToCopy =
+                              message.content ||
+                              message.metadata?.notes?.notes ||
+                              message.metadata?.study_plan?.study_plan ||
+                              "";
+                          }
                           handleCopy(textToCopy, message.id);
                         }}
                         className={cn(
