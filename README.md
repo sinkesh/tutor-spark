@@ -64,6 +64,17 @@ This project is built with:
 
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
 
+## Backend API Configuration
+
+This frontend requires a FastAPI backend to be running. When deploying to Vercel (or any hosting platform), you **must** set the `VITE_API_BASE_URL` environment variable to your deployed backend URL.
+
+- **Local development**: Defaults to `http://localhost:8000` (FastAPI default)
+- **Production / ngrok**: Set `VITE_API_BASE_URL=https://your-deployed-api.com` (or your ngrok URL) in your hosting platform's environment variables
+
+See `.env.example` for local development configuration and `.env.production` for production configuration.
+
+> **Tip:** If you haven't deployed your backend yet, you can use [ngrok](https://ngrok.com/) to expose your local FastAPI server publicly, then set that URL as `VITE_API_BASE_URL`.
+
 ## Can I connect a custom domain to my Lovable project?
 
 Yes, you can!
