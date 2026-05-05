@@ -650,7 +650,61 @@ export const generateTTS = async (text: string) => {
 // Conversation History API Services
 export const getConversationHistory = async (studentId: string) => {
   console.log('Getting conversation history for student:', studentId);
-  const response = await apiDataJson.get(`${API_URL.STUDENT}/conversation-history/${studentId}`);
+  const response = await apiDataJson.get(`${API_URL.CONVERSATION_HISTORY}/${studentId}`);
   console.log('Conversation history response:', response);
+  return response.data;
+};
+
+// Bookmark API Services
+export const createBookmark = async (studentId: string, data: {
+  conversation_id: string;
+  session_id?: string;
+  subject: string;
+  query?: string;
+  response?: string;
+  personal_notes?: string;
+}) => {
+  const response = await apiDataJson.post(`${API_URL.STUDENT_BOOKMARKS}/${studentId}`, data);
+  return response.data;
+};
+
+export const getBookmarks = async (studentId: string) => {
+  const response = await apiDataJson.get(`${API_URL.STUDENT_BOOKMARKS}/${studentId}`);
+  return response.data;
+};
+
+export const updateBookmark = async (studentId: string, bookmarkId: string, personalNotes: string) => {
+  const response = await apiDataJson.put(`${API_URL.STUDENT_BOOKMARKS}/${studentId}/${bookmarkId}`, {
+    personal_notes: personalNotes,
+  });
+  return response.data;
+};
+
+export const deleteBookmark = async (studentId: string, bookmarkId: string) => {
+  const response = await apiDataJson.delete(`${API_URL.STUDENT_BOOKMARKS}/${studentId}/${bookmarkId}`);
+  return response.data;
+};
+
+// Profile API Services
+export const getStudentProfile = async (studentId: string) => {
+  const response = await apiDataJson.get(`${API_URL.STUDENT_PROFILE}/${studentId}`);
+  return response.data;
+};
+
+export const updateStudentProfile = async (studentId: string, data: {
+  name?: string;
+  age?: number;
+  class_name?: string;
+  subjects?: string[];
+  learning_style?: {
+    pace?: string;
+    explanation_depth?: string;
+    example?: boolean;
+    difficulty_level?: string;
+    interaction_mode?: string;
+    memory?: string;
+  };
+}) => {
+  const response = await apiDataJson.put(`${API_URL.STUDENT_PROFILE}/${studentId}`, data);
   return response.data;
 };

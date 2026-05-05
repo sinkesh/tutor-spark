@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import MarkdownMessage from "@/components/MarkdownMessage";
 import { useTTS } from "@/hooks/useTTS";
 import { SpeakerIcon, StopIcon } from "@/components/icons/SpeakerIcon";
+import BookmarkButton from "@/components/bookmarks/BookmarkButton";
 
 interface ChatWindowProps {
   messages: ChatMessage[];
@@ -30,8 +31,10 @@ interface ChatWindowProps {
   disabled?: boolean;
   agentId?: string;
   agentName?: string;
-  externalInputValue?: string; // New prop for external input control
-  onExternalInputClear?: () => void; // Callback to clear external input
+  externalInputValue?: string;
+  onExternalInputClear?: () => void;
+  studentId?: string;
+  subject?: string;
 }
 
 export default function ChatWindow({
@@ -46,6 +49,8 @@ export default function ChatWindow({
   agentName,
   externalInputValue,
   onExternalInputClear,
+  studentId,
+  subject,
 }: ChatWindowProps) {
   const [inputValue, setInputValue] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -834,6 +839,16 @@ export default function ChatWindow({
                       >
                         <ThumbsDown className="w-3.5 h-3.5" />
                       </button>
+
+                      {/* Bookmark Button */}
+                      {studentId && message.conversation_id && subject && (
+                        <BookmarkButton
+                          studentId={studentId}
+                          conversationId={message.conversation_id}
+                          sessionId={message.session_id}
+                          subject={subject}
+                        />
+                      )}
                     </div>
 
                     {/* TTS Speaker and Stop Buttons in Bottom-Right Corner */}

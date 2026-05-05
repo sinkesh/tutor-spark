@@ -37,6 +37,9 @@ export const API_URL = {
   STUDENT_CHAT_SESSIONS_BASE: "/student/chat-sessions",
   STUDENT_CHAT_SESSIONS_GET: "/student/chat",  // GET /student/chat/{student_id}/sessions
   STUDENT_SESSIONS_BASE: "/student/sessions",  // Base for PUT/DELETE /student/sessions/{id}/chat-sessions/{id}
+  CONVERSATION_HISTORY: "/student/sessions/conversation-history",
+  STUDENT_BOOKMARKS: "/student/bookmarks",
+  STUDENT_PROFILE: "/student/profile",
   // Student agent endpoints
   STUDENT_AGENT_TOPICS: "/student/agents",
   STUDENT_AGENT_KNOWLEDGE: "/student/agents",

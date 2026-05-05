@@ -1609,6 +1609,8 @@ export default function AdaptiveContent({
                 agentName={currentSession?.agent_name || agentName}
                 externalInputValue={externalInputValue}
                 onExternalInputClear={handleExternalInputClear}
+                studentId={user?.id}
+                subject={currentSession?.agent_name || agentName || "General"}
               />
             </div>
           </div>
