@@ -27,6 +27,7 @@ import {
   Menu,
   Bell,
   X,
+  FileText,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -37,6 +38,7 @@ interface StudentLayoutProps {
 const navItems = [
   { path: '/student', icon: Home, label: 'Studio' },
   { path: '/student/explore', icon: FolderTree, label: 'Discover' },
+  { path: '/student/documents', icon: FileText, label: 'Documents' },
   { path: '/student/history', icon: History, label: 'Timeline' },
   { path: '/student/conversation-history', icon: Bookmark, label: 'Saved Chats' },
   { path: '/student/profile', icon: User, label: 'Account' },

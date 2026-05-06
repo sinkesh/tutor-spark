@@ -364,6 +364,18 @@ export const getAgentDocuments = async (agentId: string) => {
   }
 };
 
+export const getDocumentsByAgent = async (agentId: string) => {
+  try {
+    const response = await apiDataJson.get(
+      `${API_URL.STUDENT_DOCUMENTS_BY_AGENT}/${agentId}?exclude_chunks=true`
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch documents by agent ${agentId}:`, error);
+    return { status: "error", documents: [], total_documents: 0 };
+  }
+};
+
 export const getAgentTopics = async (agentId: string) => {
   try {
     // Try the extract topics endpoint which is available for students

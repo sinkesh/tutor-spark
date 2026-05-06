@@ -1254,7 +1254,7 @@ export default function AdaptiveContent({
           ...document,
           created_at: document.upload_date,
           preview_available: true,
-          download_url: `${BASE_URL}${VERSION}/student/${user.id}/agents/${finalAgentId}/documents/${document.id}/preview`
+          download_url: `${BASE_URL}${VERSION}/student/documents/${user.id}/agents/${finalAgentId}/documents/${document.id}/preview`
         },
       };
 

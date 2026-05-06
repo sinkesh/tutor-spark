@@ -26,6 +26,7 @@ import NewAgentChatPage from "@/pages/student/NewAgentChatPage";
 import HistoryPage from "@/pages/student/HistoryPage";
 import ConversationHistoryPage from "@/pages/student/ConversationHistoryPage";
 import ProfilePage from "@/pages/student/ProfilePage";
+import DocumentsPage from "@/pages/student/DocumentsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -237,6 +238,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="student">
             <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/documents"
+        element={
+          <ProtectedRoute allowedRole="student">
+            <DocumentsPage />
           </ProtectedRoute>
         }
       />
